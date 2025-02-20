@@ -1,0 +1,5 @@
+[
+{"name":"spamscan","value":"true"},
+{"name":"hostserv","value":"true"},
+{"name":"authserv","value":"true"}
+]

@@ -1,2 +1,2 @@
 # JServ
- Contains SpamScan, AuthServ and HostServ in one package
+ Contains partly newserv compatible SpamScan, AuthServ and HostServ in one package<br>

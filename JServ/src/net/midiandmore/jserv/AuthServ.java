@@ -171,7 +171,20 @@ public class AuthServ implements Userflags {
             var elem = text.split(" ");
             if (getSt().getServerNumeric() != null) {
                 var server = getMi().getConfig().getAuthFile().getProperty("nick") + "@" + getMi().getConfig().getConfigFile().getProperty("servername");
-                if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]) || elem[3].equalsIgnoreCase(":SASL"))) {
+                if (elem[1].equalsIgnoreCase("sasl")) {
+                        if (elem.length < 5) {
+                            sendText("%s AUTHENTICATE %s PARAM %s", getNumeric(), elem[0], elem[3]);
+                        } else if (getSt().getAuthed().containsKey(elem[3])) {
+                            sendText("%s AUTHENTICATE %s ALREADY %s", getNumeric(), elem[0], elem[3]);
+                        } else if (getMi().getDb().isRegistered(elem[3], elem[4])) {
+                            getSt().getAuthed().put(elem[2], elem[3]);
+                            sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[0], elem[2], elem[3]);
+                            sendText("%s AC %s %s %s %s", getNumeric(), elem[2], elem[3], getMi().getDb().getTimestamp(elem[3]), getMi().getDb().getId(elem[3]));
+                        } else {
+                            sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), elem[0], elem[2], elem[3]);
+                        }
+                    } else 
+                if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]))) {
                     var target = elem[2];
                     StringBuilder sb = new StringBuilder();
                     for (int i = 3; i < elem.length; i++) {
@@ -215,18 +228,6 @@ public class AuthServ implements Userflags {
                             sendText("%sAAA %s %s :If you do not see an email soon be sure to check your spam folder.", getNumeric(), notice, nick);
                             getSt().getUsers().get(nick).setReg(true);
                             getMi().getDb().addUser(nickname, auth[1]);
-                        }
-                    } else if (auth[0].equalsIgnoreCase("sasl")) {
-                        if (auth.length < 4) {
-                            sendText("%sAAA AUTHENTICATE %s PARAM %s", getNumeric(), nick, auth[1]);
-                        } else if (getSt().getAuthed().containsKey(nick)) {
-                            sendText("%sAAA AUTHENTICATE %s ALREADY %s", getNumeric(), nick, auth[1]);
-                        } else if (getMi().getDb().isRegistered(auth[2], auth[3])) {
-                            getSt().getAuthed().put(nick, auth[2]);
-                            sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[2], getMi().getDb().getTimestamp(auth[2]), getMi().getDb().getId(auth[2]));
-                            sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), nick, auth[1], auth[2]);
-                        } else {
-                            sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), nick, auth[2], auth[3]);
                         }
                     } else if (auth[0].equalsIgnoreCase("auth")) {
                         if (!target.equalsIgnoreCase(server)) {
@@ -302,7 +303,7 @@ public class AuthServ implements Userflags {
                             sendText("%sAAA %s %s :%s is only available to authed users. Try AUTH to authenticate with your", getNumeric(), notice, nick, auth[0].toUpperCase());
                             sendText("%sAAA %s %s :account, or HELLO to create an account.", getNumeric(), notice, nick);
                         } else if (auth.length == 1) {
-                            sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(nick).getAccount(), getUserFlags(nickname));
+                            sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
                         } else if (auth.length == 2) {
                             if (auth[1].startsWith("+")) {
                                 setUserFlags(getSt().getUsers().get(nick).getAccount(), auth[1], true, false);
@@ -313,7 +314,7 @@ public class AuthServ implements Userflags {
                                 sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
                                 return;
                             }
-                            if (!getSt().isPrivileged(getSt().getUsers().get(nick).getAccount())) {
+                            if (!getSt().isOper(getSt().getUsers().get(nick).getAccount())) {
                                 sendText("%sAAA %s %s :You do not have sufficient privileges to use %s.", getNumeric(), notice, nick, auth[0]);
                                 return;
                             }
@@ -325,7 +326,7 @@ public class AuthServ implements Userflags {
                             }
 
                         } else {
-                            if (!getSt().isPrivileged(getSt().getUsers().get(nick).getAccount())) {
+                            if (!getSt().isOper(getSt().getUsers().get(nick).getAccount())) {
                                 sendText("%sAAA %s %s :You do not have sufficient privileges to use %s.", getNumeric(), notice, nick, auth[0]);
                                 return;
                             }
@@ -353,7 +354,7 @@ public class AuthServ implements Userflags {
 
     private void setUserFlags(String nick, String flag, boolean add, boolean privs) {
         var flags = getMi().getDb().getFlags(nick);
-        var priv = getSt().isPrivileged(nick);
+        var priv = getSt().isOper(nick);
         var userflags = getUserFlags(nick);
         if (!priv && !privs) {
             if (flag.startsWith("+") && flag.contains("n")) {
@@ -368,6 +369,10 @@ public class AuthServ implements Userflags {
             if (add && flag.contains(String.valueOf(chr[0])) && !userflags.contains(String.valueOf(chr[0]))) {
                 flags += chr[1];
             } else if (!add && flag.contains(String.valueOf(chr[0])) && userflags.contains(String.valueOf(chr[0]))) {
+                flags -= chr[1];
+            } else if (add && flag.contains(String.valueOf(chr[0]))) {
+                flags += chr[1];
+            } else if (!add && flag.contains(String.valueOf(chr[0]))) {
                 flags -= chr[1];
             }
         }

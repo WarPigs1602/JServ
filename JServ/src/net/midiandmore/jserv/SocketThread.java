@@ -381,12 +381,56 @@ public class SocketThread implements Runnable, Userflags {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
             var oper = flags & (QUFLAG_OPER | QUFLAG_DEV | QUFLAG_PROTECT | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF);
-            System.out.printf("%d\r\n", oper);
             return oper != 0;
         }
         return false;
     }
 
+    protected boolean isHelper(String nick) {
+        if (!nick.isBlank()) {
+            var flags = getMi().getDb().getFlags(nick);
+            var oper = flags & (QUFLAG_HELPER);
+            return oper != 0;
+        }
+        return false;
+    }
+
+    protected boolean isStaff(String nick) {
+        if (!nick.isBlank()) {
+            var flags = getMi().getDb().getFlags(nick);
+            var oper = flags & (QUFLAG_HELPER | QUFLAG_STAFF);
+            return oper != 0;
+        }
+        return false;
+    }
+
+    protected boolean isOper(String nick) {
+        if (!nick.isBlank()) {
+            var flags = getMi().getDb().getFlags(nick);
+            var oper = flags & (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_STAFF);
+            return oper != 0;
+        }
+        return false;
+    }
+    
+    protected boolean isAdmin(String nick) {
+        if (!nick.isBlank()) {
+            var flags = getMi().getDb().getFlags(nick);
+            var oper = flags & (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF);
+            return oper != 0;
+        }
+        return false;
+    }   
+    
+    protected boolean isDev(String nick) {
+        if (!nick.isBlank()) {
+            var flags = getMi().getDb().getFlags(nick);
+            var oper = flags & (QUFLAG_OPER | QUFLAG_DEV | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF);
+            return oper != 0;
+        }
+        return false;
+    }    
+    
     protected boolean isNoInfo(int flags) {
         return flags == 0;
     }

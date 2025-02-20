@@ -260,7 +260,7 @@ public class SpamScan implements Software {
                         notice = "P";
                     }
                     var auth = command.split(" ");
-                    if ((getSt().isPrivileged(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
+                    if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
 
                         var channel = auth[1];
                         if (getSt().getChannel().containsKey(channel.toLowerCase()) && !getMi().getDb().isChan(channel.toLowerCase())) {
@@ -272,7 +272,7 @@ public class SpamScan implements Software {
                             setReg(false);
                             sendText("%sAAC %s %s :Cannot add channel %s: The channel doesn't exists or %s is allready in the channel...", getNumeric(), notice, elem[0], channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
-                    } else if ((getSt().isPrivileged(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELCHAN")) {
+                    } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELCHAN")) {
                         var channel = auth[1];
                         if (getSt().getChannel().containsKey(channel.toLowerCase()) && getMi().getDb().isChan(channel.toLowerCase())) {
                             getMi().getDb().removeChan(channel.toLowerCase());
@@ -283,7 +283,7 @@ public class SpamScan implements Software {
                             setReg(false);
                             sendText("%sAAC %s %s :Cannot delete channel %s: The channel doesn't exists or %s isn't in the channel...", getNumeric(), notice, elem[0], channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
-                    } else if (getSt().isPrivileged(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("BADWORD")) {
+                    } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("BADWORD")) {
                         var flag = auth[1];
                         var b = getMi().getConfig().getBadwordFile();
                         if (flag.equalsIgnoreCase("ADD") || flag.equalsIgnoreCase("DELETE")) {
@@ -322,33 +322,34 @@ public class SpamScan implements Software {
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
                         sendText("%sAAC %s %s :SpamScan Version %s", getNumeric(), notice, elem[0], VERSION);
                         sendText("%sAAC %s %s :The following commands are available to you:", getNumeric(), notice, elem[0]);
-                        sendText("%sAAC %s %s :--- Commands available for users ---", getNumeric(), notice, elem[0]);
-                        if (getSt().isPrivileged(nick)) {
-                            sendText("%sAAC %s %s :ADDCHAN", getNumeric(), notice, elem[0]);
-                            sendText("%sAAC %s %s :AUTH", getNumeric(), notice, elem[0]);
-                            sendText("%sAAC %s %s :BADWORD", getNumeric(), notice, elem[0]);
-                            sendText("%sAAC %s %s :DELCHAN", getNumeric(), notice, elem[0]);
+                        if (getSt().isOper(nick)) {
+                            sendText("%sAAC %s %s :--- Commands available for opers ---", getNumeric(), notice, elem[0]);
+                            sendText("%sAAC %s %s :+o ADDCHAN      Addds a channel", getNumeric(), notice, elem[0]);
+                            sendText("%sAAC %s %s :+o BADWORD      Manage badwords", getNumeric(), notice, elem[0]);
+                            sendText("%sAAC %s %s :+o DELCHAN      Removes a channel", getNumeric(), notice, elem[0]);
+                        } else {
+                            sendText("%sAAC %s %s :--- Commands available for users ---", getNumeric(), notice, elem[0]);
                         }
-                        sendText("%sAAC %s %s :HELP", getNumeric(), notice, elem[0]);
-                        sendText("%sAAC %s %s :SHOWCOMMANDS", getNumeric(), notice, elem[0]);
-                        sendText("%sAAC %s %s :VERSION", getNumeric(), notice, elem[0]);
+                        sendText("%sAAC %s %s :   HELP         Show a help for an command", getNumeric(), notice, elem[0]);
+                        sendText("%sAAC %s %s :   SHOWCOMMANDS This message", getNumeric(), notice, elem[0]);
+                        sendText("%sAAC %s %s :   VERSION      Shows version information", getNumeric(), notice, elem[0]);
                         sendText("%sAAC %s %s :End of list.", getNumeric(), notice, elem[0]);
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
                         sendText("%sAAC %s %s :SpamScan v%s by %s", getNumeric(), notice, elem[0], VERSION, VENDOR);
                         sendText("%sAAC %s %s :By %s", getNumeric(), notice, elem[0], AUTHOR);
-                    } else if (getSt().isPrivileged(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDCHAN")) {
+                    } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDCHAN")) {
                         sendText("%sAAC %s %s :ADDCHAN <#channel>", getNumeric(), notice, elem[0]);
-                    } else if (getSt().isPrivileged(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("AUTH")) {
+                    } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("AUTH")) {
                         sendText("%sAAC %s %s :AUTH <requestname> <requestpassword>", getNumeric(), notice, elem[0]);
-                    } else if (getSt().isPrivileged(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("BADWORD")) {
+                    } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("BADWORD")) {
                         sendText("%sAAC %s %s :BADWORD <ADD|LIST|DELETE> [badword]", getNumeric(), notice, elem[0]);
-                    } else if (getSt().isPrivileged(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("DELCHAN")) {
+                    } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("DELCHAN")) {
                         sendText("%sAAC %s %s :DELCHAN <#channel>", getNumeric(), notice, elem[0]);
                     } else {
                         sendText("%sAAC %s %s :Unknown command, or access denied.", getNumeric(), notice, elem[0]);
                     }
                 } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase())) {
-                    if (!getSt().isPrivileged(getSt().getUsers().get(elem[0]).getAccount())) {
+                    if (!getSt().isOper(getSt().getUsers().get(elem[0]).getAccount())) {
                         StringBuilder sb = new StringBuilder();
                         for (int i = 3; i < elem.length; i++) {
                             if (elem[3].startsWith(":")) {

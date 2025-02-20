@@ -73,7 +73,7 @@ public class JServ implements Software {
     }
 
     protected void init(String[] args) {
-        System.out.println("HostServ " + VERSION);
+        System.out.println("JServ " + VERSION);
         System.out.println("By " + AUTHOR);
         System.out.println();
         setConfig(new Config(this, "config-jserv.json"));

@@ -27,7 +27,6 @@ import org.apache.commons.codec.digest.DigestUtils;
  */
 public class HostServ implements Software {
 
-
     /**
      * @return the nick
      */
@@ -301,13 +300,15 @@ public class HostServ implements Software {
                     if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
                         sendText("%sAAB %s %s :HostServ Version %s", getNumeric(), notice, elem[0], VERSION);
                         sendText("%sAAB %s %s :The following commands are available to you:", getNumeric(), notice, elem[0]);
-                        sendText("%sAAB %s %s :--- Commands available for users ---", getNumeric(), notice, elem[0]);
-                        if (getSt().isPrivileged(nick)) {
-                            sendText("%sAAB %s %s :HOST", getNumeric(), notice, elem[0]);
+                        if (getSt().isOper(nick)) {
+                            sendText("%sAAB %s %s :--- Commands available for opers ---", getNumeric(), notice, elem[0]);
+                            sendText("%sAAB %s %s :+o HOST         Enables or disables host hiding.", getNumeric(), notice, elem[0]);
+                        } else {
+                            sendText("%sAAB %s %s :--- Commands available for users ---", getNumeric(), notice, elem[0]);
                         }
-                        sendText("%sAAB %s %s :HELP", getNumeric(), notice, elem[0]);
-                        sendText("%sAAB %s %s :SHOWCOMMANDS", getNumeric(), notice, elem[0]);
-                        sendText("%sAAB %s %s :VERSION", getNumeric(), notice, elem[0]);
+                        sendText("%sAAB %s %s :   HELP         Generic help for a command", getNumeric(), notice, elem[0]);
+                        sendText("%sAAB %s %s :   SHOWCOMMANDS View this list", getNumeric(), notice, elem[0]);
+                        sendText("%sAAB %s %s :   VERSION      Prints version information", getNumeric(), notice, elem[0]);
                         sendText("%sAAB %s %s :End of list.", getNumeric(), notice, elem[0]);
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
                         sendText("%sAAB %s %s :HostServ v%s by %s", getNumeric(), notice, elem[0], VERSION, VENDOR);

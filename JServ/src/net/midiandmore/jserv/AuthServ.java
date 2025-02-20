@@ -354,6 +354,7 @@ public class AuthServ implements Userflags {
     private void setUserFlags(String nick, String flag, boolean add, boolean privs) {
         var flags = getMi().getDb().getFlags(nick);
         var priv = getSt().isPrivileged(nick);
+        var userflags = getUserFlags(nick);
         if (!priv && !privs) {
             if (flag.startsWith("+") && flag.contains("n")) {
                 flag = "+n";
@@ -364,9 +365,9 @@ public class AuthServ implements Userflags {
             }
         }
         for (char chr[] : userFlags) {
-            if (add && flag.contains(String.valueOf(chr[0]))) {
+            if (add && flag.contains(String.valueOf(chr[0])) && !userflags.contains(String.valueOf(chr[0]))) {
                 flags += chr[1];
-            } else if (!add && flag.contains(String.valueOf(chr[0]))) {
+            } else if (!add && flag.contains(String.valueOf(chr[0])) && userflags.contains(String.valueOf(chr[0]))) {
                 flags -= chr[1];
             }
         }

@@ -128,7 +128,7 @@ public class AuthServ implements Userflags {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 2 %d %s %s +oikrd - %s:%d U]AAEA %sAAA :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
+        sendText("%s N %s 1 %d %s %s +oikrd - %s:%d U]AAEA %sAAA :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
     }
 
     /**
@@ -172,19 +172,18 @@ public class AuthServ implements Userflags {
             if (getSt().getServerNumeric() != null) {
                 var server = getMi().getConfig().getAuthFile().getProperty("nick") + "@" + getMi().getConfig().getConfigFile().getProperty("servername");
                 if (elem[1].equalsIgnoreCase("sasl")) {
-                        if (elem.length < 5) {
-                            sendText("%s AUTHENTICATE %s PARAM %s", getNumeric(), elem[0], elem[3]);
-                        } else if (getSt().getAuthed().containsKey(elem[3])) {
-                            sendText("%s AUTHENTICATE %s ALREADY %s", getNumeric(), elem[0], elem[3]);
-                        } else if (getMi().getDb().isRegistered(elem[3], elem[4])) {
-                            getSt().getAuthed().put(elem[2], elem[3]);
-                            sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[0], elem[2], elem[3]);
-                            sendText("%s AC %s %s %s %s", getNumeric(), elem[2], elem[3], getMi().getDb().getTimestamp(elem[3]), getMi().getDb().getId(elem[3]));
-                        } else {
-                            sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), elem[0], elem[2], elem[3]);
-                        }
-                    } else 
-                if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]))) {
+                    if (elem.length < 5) {
+                        sendText("%s AUTHENTICATE %s PARAM %s", getNumeric(), elem[0], elem[3]);
+                    } else if (getSt().getAuthed().containsKey(elem[3])) {
+                        sendText("%s AUTHENTICATE %s ALREADY %s", getNumeric(), elem[0], elem[3]);
+                    } else if (getMi().getDb().isRegistered(elem[3], elem[4])) {
+                        getSt().getAuthed().put(elem[2], elem[3]);
+                        sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[0], elem[2], elem[3]);
+                        sendText("%s AC %s %s %s %s", getNumeric(), elem[2], elem[3], getMi().getDb().getTimestamp(elem[3]), getMi().getDb().getId(elem[3]));
+                    } else {
+                        sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), elem[0], elem[2], elem[3]);
+                    }
+                } else if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]))) {
                     var target = elem[2];
                     StringBuilder sb = new StringBuilder();
                     for (int i = 3; i < elem.length; i++) {
@@ -354,7 +353,7 @@ public class AuthServ implements Userflags {
 
     private void setUserFlags(String nick, String flag, boolean add, boolean privs) {
         var flags = getMi().getDb().getFlags(nick);
-        var priv = getSt().isOper(nick);
+        var priv = getSt().isPrivileged(nick);
         var userflags = getUserFlags(nick);
         if (!priv && !privs) {
             if (flag.startsWith("+") && flag.contains("n")) {
@@ -397,8 +396,12 @@ public class AuthServ implements Userflags {
     }
 
     protected void joinChannel(String channel) {
-        sendText("%sAAA J %s", getNumeric(), channel);
-        sendText("%s M %s +o %sAAA", getNumeric(), channel, getNumeric());
+        if (getSt().getChannel().containsKey(channel.toLowerCase())) {
+            sendText("%sAAA J %s %d", getNumeric(), channel.toLowerCase(), time());
+        } else {
+            sendText("%sAAA C %s %d", getNumeric(), channel.toLowerCase(), time());
+        }
+        sendText("%s M %s +o %sAAA", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

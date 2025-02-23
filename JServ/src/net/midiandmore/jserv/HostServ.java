@@ -132,7 +132,7 @@ public class HostServ implements Software {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 2 %d %s %s +oikrd - %s:%d U]AAEB %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
+        sendText("%s N %s 1 %d %s %s +oikrd - %s:%d U]AAEB %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
     }
 
     /**
@@ -227,57 +227,7 @@ public class HostServ implements Software {
             text = text.trim();
             var elem = text.split(" ");
             if (getSt().getServerNumeric() != null) {
-                if (elem[1].equals("N") && elem.length > 4) {
-                    var priv = elem[7].contains("r");
-                    var hidden = elem[7].contains("h");
-                    var x = elem[7].contains("x");
-                    String acc = null;
-                    String nick = null;
-                    if (elem[8].contains(":")) {
-                        acc = elem[8].split(":", 2)[0];
-                        if (hidden) {
-                            nick = elem[11];
-                        } else {
-                            nick = elem[10];
-                            sendText("%s SH %s %s %s", getNumeric(), nick, elem[5], parseCloak(elem[6]));
-                        }
-                        if (x) {
-                            sendText("%s SH %s %s %s", getNumeric(), nick, elem[5], acc + getMi().getConfig().getConfigFile().getProperty("reg_host"));
-                        }
-                    } else {
-                        acc = "";
-                        if (hidden) {
-                            nick = elem[10];
-                        } else {
-                            nick = elem[9];
-                            sendText("%s SH %s %s %s", getNumeric(), nick, elem[5], parseCloak(elem[6]));
-                        }
-                    }
-                    getSt().getUsers().get(nick).setAccount(acc);
-                    getSt().getUsers().get(nick).setNick(elem[2]);
-                    getSt().getUsers().get(nick).setHost(elem[5] + "@" + elem[6]);
-                    getSt().getUsers().get(nick).setX(x);
-
-                } else if (elem[1].equals("M") && elem.length == 4) {
-                    var nick = elem[0];
-                    if (elem[3].contains("x")) {
-                        getSt().getUsers().get(nick).setX(true);
-                    }
-                    if (elem[3].contains("x") && getSt().getUsers().get(nick).getNick().equalsIgnoreCase(elem[2]) && !getSt().getUsers().get(nick).getAccount().isBlank()) {
-                        var host = getSt().getUsers().get(nick).getHost();
-                        sendText("%s SH %s %s %s", getNumeric(), nick, host.split("@")[0], getSt().getUsers().get(nick).getAccount() + getMi().getConfig().getConfigFile().getProperty("reg_host"));
-                    }
-                } else if (elem[1].equals("AC")) {
-                    var acc = elem[3];
-                    var nick = elem[2];
-                    if (getSt().getUsers().get(nick).isX()) {
-                        var host = getSt().getUsers().get(nick).getHost();
-                        sendText("%s SH %s %s %s", getNumeric(), nick, host.split("@")[0], acc + getMi().getConfig().getConfigFile().getProperty("reg_host"));
-                    }
-                    if (getSt().getUsers().get(nick).getAccount().isBlank()) {
-                        getSt().getUsers().get(nick).setAccount(acc);
-                    }
-                } else if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAB")) {
+                if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAB")) {
                     var target = elem[2];
                     if (target.startsWith("#") || target.startsWith("!") || target.startsWith("&")) {
                         return;
@@ -324,8 +274,12 @@ public class HostServ implements Software {
     }
 
     protected void joinChannel(String channel) {
-        sendText("%sAAB J %s", getNumeric(), channel);
-        sendText("%s M %s +o %sAAB", getNumeric(), channel, getNumeric());
+        if (getSt().getChannel().containsKey(channel.toLowerCase())) {
+            sendText("%sAAB J %s %d", getNumeric(), channel.toLowerCase(), time());
+        } else {
+            sendText("%sAAB C %s %d", getNumeric(), channel.toLowerCase(), time());
+        }
+        sendText("%s M %s +o %sAAB", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

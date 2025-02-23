@@ -125,7 +125,7 @@ public class SpamScan implements Software {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 2 %d %s %s +oikr - %s:%d U]AAEC %sAAC :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
+        sendText("%s N %s 1 %d %s %s +oikr - %s:%d U]AAEC %sAAC :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
     }
 
     /**
@@ -158,78 +158,12 @@ public class SpamScan implements Software {
         }
     }
 
-    // Antikocker
-    private boolean antiKnocker(String nick, String ident) {
-        if (ident.startsWith("~")) {
-            ident = ident.substring(1);
-        }
-        var regex = "^(st|sn|cr|pl|pr|fr|fl|qu|br|gr|sh|sk|tr|kl|wr|bl|[bcdfgklmnprstvwz])([aeiou][aeiou][bcdfgklmnprstvwz])(ed|est|er|le|ly|y|ies|iest|ian|ion|est|ing|led|inger?|[abcdfgklmnprstvwz])$";
-        return !ident.equalsIgnoreCase(nick) && nick.matches(regex) && ident.matches(regex);
-    }
-
     protected void parseLine(String text) {
         try {
             text = text.trim();
             if (getSt().getServerNumeric() != null) {
                 var elem = text.split(" ");
-                if (elem[1].equals("N") && elem.length > 4) {
-                    var priv = elem[7].contains("r");
-                    var hidden = elem[7].contains("h");
-                    var x = elem[7].contains("x");
-                    String acc = null;
-                    String nick = null;
-                    if (elem[8].contains(":")) {
-                        acc = elem[8].split(":", 2)[0];
-                        if (hidden) {
-                            nick = elem[11];
-                        } else {
-                            nick = elem[10];
-                        }
-                    } else {
-                        acc = "";
-                        if (hidden) {
-                            nick = elem[10];
-                        } else {
-                            nick = elem[9];
-                        }
-                    }
-                    var host = elem[5] + "@" + elem[6];
-                    // Antiknocker
-                    if (!antiKnocker(elem[2], elem[5])) {
-                        getSt().getUsers().put(nick, new Users(elem[2], acc, host));
-                        if (!acc.isBlank()) {
-                            getMi().getDb().updateData("lastuserhost", acc, host);
-                            getMi().getDb().updateData("lastpasschng", acc, time());
-                        }
-                    } else {
-                        int count = getMi().getDb().getId();
-                        count++;
-                        getMi().getDb().addId("Spambot!");
-                        sendText("%sAAC D %s %d : (You are detected as Spambot, ID: %d)", getNumeric(), nick, time(), count);
-                    }
-                } else if (elem[1].equals("N") && elem.length == 4) {
-                    getSt().getUsers().get(elem[0]).setNick(elem[2]);
-                } else if (elem[1].equals("B") && elem.length == 7) {
-                    var channel = elem[2].toLowerCase();
-                    var modes = elem[4];
-                    var names = elem[6].split(",");
-                    getSt().getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), modes, names));
-                } else if (elem[1].equals("B") && elem.length == 6) {
-                    var channel = elem[2].toLowerCase();
-                    var modes = elem[4];
-                    var names = elem[5].split(",");
-                    getSt().getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), modes, names));
-                } else if (elem[1].equals("B") && elem.length == 5) {
-                    var channel = elem[2].toLowerCase();
-                    var modes = "";
-                    var names = elem[4].split(",");
-                    getSt().getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), modes, names));
-                } else if (elem[1].equals("C")) {
-                    var channel = elem[2].toLowerCase();
-                    var names = new String[1];
-                    names[0] = elem[0] + ":o";
-                    getSt().getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), "", names));
-                } else if (elem[1].equals("J")) {
+                if (elem[1].equals("J")) {
                     var channel = elem[2].toLowerCase();
                     var names = elem[0];
                     var user = new String[1];
@@ -240,10 +174,6 @@ public class SpamScan implements Software {
                     } else {
                         getSt().getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), "", user));
                     }
-                } else if (elem[1].equals("AC") && getSt().getUsers().containsKey(nick)) {
-                    var acc = elem[3];
-                    var nick = elem[2];
-                    getSt().getUsers().get(nick).setAccount(acc);
                 } else if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAC")) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 3; i < elem.length; i++) {
@@ -429,71 +359,11 @@ public class SpamScan implements Software {
                 } else if (elem[1].equals("L")) {
                     var nick = elem[0];
                     var channel = elem[2].toLowerCase();
-                    removeUser(nick, channel.toLowerCase());
+                    getSt().removeUser(nick, channel.toLowerCase());
                 } else if (elem[1].equals("K")) {
                     var nick = elem[0];
                     var channel = elem[2].toLowerCase();
-                    removeUser(nick, channel.toLowerCase());
-                } else if (elem[1].equals("Q")) {
-                    var nick = elem[0];
-                    for (var users : getSt().getUsers().values()) {
-                        var channels = users.getChannels().toArray();
-                        for (var channel : channels) {
-                            removeUser(nick, channel.toString());
-                        }
-                    }
-                    getSt().getUsers().remove(nick);
-                } else if (elem[1].equals("D")) {
-                    var nick = elem[2];
-                    for (var users : getSt().getUsers().values()) {
-                        var channels = users.getChannels().toArray();
-                        for (var channel : channels) {
-                            removeUser(nick, channel.toString());
-                        }
-                    }
-                    getSt().getUsers().remove(nick);
-                } else if (elem[1].equals("M")) {
-                    var nick = elem[0];
-                    var channel = elem[2].toLowerCase();
-                    elem = text.split(" ", 5);
-                    if (channel.startsWith("#") || channel.startsWith("&")) {
-                        var flags = elem[3].split("");
-                        var set = false;
-                        var cnt = 0;
-                        for (var mode : flags) {
-                            if (mode.equals("-")) {
-                                set = false;
-                            } else if (mode.equals("+")) {
-                                set = true;
-                            } else if (set && mode.equals("o")) {
-                                var users = elem[4].split(" ");
-                                getSt().getChannel().get(channel.toLowerCase()).getOp().add(users[cnt]);
-                                cnt++;
-                            } else if (set && mode.equals("v")) {
-                                var users = elem[4].split(" ");
-                                getSt().getChannel().get(channel.toLowerCase()).getVoice().add(users[cnt]);
-                                cnt++;
-                            } else if (!set && mode.equals("o")) {
-                                var users = elem[4].split(" ");
-                                getSt().getChannel().get(channel.toLowerCase()).getOp().remove(users[cnt]);
-                                cnt++;
-                            } else if (!set && mode.equals("v")) {
-                                var users = elem[4].split(" ");
-                                getSt().getChannel().get(channel.toLowerCase()).getVoice().remove(users[cnt]);
-                                cnt++;
-                            } else if (set) {
-                                getSt().getChannel().get(channel.toLowerCase()).setModes(getSt().getChannel().get(channel.toLowerCase()).getModes() + mode);
-                                if (mode.equals("m")) {
-                                    getSt().getChannel().get(channel.toLowerCase()).setModerated(true);
-                                }
-                            } else {
-                                getSt().getChannel().get(channel.toLowerCase()).setModes(getSt().getChannel().get(channel.toLowerCase()).getModes().replace(mode, ""));
-                                if (mode.equals("m")) {
-                                    getSt().getChannel().get(channel.toLowerCase()).setModerated(false);
-                                }
-                            }
-                        }
-                    }
+                    getSt().removeUser(nick, channel.toLowerCase());
                 }
             }
         } catch (Exception e) {
@@ -509,33 +379,13 @@ public class SpamScan implements Software {
         return flag;
     }
 
-    private void removeUser(String nick, String channel) {
-        if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
-            return;
-        }
-        if (getSt().getChannel().get(channel.toLowerCase()).getUsers().contains(nick)) {
-            getSt().getChannel().get(channel.toLowerCase()).getUsers().remove(nick);
-        }
-        if (getSt().getChannel().get(channel.toLowerCase()).getOp().contains(nick)) {
-            getSt().getChannel().get(channel.toLowerCase()).getOp().remove(nick);
-        }
-        if (getSt().getChannel().get(channel.toLowerCase()).getVoice().contains(nick)) {
-            getSt().getChannel().get(channel.toLowerCase()).getVoice().remove(nick);
-        }
-        if (getSt().getChannel().get(channel.toLowerCase()).getLastJoin().containsKey(nick)) {
-            getSt().getChannel().get(channel.toLowerCase()).getLastJoin().remove(nick);
-        }
-        if (getSt().getChannel().get(channel.toLowerCase()).getUsers().isEmpty()) {
-            getSt().getChannel().remove(channel.toLowerCase());
-        }
-        if (getSt().getUsers().get(nick).getChannels().contains(channel.toLowerCase())) {
-            getSt().getUsers().get(nick).getChannels().remove(channel.toLowerCase());
-        }
-    }
-
     protected void joinChannel(String channel) {
         if (channel.startsWith("#")) {
-            sendText("%sAAC J %s", getNumeric(), channel.toLowerCase());
+            if (getSt().getChannel().containsKey(channel.toLowerCase())) {
+                sendText("%sAAC J %s %d", getNumeric(), channel.toLowerCase(), time());
+            } else {
+                sendText("%sAAC C %s %d", getNumeric(), channel.toLowerCase(), time());
+            }
             sendText("%s M %s +o %sAAC", getNumeric(), channel.toLowerCase(), getNumeric());
         }
     }

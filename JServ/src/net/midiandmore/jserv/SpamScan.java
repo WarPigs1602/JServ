@@ -163,18 +163,7 @@ public class SpamScan implements Software {
             text = text.trim();
             if (getSt().getServerNumeric() != null) {
                 var elem = text.split(" ");
-                if (elem[1].equals("J")) {
-                    var channel = elem[2].toLowerCase();
-                    var names = elem[0];
-                    var user = new String[1];
-                    user[0] = names;
-                    if (getSt().getChannel().containsKey(channel.toLowerCase())) {
-                        getSt().getChannel().get(channel.toLowerCase()).getUsers().add(names);
-                        getSt().getChannel().get(channel.toLowerCase()).getLastJoin().put(names, time());
-                    } else {
-                        getSt().getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), "", user));
-                    }
-                } else if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAC")) {
+                if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAC")) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 3; i < elem.length; i++) {
                         sb.append(elem[i]);
@@ -278,7 +267,7 @@ public class SpamScan implements Software {
                     } else {
                         sendText("%sAAC %s %s :Unknown command, or access denied.", getNumeric(), notice, elem[0]);
                     }
-                } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase())) {
+                } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase()) && !getSt().getChannel().get(elem[2].toLowerCase()).getOwner().contains(elem[0]) && !getSt().getChannel().get(elem[2].toLowerCase()).getService().contains(elem[0]) && !getSt().getUsers().get(elem[0]).isOper() && !getSt().getUsers().get(elem[0]).isService()) {
                     if (!getSt().isOper(getSt().getUsers().get(elem[0]).getAccount())) {
                         StringBuilder sb = new StringBuilder();
                         for (int i = 3; i < elem.length; i++) {

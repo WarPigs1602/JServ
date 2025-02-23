@@ -14,6 +14,48 @@ import java.util.HashMap;
 public class Channel {
 
     /**
+     * @return the owner
+     */
+    public ArrayList<String> getOwner() {
+        return owner;
+    }
+
+    /**
+     * @param owner the owner to set
+     */
+    public void setOwner(ArrayList<String> owner) {
+        this.owner = owner;
+    }
+
+    /**
+     * @return the hop
+     */
+    public ArrayList<String> getHop() {
+        return hop;
+    }
+
+    /**
+     * @param hop the hop to set
+     */
+    public void setHop(ArrayList<String> hop) {
+        this.hop = hop;
+    }
+
+    /**
+     * @return the service
+     */
+    public ArrayList<String> getService() {
+        return service;
+    }
+
+    /**
+     * @param service the service to set
+     */
+    public void setService(ArrayList<String> service) {
+        this.service = service;
+    }
+
+    /**
      * @return the lastJoin
      */
     public HashMap<String, Long> getLastJoin() {
@@ -115,8 +157,11 @@ public class Channel {
     private String modes;
     private boolean moderated;
     private ArrayList<String> users;
+    private ArrayList<String> hop;
+    private ArrayList<String> service;
     private ArrayList<String> op;
     private ArrayList<String> voice;
+    private ArrayList<String> owner;
     private HashMap<String, Long> lastJoin;
 
     public Channel(String name, String modes, String[] names) {
@@ -125,34 +170,50 @@ public class Channel {
         setUsers(new ArrayList<>());
         setOp(new ArrayList<>());
         setVoice(new ArrayList<>());
+        setHop(new ArrayList<>());
+        setService(new ArrayList<>());
+        setOwner(new ArrayList<>());
         setLastJoin(new HashMap<>());
         setModerated(modes.contains("m"));
-        var voice = false;
-        var op = false;
         for (var nick : names) {
+            var voice = false;
+            var op = false;
+            var hop = false;
+            var service = false;
+            var owner = false;
             if (nick.contains(":")) {
                 var elem = nick.split(":", 2);
                 nick = elem[0];
                 var status = elem[1];
-                if(status.equals("o")) {
+                if (status.contains("q")) {
+                    owner = true;
+                } else if (status.contains("O")) {
+                    service = true;
+                } else if (status.contains("o")) {
                     op = true;
-                    voice = false;
-                } else if(status.equals("v")) {
-                    op = false;
+                } else if (status.contains("h")) {
+                    hop = true;
+                } else if (status.contains("v")) {
                     voice = true;
-                } else if(status.equals("ov") || status.equals("vo")) {
-                    op = true;
-                    voice = true;
-                } 
+                }
             }
-            if(op) {
+            if (op) {
                 getOp().add(nick);
             }
-            if(voice) {
+            if (voice) {
                 getVoice().add(nick);
+            }
+            if (hop) {
+                getHop().add(nick);
+            }
+            if (service) {
+                getService().add(nick);
+            }
+            if (owner) {
+                getOwner().add(nick);
             }
             getUsers().add(nick);
             getLastJoin().put(nick, System.currentTimeMillis() / 1000);
-        } 
+        }
     }
 }

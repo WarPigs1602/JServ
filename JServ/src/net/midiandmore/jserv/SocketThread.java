@@ -326,10 +326,23 @@ public class SocketThread implements Runnable, Userflags {
                     } else if (content.startsWith("SERVER")) {
                         setServerNumeric(content.split(" ")[6].substring(0, 1));
                         System.out.println("Getting SERVER response...");
+                    } else if (elem[1].equals("J") || elem[1].equals("C")) {
+                        var channel = elem[2].toLowerCase();
+                        var names = elem[0];
+                        var user = new String[1];
+                        user[0] = names;
+                        if (getChannel().containsKey(channel.toLowerCase())) {
+                            getChannel().get(channel.toLowerCase()).getUsers().add(names);
+                            getChannel().get(channel.toLowerCase()).getLastJoin().put(names, time());
+                        } else {
+                            getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), "", user));
+                        }
                     } else if (elem[1].equals("N") && elem.length > 4) {
                         var priv = elem[7].contains("r");
                         var hidden = elem[7].contains("h");
+                        var service = elem[7].contains("k");
                         var x = elem[7].contains("x");
+                        var o = elem[7].contains("o");
                         String acc = null;
                         String nick = null;
                         if (priv) {
@@ -372,6 +385,8 @@ public class SocketThread implements Runnable, Userflags {
                         if (!antiKnocker(elem[2], elem[5])) {
                             getUsers().put(nick, new Users(elem[2], acc, hosts));
                             getUsers().get(nick).setX(x);
+                            getUsers().get(nick).setService(service);
+                            getUsers().get(nick).setOper(o);
                             if (!acc.isBlank()) {
                                 getMi().getDb().updateData("lastuserhost", acc, hosts);
                                 getMi().getDb().updateData("lastpasschng", acc, time());
@@ -380,7 +395,7 @@ public class SocketThread implements Runnable, Userflags {
                             int count = getMi().getDb().getId();
                             count++;
                             getMi().getDb().addId("Spambot!");
-                            sendText("%sAAC D %s %d : (You are detected as Spambot, ID: %d)", jnumeric, nick, time(), count);
+                            sendText("%sAAC D %s %d : (You are detected as as Knocker Spambot, ID: %d)", jnumeric, nick, time(), count);
                         }
                     } else if (elem[1].equals("N") && elem.length == 4) {
                         getUsers().get(elem[0]).setNick(elem[2]);
@@ -421,6 +436,12 @@ public class SocketThread implements Runnable, Userflags {
                         if (elem[3].contains("x")) {
                             getUsers().get(nick).setX(true);
                         }
+                        if (elem[3].contains("k")) {
+                            getUsers().get(nick).setService(true);
+                        }
+                        if (elem[3].contains("o")) {
+                            getUsers().get(nick).setOper(true);
+                        }                                                
                         if (elem[3].contains("x") && getUsers().get(nick).getNick().equalsIgnoreCase(elem[2]) && !getUsers().get(nick).getAccount().isBlank()) {
                             var hosts = getUsers().get(nick).getHost();
                             sendText("%s SH %s %s %s", jnumeric, nick, hosts.split("@")[0], getUsers().get(nick).getAccount() + getMi().getConfig().getConfigFile().getProperty("reg_host"));
@@ -445,6 +466,18 @@ public class SocketThread implements Runnable, Userflags {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).getVoice().add(users[cnt]);
                                     cnt++;
+                                } else if (set && mode.equals("h")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).getHop().add(users[cnt]);
+                                    cnt++;
+                                } else if (set && mode.equals("O")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).getService().add(users[cnt]);
+                                    cnt++;
+                                } else if (set && mode.equals("q")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).getOwner().add(users[cnt]);
+                                    cnt++;
                                 } else if (!set && mode.equals("o")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).getOp().remove(users[cnt]);
@@ -452,6 +485,18 @@ public class SocketThread implements Runnable, Userflags {
                                 } else if (!set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).getVoice().remove(users[cnt]);
+                                    cnt++;
+                                } else if (!set && mode.equals("h")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).getHop().remove(users[cnt]);
+                                    cnt++;
+                                } else if (!set && mode.equals("O")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).getService().remove(users[cnt]);
+                                    cnt++;
+                                } else if (!set && mode.equals("q")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).getOwner().remove(users[cnt]);
                                     cnt++;
                                 } else if (set) {
                                     getChannel().get(channel.toLowerCase()).setModes(getChannel().get(channel.toLowerCase()).getModes() + mode);
@@ -490,7 +535,6 @@ public class SocketThread implements Runnable, Userflags {
                                 removeUser(nick, channel.toString());
                             }
                         }
-                        getUsers().remove(nick);
                         if (getAuthed().containsKey(nick)) {
                             getAuthed().remove(nick);
                         }
@@ -498,6 +542,7 @@ public class SocketThread implements Runnable, Userflags {
                         if (getAuthed().containsKey(nn)) {
                             getAuthed().remove(nn);
                         }
+                        getUsers().remove(nick);
                     }
                     if (modules.equalsIgnoreCase("true")) {
                         getSs().parseLine(content);

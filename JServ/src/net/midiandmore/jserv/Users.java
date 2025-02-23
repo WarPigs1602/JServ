@@ -13,6 +13,20 @@ import java.util.ArrayList;
 public class Users {
 
     /**
+     * @return the oper
+     */
+    public boolean isOper() {
+        return oper;
+    }
+
+    /**
+     * @param oper the oper to set
+     */
+    public void setOper(boolean oper) {
+        this.oper = oper;
+    }
+
+    /**
      * @return the realHost
      */
     public String getRealHost() {
@@ -146,7 +160,9 @@ public class Users {
     private int flood;
     private int repeat;
     private ArrayList<String> channels;
+    private boolean oper;    
     private boolean reg;    
+    private boolean service;    
     private boolean x;    
     public Users(String nick, String account, String host) {
         setNick(nick);
@@ -159,6 +175,8 @@ public class Users {
         setReg(false);
         setChannels(new ArrayList<>());
         setX(false);
+        setService(false);
+        setOper(false);
     }
 
     /**
@@ -173,5 +191,19 @@ public class Users {
      */
     public void setReg(boolean reg) {
         this.reg = reg;
+    }
+
+    /**
+     * @return the service
+     */
+    public boolean isService() {
+        return service;
+    }
+
+    /**
+     * @param service the service to set
+     */
+    public void setService(boolean service) {
+        this.service = service;
     }
 }

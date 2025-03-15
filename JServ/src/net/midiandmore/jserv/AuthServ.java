@@ -173,9 +173,9 @@ public class AuthServ implements Userflags {
                 var server = getMi().getConfig().getAuthFile().getProperty("nick") + "@" + getMi().getConfig().getConfigFile().getProperty("servername");
                 if (elem[1].equalsIgnoreCase("sasl")) {
                     if (elem.length < 7) {
-                        sendText("%s AUTHENTICATE %s PARAM %s moep", getNumeric(), elem[5], elem[3]);
+                        sendText("%s AUTHENTICATE %s PARAM %s %s", getNumeric(), elem[5], elem[6], elem[3]);
                     } else if (getSt().getAuthed().containsKey(elem[3])) {
-                        sendText("%s AUTHENTICATE %s ALREADY %s moep", getNumeric(), elem[5], elem[3]);
+                        sendText("%s AUTHENTICATE %s ALREADY %s %s", getNumeric(), elem[5], elem[6], elem[3]);
                     } else if (getMi().getDb().isRegistered(elem[3], elem[4])) {
                         getSt().getAuthed().put(elem[6], elem[3]);
                         sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[5], elem[6], elem[3]);

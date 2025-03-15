@@ -24,6 +24,20 @@ import java.util.Properties;
 public class Config {
 
     /**
+     * @return the chanFile
+     */
+    public Properties getChanFile() {
+        return chanFile;
+    }
+
+    /**
+     * @param chanFile the chanFile to set
+     */
+    public void setChanFile(Properties chanFile) {
+        this.chanFile = chanFile;
+    }
+
+    /**
      * @return the modulesFile
      */
     public Properties getModulesFile() {
@@ -85,7 +99,8 @@ public class Config {
     private Properties modulesFile;
     private Properties spamFile;     
     private Properties hostFile;  
-    private Properties authFile;          
+    private Properties authFile; 
+    private Properties chanFile;           
     /**
      * Initiales the class
      *
@@ -154,7 +169,8 @@ public class Config {
         setModulesFile(loadDataFromJSONasProperties("config-modules.json", "name", "value")); 
         setAuthFile(loadDataFromJSONasProperties("config-authserv.json", "name", "value"));
         setHostFile(loadDataFromJSONasProperties("config-hostserv.json", "name", "value"));   
-        setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value")); 
+        setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
+        setChanFile(loadDataFromJSONasProperties("config-chanserv.json", "name", "value")); 
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 

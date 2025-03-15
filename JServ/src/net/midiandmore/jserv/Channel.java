@@ -158,6 +158,7 @@ public class Channel {
     private boolean moderated;
     private ArrayList<String> users;
     private ArrayList<String> hop;
+    private ArrayList<String> admin;
     private ArrayList<String> service;
     private ArrayList<String> op;
     private ArrayList<String> voice;
@@ -171,6 +172,7 @@ public class Channel {
         setOp(new ArrayList<>());
         setVoice(new ArrayList<>());
         setHop(new ArrayList<>());
+        setAdmin(new ArrayList<>());
         setService(new ArrayList<>());
         setOwner(new ArrayList<>());
         setLastJoin(new HashMap<>());
@@ -181,20 +183,30 @@ public class Channel {
             var hop = false;
             var service = false;
             var owner = false;
+            var admin = false;
             if (nick.contains(":")) {
                 var elem = nick.split(":", 2);
                 nick = elem[0];
-                var status = elem[1];
-                if (status.contains("q")) {
-                    owner = true;
-                } else if (status.contains("O")) {
-                    service = true;
-                } else if (status.contains("o")) {
-                    op = true;
-                } else if (status.contains("h")) {
-                    hop = true;
-                } else if (status.contains("v")) {
-                    voice = true;
+                var stats = elem[1].split("");
+                for (var status : stats) {
+                    if (status.contains("O")) {
+                        service = true;
+                    }
+                    if (status.contains("q")) {
+                        owner = true;
+                    }
+                    if (status.contains("a")) {
+                        admin = true;
+                    }
+                    if (status.contains("o")) {
+                        op = true;
+                    }
+                    if (status.contains("h")) {
+                        hop = true;
+                    }
+                    if (status.contains("v")) {
+                        voice = true;
+                    }
                 }
             }
             if (op) {
@@ -209,11 +221,28 @@ public class Channel {
             if (service) {
                 getService().add(nick);
             }
+            if (admin) {
+                getAdmin().add(nick);
+            }
             if (owner) {
                 getOwner().add(nick);
             }
             getUsers().add(nick);
             getLastJoin().put(nick, System.currentTimeMillis() / 1000);
         }
+    }
+
+    /**
+     * @return the admin
+     */
+    public ArrayList<String> getAdmin() {
+        return admin;
+    }
+
+    /**
+     * @param admin the admin to set
+     */
+    public void setAdmin(ArrayList<String> admin) {
+        this.admin = admin;
     }
 }

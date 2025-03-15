@@ -279,7 +279,7 @@ public class HostServ implements Software {
         } else {
             sendText("%sAAB C %s %d", getNumeric(), channel.toLowerCase(), time());
         }
-        sendText("%s M %s +o %sAAB", getNumeric(), channel.toLowerCase(), getNumeric());
+        sendText("%s M %s +O %sAAB", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

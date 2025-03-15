@@ -375,7 +375,7 @@ public class SpamScan implements Software {
             } else {
                 sendText("%sAAC C %s %d", getNumeric(), channel.toLowerCase(), time());
             }
-            sendText("%s M %s +o %sAAC", getNumeric(), channel.toLowerCase(), getNumeric());
+            sendText("%s M %s +O %sAAC", getNumeric(), channel.toLowerCase(), getNumeric());
         }
     }
 

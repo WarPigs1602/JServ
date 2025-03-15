@@ -172,16 +172,17 @@ public class AuthServ implements Userflags {
             if (getSt().getServerNumeric() != null) {
                 var server = getMi().getConfig().getAuthFile().getProperty("nick") + "@" + getMi().getConfig().getConfigFile().getProperty("servername");
                 if (elem[1].equalsIgnoreCase("sasl")) {
-                    if (elem.length < 5) {
-                        sendText("%s AUTHENTICATE %s PARAM %s", getNumeric(), elem[0], elem[3]);
+                    if (elem.length < 7) {
+                        sendText("%s AUTHENTICATE %s PARAM %s moep", getNumeric(), elem[5], elem[3]);
                     } else if (getSt().getAuthed().containsKey(elem[3])) {
-                        sendText("%s AUTHENTICATE %s ALREADY %s", getNumeric(), elem[0], elem[3]);
+                        sendText("%s AUTHENTICATE %s ALREADY %s moep", getNumeric(), elem[5], elem[3]);
                     } else if (getMi().getDb().isRegistered(elem[3], elem[4])) {
-                        getSt().getAuthed().put(elem[2], elem[3]);
-                        sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[0], elem[2], elem[3]);
-                        sendText("%s AC %s %s %s %s", getNumeric(), elem[2], elem[3], getMi().getDb().getTimestamp(elem[3]), getMi().getDb().getId(elem[3]));
+                        getSt().getAuthed().put(elem[6], elem[3]);
+                        sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[5], elem[6], elem[3]);
+                        sendText("%s AC %s %s %s %s", getNumeric(), elem[6], elem[3], getMi().getDb().getTimestamp(elem[3]), getMi().getDb().getId(elem[3]));
+                        getMi().getDb().addAuthHistory(elem[3], elem[2], getMi().getDb().getData("email", elem[3]), getMi().getDb().getData("lastuserhost", elem[3]).split("@")[0], getMi().getDb().getData("lastuserhost", elem[3]).split("@")[1]);
                     } else {
-                        sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), elem[0], elem[2], elem[3]);
+                        sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), elem[5], elem[6], elem[3]);
                     }
                 } else if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]))) {
                     var target = elem[2];
@@ -235,19 +236,43 @@ public class AuthServ implements Userflags {
                             sendText("%sAAA %s %s :/msg %s.", getNumeric(), notice, nick, server);
                         } else if (auth.length < 3) {
                             sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
-                        } else if (!getSt().getUsers().get(nick).getAccount().isBlank()) {
+                        } else if (getSt().getUsers().containsKey(nick) && !getSt().getUsers().get(nick).getAccount().isBlank()) {
                             sendText("%sAAA %s %s :%s is not available once you have authed.", getNumeric(), notice, nick, auth[0].toUpperCase());
                         } else if (getMi().getDb().isRegistered(auth[1], auth[2])) {
                             getSt().getUsers().get(nick).setAccount(auth[1]);
                             getMi().getDb().updateData("lastuserhost", auth[1], getSt().getUsers().get(nick).getRealHost());
                             getMi().getDb().updateData("lastpasschng", auth[1], time());
                             var host = getSt().getUsers().get(nick).getHost();
+                            getMi().getDb().addAuthHistory(auth[1], getSt().getUsers().get(nick).getNick(), getMi().getDb().getData("email", auth[1]), getSt().getUsers().get(nick).getRealHost().split("@")[0], getSt().getUsers().get(nick).getRealHost().split("@")[1]);
                             if (getSt().getUsers().get(nick).isX()) {
                                 sendText("%s SH %s %s %s", getNumeric(), nick, host.split("@")[0], getSt().getUsers().get(nick).getAccount() + getMi().getConfig().getConfigFile().getProperty("reg_host"));
                             }
                             sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getDb().getTimestamp(auth[1]), getMi().getDb().getId(auth[1]));
                             sendText("%sAAA %s %s :You are now logged in as %s.", getNumeric(), notice, nick, auth[1]);
                             sendText("%sAAA %s %s :Remember: NO-ONE from %s will ever ask for your password.  NEVER send your password to ANYONE except %s", getNumeric(), notice, nick, network, server);
+                            var list = getMi().getDb().getChannels();
+                            var nicks = getMi().getDb().getData();
+                            for (var channels : list) {
+                                var cid = channels[0];
+                                for (var nick1 : nicks) {
+                                    var nid = nick1[0];
+                                    var auth1 = getMi().getDb().getChanUser(Long.parseLong(nid), Long.parseLong(cid));
+                                    if (auth1 != null) {
+                                        Users u = getSt().getUsers().get(nick);
+                                        if (u.getAccount().equalsIgnoreCase(nick1[1]) && getSt().getChannel().containsKey(channels[1].toLowerCase()) && getSt().getChannel().get(channels[1].toLowerCase()).getUsers().contains(nick)) {
+                                            if (getSt().isOwner(Integer.parseInt(auth1[0]))) {
+                                                sendText("%sAAD M %s +q %s", getNumeric(), channels[1], nick);
+                                            } else if (getSt().isMaster(Integer.parseInt(auth1[0]))) {
+                                                sendText("%sAAD M %s +a %s", getNumeric(), channels[1], nick);
+                                            } else if (getSt().isOp(Integer.parseInt(auth1[0]))) {
+                                                sendText("%sAAD M %s +o %s", getNumeric(), channels[1], nick);
+                                            } else if (getSt().isVoice(Integer.parseInt(auth1[0]))) {
+                                                sendText("%sAAD M %s +v %s", getNumeric(), channels[1], nick);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             sendText("%sAAA %s %s :Username or password incorrect.", getNumeric(), notice, nick);
                         }
@@ -401,7 +426,7 @@ public class AuthServ implements Userflags {
         } else {
             sendText("%sAAA C %s %d", getNumeric(), channel.toLowerCase(), time());
         }
-        sendText("%s M %s +o %sAAA", getNumeric(), channel.toLowerCase(), getNumeric());
+        sendText("%s M %s +O %sAAA", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

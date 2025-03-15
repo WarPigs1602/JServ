@@ -151,7 +151,8 @@ public class Users {
     public void setChannels(ArrayList<String> channels) {
         this.channels = channels;
     }
-    
+
+    private String id;    
     private String nick;
     private String account;
     private String host;
@@ -164,7 +165,8 @@ public class Users {
     private boolean reg;    
     private boolean service;    
     private boolean x;    
-    public Users(String nick, String account, String host) {
+    public Users(String id, String nick, String account, String host) {
+        setId(id);
         setNick(nick);
         setAccount(account);
         setHost(host);
@@ -205,5 +207,19 @@ public class Users {
      */
     public void setService(boolean service) {
         this.service = service;
+    }
+
+    /**
+     * @return the id
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(String id) {
+        this.id = id;
     }
 }

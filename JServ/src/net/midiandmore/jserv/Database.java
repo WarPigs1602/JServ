@@ -67,7 +67,7 @@ public class Database {
             ex.printStackTrace();
         }
     }
-    
+
     /**
      * Fetching userdata
      *
@@ -83,7 +83,7 @@ public class Database {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-    }    
+    }
 
     /**
      * Checks that the user is registered
@@ -98,6 +98,37 @@ public class Database {
     public int getIndex() {
         int index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users ORDER BY id DESC;")) {
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    index = resultset.getInt(1);
+                    break;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return index;
+    }
+
+    public int getNumeric() {
+        int index = 0;
+        try (var statement = getConn().prepareStatement("SELECT numeric FROM chanserv.authhistory ORDER BY numeric DESC;")) {
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    index = resultset.getInt(1);
+                    break;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return index;
+    }
+
+    public int getIndex(String nick) {
+        int index = 0;
+        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE username=?;")) {
+            statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
                     index = resultset.getInt(1);
@@ -160,6 +191,25 @@ public class Database {
         }
     }
 
+    public void addAuthHistory(String auth, String nick, String email, String username, String host) {
+        try {
+            var index = getNumeric() + 1;
+            try (var statement = getConn().prepareStatement("INSERT INTO chanserv.authhistory (userid, nick, username, host, authtime, disconnecttime, numeric)"
+                    + " VALUES (?,?,?,?,?,?,?);")) {
+                statement.setInt(1, getIndex(auth));
+                statement.setString(2, nick);
+                statement.setString(3, username);
+                statement.setString(4, host);
+                statement.setLong(5, getCurrentTime());
+                statement.setLong(6, 0);
+                statement.setInt(7, index);
+                statement.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
     public void submitNewPassword(String email) {
         try {
             try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE email = ?")) {
@@ -187,7 +237,7 @@ public class Database {
             ex.printStackTrace();
         }
     }
-    
+
     private String createRandomId() {
         StringBuilder sb = new StringBuilder();
         Random r = new Random(System.currentTimeMillis());
@@ -210,7 +260,7 @@ public class Database {
      */
     public ArrayList<String[]> getData() {
         var list = new ArrayList<String[]>();
-        try (var statement = getConn().prepareStatement("SELECT users.* FROM chanserv.users ORDER BY id DESC LIMIT 15")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
                     var dat = new String[19];
@@ -240,6 +290,99 @@ public class Database {
             ex.printStackTrace();
         }
         return list;
+    }
+
+    /**
+     * Fetching userdata
+     *
+     * @return The data as array list
+     */
+    public ArrayList<String[]> getChannels() {
+        var list = new ArrayList<String[]>();
+        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.channels")) {
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    var dat = new String[28];
+
+                    dat[0] = resultset.getString("id");
+                    dat[1] = resultset.getString("name").toLowerCase();
+                    dat[2] = resultset.getString("forcemodes");
+                    dat[3] = resultset.getString("denymodes");
+                    dat[4] = resultset.getString("chanlimit");
+                    dat[5] = resultset.getString("flags");
+                    dat[6] = resultset.getString("autolimit");
+                    dat[7] = resultset.getString("banstyle");
+                    dat[8] = resultset.getString("created");
+                    dat[9] = resultset.getString("lastactive");
+                    dat[10] = resultset.getString("statsreset");
+                    dat[11] = resultset.getString("banduration");
+                    dat[12] = resultset.getString("founder");
+                    dat[13] = resultset.getString("addedby");
+                    dat[14] = resultset.getString("suspendby");
+                    dat[15] = resultset.getString("suspendtime");
+                    dat[16] = resultset.getString("chantype");
+                    dat[17] = resultset.getString("totaljoins");
+                    dat[18] = resultset.getString("tripjoins");
+                    dat[19] = resultset.getString("maxusers");
+                    dat[20] = resultset.getString("tripusers");
+                    dat[21] = resultset.getString("welcome");
+                    dat[22] = resultset.getString("topic");
+                    dat[23] = resultset.getString("chankey");
+                    dat[24] = resultset.getString("suspendreason");
+                    dat[25] = resultset.getString("topic");
+                    dat[26] = resultset.getString("comment");
+                    dat[27] = resultset.getString("lasttimestamp");
+                    list.add(dat);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Fetching userdata
+     *
+     * @return The data as array list
+     */
+    public String getChannel(String key, String name) {
+        try (var statement = getConn().prepareStatement("SELECT "+key+" FROM chanserv.channels WHERE name=?")) {
+            statement.setString(1, name);
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    return resultset.getString(key);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+    
+    /**
+     * Fetching userdata
+     *
+     * @return The data as array list
+     */
+    public String[] getChanUser(long id, long chanid) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.chanusers WHERE userid=? AND channelid=?")) {
+            statement.setLong(1, id);
+            statement.setLong(2, chanid);
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    var dat = new String[4];
+                    dat[0] = resultset.getString("flags");
+                    dat[1] = resultset.getString("changetime");
+                    dat[2] = resultset.getString("usetime");
+                    dat[3] = resultset.getString("info");
+                    return dat;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 
     private void connect() {

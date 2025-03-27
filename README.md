@@ -1,9 +1,10 @@
 # JServ
- Contains partly newserv compatible SpamScan, AuthServ and HostServ in one package (with SSL support)<br>
+ Attention! This service runs only with midircd.
+ Contains partly newserv compatible SpamScan, AuthServ and HostServ in one package<br>
  The AuthServ supports as example SASL.<br>
  It's recommened to compile the sources with NetBeans<br>
  <br>
- [Here](https://github.com/user-attachments/files/19324305/JServ.zip) is a precompiled package, it needs JRE17 or higher and Postgresql.
+ [Here](https://github.com/user-attachments/files/19493845/JServ.zip) is a precompiled package, it needs JRE17 or higher and Postgresql.
  <br>
  To run this package, just enter "java -jar JServ.jar &" and then logout with "exit".<br>
  <br>

@@ -128,7 +128,7 @@ public class AuthServ implements Userflags {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 1 %d %s %s +oikrd - %s:%d U]AAEA %sAAA :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
+        sendText("%s N %s 3 %d %s %s +oikrd %s U]AEA %sAAA :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
     }
 
     /**
@@ -171,20 +171,7 @@ public class AuthServ implements Userflags {
             var elem = text.split(" ");
             if (getSt().getServerNumeric() != null) {
                 var server = getMi().getConfig().getAuthFile().getProperty("nick") + "@" + getMi().getConfig().getConfigFile().getProperty("servername");
-                if (elem[1].equalsIgnoreCase("sasl")) {
-                    if (elem.length < 7) {
-                        sendText("%s AUTHENTICATE %s PARAM %s %s", getNumeric(), elem[5], elem[6], elem[3]);
-                    } else if (getSt().getAuthed().containsKey(elem[3])) {
-                        sendText("%s AUTHENTICATE %s ALREADY %s %s", getNumeric(), elem[5], elem[6], elem[3]);
-                    } else if (getMi().getDb().isRegistered(elem[3], elem[4])) {
-                        getSt().getAuthed().put(elem[6], elem[3]);
-                        sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[5], elem[6], elem[3]);
-                        sendText("%s AC %s %s %s %s", getNumeric(), elem[6], elem[3], getMi().getDb().getTimestamp(elem[3]), getMi().getDb().getId(elem[3]));
-                        getMi().getDb().addAuthHistory(elem[3], elem[2], getMi().getDb().getData("email", elem[3]), getMi().getDb().getData("lastuserhost", elem[3]).split("@")[0], getMi().getDb().getData("lastuserhost", elem[3]).split("@")[1]);
-                    } else {
-                        sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(), elem[5], elem[6], elem[3]);
-                    }
-                } else if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]))) {
+                if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAA") || server.equalsIgnoreCase(elem[2]))) {
                     var target = elem[2];
                     StringBuilder sb = new StringBuilder();
                     for (int i = 3; i < elem.length; i++) {
@@ -203,7 +190,19 @@ public class AuthServ implements Userflags {
                     if (getSt().getUsers().containsKey(nick) && !getSt().getUsers().get(nick).getAccount().isBlank() && !getSt().isNotice(getSt().getUsers().get(nick).getAccount())) {
                         notice = "P";
                     }
-                    if (auth[0].equalsIgnoreCase("hello")) {
+                    if (auth[0].equalsIgnoreCase("sasl")) {
+                        if (auth.length < 6) {
+                            sendText("%s AUTHENTICATE %s PARAM %s %s", getNumeric(), elem[0], auth[2], auth[3]);
+                        } else if (getSt().getAuthed().containsKey(auth[4])) {
+                            sendText("%s AUTHENTICATE %s ALREADY %s %s", getNumeric(), elem[0], auth[2], auth[3]);
+                        } else if (getMi().getDb().isRegistered(auth[3], auth[4])) {
+                            getSt().getAuthed().put(auth[5], auth[3]);
+                            sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[0], auth[2], auth[3]);
+                            sendText("%s AC %s %s %s %s", getNumeric(), auth[2], auth[3], getMi().getDb().getTimestamp(auth[3]), getMi().getDb().getId(auth[3]));
+                        } else {
+                            sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(),elem[0], auth[2], auth[3]);
+                        }
+                    } else if (auth[0].equalsIgnoreCase("hello")) {
                         var authed = getSt().getUsers().get(nick).getAccount();
                         if (auth.length == 1) {
                             sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
@@ -261,13 +260,13 @@ public class AuthServ implements Userflags {
                                         Users u = getSt().getUsers().get(nick);
                                         if (u.getAccount().equalsIgnoreCase(nick1[1]) && getSt().getChannel().containsKey(channels[1].toLowerCase()) && getSt().getChannel().get(channels[1].toLowerCase()).getUsers().contains(nick)) {
                                             if (getSt().isOwner(Integer.parseInt(auth1[0]))) {
-                                                sendText("%sAAD M %s +q %s", getNumeric(), channels[1], nick);
+                                                sendText("%s M %s +q %s", getNumeric(), channels[1], nick);
                                             } else if (getSt().isMaster(Integer.parseInt(auth1[0]))) {
-                                                sendText("%sAAD M %s +a %s", getNumeric(), channels[1], nick);
+                                                sendText("%s M %s +a %s", getNumeric(), channels[1], nick);
                                             } else if (getSt().isOp(Integer.parseInt(auth1[0]))) {
-                                                sendText("%sAAD M %s +o %s", getNumeric(), channels[1], nick);
+                                                sendText("%s M %s +o %s", getNumeric(), channels[1], nick);
                                             } else if (getSt().isVoice(Integer.parseInt(auth1[0]))) {
-                                                sendText("%sAAD M %s +v %s", getNumeric(), channels[1], nick);
+                                                sendText("%s M %s +v %s", getNumeric(), channels[1], nick);
                                             }
                                         }
                                     }

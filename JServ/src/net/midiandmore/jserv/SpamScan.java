@@ -125,7 +125,7 @@ public class SpamScan implements Software {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 1 %d %s %s +oikr - %s:%d U]AAEC %sAAC :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
+        sendText("%s N %s 3 %d %s %s +oikr %s U]AEC %sAAC :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
     }
 
     /**
@@ -179,7 +179,14 @@ public class SpamScan implements Software {
                         notice = "P";
                     }
                     var auth = command.split(" ");
-                    if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
+                    if (auth[0].equalsIgnoreCase("AUTH")) {
+                        if (auth.length >= 3 && auth[1].equals(getMi().getConfig().getSpamFile().getProperty("authuser")) && auth[2].equals(getMi().getConfig().getSpamFile().getProperty("authpassword"))) {
+                            setReg(true);
+                            sendText("%sAAC %s %s :Successfully authed.", getNumeric(), notice, elem[0]);
+                        } else {
+                            sendText("%sAAC %s %s :Unknown command, or access denied.", getNumeric(), notice, elem[0]);
+                        }
+                    } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
 
                         var channel = auth[1];
                         if (getSt().getChannel().containsKey(channel.toLowerCase()) && !getMi().getDb().isChan(channel.toLowerCase())) {

@@ -232,7 +232,7 @@ public class SocketThread implements Runnable, Userflags {
     protected void handshake(String password, String servername, String description, String numeric) {
         System.out.println("Starting handshake...");
         sendText("PASS :%s", password);
-        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n 0 :%s", servername, 1, time(), time(), numeric, description);
+        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n 0 :%s", servername, 3, time(), time(), numeric, description);
     }
 
     protected void sendText(String text, Object... args) {
@@ -462,36 +462,18 @@ public class SocketThread implements Runnable, Userflags {
                                 acc = "";
                             }
                             if (other) {
-                                if (!ssl) {
-                                    if (hidden) {
-                                        nick = elem[12];
-                                    } else {
-                                        nick = elem[11];
-                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                    }
+                                if (hidden) {
+                                    nick = elem[12];
                                 } else {
-                                    if (hidden) {
-                                        nick = elem[11];
-                                    } else {
-                                        nick = elem[10];
-                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                    }
+                                    nick = elem[11];
+                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
                                 }
                             } else {
-                                if (!ssl) {
-                                    if (hidden) {
-                                        nick = elem[11];
-                                    } else {
-                                        nick = elem[10];
-                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                    }
+                                if (hidden) {
+                                    nick = elem[11];
                                 } else {
-                                    if (hidden) {
-                                        nick = elem[12];
-                                    } else {
-                                        nick = elem[11];
-                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                    }
+                                    nick = elem[10];
+                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
                                 }
                             }
                             if (x) {
@@ -502,20 +484,11 @@ public class SocketThread implements Runnable, Userflags {
                             nick = elem[11];
                         } else {
                             acc = "";
-                            if (!ssl) {
-                                if (hidden) {
-                                    nick = elem[10];
-                                } else {
-                                    nick = elem[9];
-                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                }
+                            if (hidden) {
+                                nick = elem[10];
                             } else {
-                                if (hidden) {
-                                    nick = elem[11];
-                                } else {
-                                    nick = elem[10];
-                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                }
+                                nick = elem[9];
+                                sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
                             }
                         }
                         var hosts = elem[5] + "@" + elem[6];

@@ -132,7 +132,7 @@ public class HostServ implements Software {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 1 %d %s %s +oikrd - %s:%d U]AAEB %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), time(), getNumeric(), getDescription());
+        sendText("%s N %s 3 %d %s %s +oikrd %s U]AEB %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
     }
 
     /**

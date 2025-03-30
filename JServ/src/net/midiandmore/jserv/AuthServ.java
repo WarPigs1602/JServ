@@ -190,19 +190,7 @@ public class AuthServ implements Userflags {
                     if (getSt().getUsers().containsKey(nick) && !getSt().getUsers().get(nick).getAccount().isBlank() && !getSt().isNotice(getSt().getUsers().get(nick).getAccount())) {
                         notice = "P";
                     }
-                    if (auth[0].equalsIgnoreCase("sasl")) {
-                        if (auth.length < 6) {
-                            sendText("%s AUTHENTICATE %s PARAM %s %s", getNumeric(), elem[0], auth[2], auth[3]);
-                        } else if (getSt().getAuthed().containsKey(auth[4])) {
-                            sendText("%s AUTHENTICATE %s ALREADY %s %s", getNumeric(), elem[0], auth[2], auth[3]);
-                        } else if (getMi().getDb().isRegistered(auth[3], auth[4])) {
-                            getSt().getAuthed().put(auth[5], auth[3]);
-                            sendText("%s AUTHENTICATE %s SUCCESS %s %s", getNumeric(), elem[0], auth[2], auth[3]);
-                            sendText("%s AC %s %s %s %s", getNumeric(), auth[2], auth[3], getMi().getDb().getTimestamp(auth[3]), getMi().getDb().getId(auth[3]));
-                        } else {
-                            sendText("%s AUTHENTICATE %s NOTYOU %s %s", getNumeric(),elem[0], auth[2], auth[3]);
-                        }
-                    } else if (auth[0].equalsIgnoreCase("hello")) {
+                    if (auth[0].equalsIgnoreCase("hello")) {
                         var authed = getSt().getUsers().get(nick).getAccount();
                         if (auth.length == 1) {
                             sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());

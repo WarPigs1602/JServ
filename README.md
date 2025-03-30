@@ -7,5 +7,5 @@
  <br>
  To run this package, just enter "java -jar JServ.jar &" and then logout with "exit".<br>
  <br>
- [midircd](https://github.com/WarPigs1602/midircd) supports as example SASL,<br>
- and an modified [newserv](https://github.com/WarPigs1602/newserv-midircd) contains patches to use the extended modes for Owner and Admin (Halfops are following soon)<br>
+ [midircd](https://github.com/WarPigs1602/midircd) is only supported,<br>
+ an modified [newserv](https://github.com/WarPigs1602/newserv-midircd) contains patches to use the extended modes for Owner and Admin (Halfops are following soon)<br>

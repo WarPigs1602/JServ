@@ -132,7 +132,7 @@ public class HostServ implements Software {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 3 %d %s %s +oikrd %s U]AEB %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
+        sendText("%s N %s 2 %d %s %s +oikrd - %s %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
     }
 
     /**
@@ -279,7 +279,7 @@ public class HostServ implements Software {
         } else {
             sendText("%sAAB C %s %d", getNumeric(), channel.toLowerCase(), time());
         }
-        sendText("%s M %s +O %sAAB", getNumeric(), channel.toLowerCase(), getNumeric());
+        sendText("%s M %s +o %sAAB", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

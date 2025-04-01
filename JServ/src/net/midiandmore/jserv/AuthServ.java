@@ -128,7 +128,7 @@ public class AuthServ implements Userflags {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 3 %d %s %s +oikrd %s U]AEA %sAAA :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
+        sendText("%s N %s 2 %d %s %s +oikrd - %s U]AEA %sAAA :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
     }
 
     /**
@@ -413,7 +413,7 @@ public class AuthServ implements Userflags {
         } else {
             sendText("%sAAA C %s %d", getNumeric(), channel.toLowerCase(), time());
         }
-        sendText("%s M %s +O %sAAA", getNumeric(), channel.toLowerCase(), getNumeric());
+        sendText("%s M %s +o %sAAA", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

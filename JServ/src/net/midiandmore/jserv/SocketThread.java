@@ -232,7 +232,7 @@ public class SocketThread implements Runnable, Userflags {
     protected void handshake(String password, String servername, String description, String numeric) {
         System.out.println("Starting handshake...");
         sendText("PASS :%s", password);
-        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n 0 :%s", servername, 3, time(), time(), numeric, description);
+        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n 0 :%s", servername, 2, time(), time(), numeric, description);
     }
 
     protected void sendText(String text, Object... args) {
@@ -375,13 +375,7 @@ public class SocketThread implements Runnable, Userflags {
                                 }
                                 ua.add(u.getId());
                                 if (u.getAccount().equalsIgnoreCase(nick[1]) && getChannel().get(channel[1].toLowerCase()).getUsers().contains(user)) {
-                                    if (u.isService()) {
-                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":O");
-                                    } else if (isOwner(Integer.parseInt(auth[0]))) {
-                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":q");
-                                    } else if (isMaster(Integer.parseInt(auth[0]))) {
-                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":a");
-                                    } else if (isOp(Integer.parseInt(auth[0]))) {
+                                    if (isOp(Integer.parseInt(auth[0]))) {
                                         getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":o");
                                     } else if (isVoice(Integer.parseInt(auth[0]))) {
                                         getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":v");
@@ -400,7 +394,7 @@ public class SocketThread implements Runnable, Userflags {
                 for (int i = 0; i < nicks1.length; i++) {
                     sb.append(nicks1[i]);
                     if ((nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC"))) {
-                        sb.append(":O");
+                        sb.append(":o");
                     }
                     if (i + 1 < nicks1.length) {
                         sb.append(",");
@@ -439,7 +433,7 @@ public class SocketThread implements Runnable, Userflags {
                         for (var u : cu.toArray()) {
                             var u1 = getUsers().get(u);
                             if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +O %s", jnumeric, channel, u);
+                                sendText("%s M %s +o %s", jnumeric, channel, u);
                             }
                         }
                     } else if (elem[1].equals("N") && elem.length > 4) {
@@ -520,7 +514,7 @@ public class SocketThread implements Runnable, Userflags {
                         for (var u : cu.toArray()) {
                             var u1 = getUsers().get(u);
                             if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +O %s", jnumeric, channel, u);
+                                sendText("%s M %s +o %s", jnumeric, channel, u);
                             }
                         }
                     } else if (elem[1].equals("B") && elem.length >= 6) {
@@ -533,7 +527,7 @@ public class SocketThread implements Runnable, Userflags {
                         for (var u : cu.toArray()) {
                             var u1 = getUsers().get(u);
                             if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +O %s", jnumeric, channel, u);
+                                sendText("%s M %s +o %s", jnumeric, channel, u);
                             }
                         }
                     } else if (elem[1].equals("B") && elem.length == 5) {
@@ -546,7 +540,7 @@ public class SocketThread implements Runnable, Userflags {
                         for (var u : cu.toArray()) {
                             var u1 = getUsers().get(u);
                             if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +O %s", jnumeric, channel, u);
+                                sendText("%s M %s +o %s", jnumeric, channel, u);
                             }
                         }
                     } else if (elem[1].equals("C")) {
@@ -599,36 +593,12 @@ public class SocketThread implements Runnable, Userflags {
                                 } else if (set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).getVoice().add(users[0]);
-                                } else if (set && mode.equals("h")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getHop().add(users[0]);
-                                } else if (set && mode.equals("a")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getAdmin().add(users[0]);
-                                } else if (set && mode.equals("O")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getService().add(users[0]);
-                                } else if (set && mode.equals("q")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getOwner().add(users[0]);
                                 } else if (!set && mode.equals("o")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).getOp().remove(users[0]);
                                 } else if (!set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).getVoice().remove(users[0]);
-                                } else if (!set && mode.equals("h")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getHop().remove(users[0]);
-                                } else if (!set && mode.equals("a")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getAdmin().remove(users[0]);
-                                } else if (!set && mode.equals("O")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getService().remove(users[0]);
-                                } else if (!set && mode.equals("q")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getOwner().remove(users[0]);
                                 } else if (set) {
                                     getChannel().get(channel.toLowerCase()).setModes(getChannel().get(channel.toLowerCase()).getModes() + mode);
                                     if (mode.equals("m")) {

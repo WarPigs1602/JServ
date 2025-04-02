@@ -232,7 +232,7 @@ public class SocketThread implements Runnable, Userflags {
     protected void handshake(String password, String servername, String description, String numeric) {
         System.out.println("Starting handshake...");
         sendText("PASS :%s", password);
-        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n 0 :%s", servername, 2, time(), time(), numeric, description);
+        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n :%s", servername, 2, time(), time(), numeric, description);
     }
 
     protected void sendText(String text, Object... args) {

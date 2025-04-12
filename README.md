@@ -1,5 +1,5 @@
 # JServ
- Attention! This service runs only with midircd, midircd-ircu2, icu2 and snircd.
+ Attention! This service runs only with midircd, midircd-ircu2, ircu2 and snircd.
  Contains partly newserv compatible ChanServ, SpamScan, AuthServ and HostServ in one package<br>
  It's recommened to compile the sources with NetBeans<br>
  <br>

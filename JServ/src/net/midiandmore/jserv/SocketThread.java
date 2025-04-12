@@ -216,6 +216,7 @@ public class SocketThread implements Runnable, Userflags {
     private AuthServ as;
     private HostServ hs;
     private SpamScan ss;
+    private ChanServ cs;
     private byte[] ip;
     private boolean reg;
 
@@ -286,19 +287,24 @@ public class SocketThread implements Runnable, Userflags {
         var aservername = getMi().getConfig().getAuthFile().getProperty("servername");
         var adescription = getMi().getConfig().getAuthFile().getProperty("description");
         var hnick = getMi().getConfig().getHostFile().getProperty("nick");
+        var cnick = getMi().getConfig().getChanFile().getProperty("nick");
         var hservername = getMi().getConfig().getHostFile().getProperty("servername");
         var hdescription = getMi().getConfig().getHostFile().getProperty("description");
         var snick = getMi().getConfig().getSpamFile().getProperty("nick");
+        var cservername = getMi().getConfig().getChanFile().getProperty("servername");
         var sservername = getMi().getConfig().getSpamFile().getProperty("servername");
         var sdescription = getMi().getConfig().getSpamFile().getProperty("description");
         var jdescription = getMi().getConfig().getConfigFile().getProperty("description");
+        var cdescription = getMi().getConfig().getChanFile().getProperty("description");
         var jnumeric = getMi().getConfig().getConfigFile().getProperty("numeric");
         var aidentd = getMi().getConfig().getAuthFile().getProperty("identd");
         var hidentd = getMi().getConfig().getHostFile().getProperty("identd");
         var sidentd = getMi().getConfig().getSpamFile().getProperty("identd");
+        var cidentd = getMi().getConfig().getChanFile().getProperty("identd");
         var modules = getMi().getConfig().getModulesFile().getProperty("spamscan");
         var moduleh = getMi().getConfig().getModulesFile().getProperty("hostserv");
         var modulea = getMi().getConfig().getModulesFile().getProperty("authserv");
+        var modulec = getMi().getConfig().getModulesFile().getProperty("chanserv");
         try {
             setSocket(new Socket(host, Integer.parseInt(port)));
             setPw(new PrintWriter(getSocket().getOutputStream()));
@@ -308,14 +314,21 @@ public class SocketThread implements Runnable, Userflags {
             setSs(new SpamScan(getMi(), this, getPw(), getBr()));
             setHs(new HostServ(getMi(), this, getPw(), getBr()));
             setAs(new AuthServ(getMi(), this, getPw(), getBr()));
+            setCs(new ChanServ(getMi(), this, getPw(), getBr()));
             if (modules.equalsIgnoreCase("true")) {
                 getSs().handshake(snick, sservername, sdescription, jnumeric, sidentd);
+                getMi().getDb().createSchema();
+                getMi().getDb().createTable();
+                getMi().getDb().commit();
             }
             if (moduleh.equalsIgnoreCase("true")) {
                 getHs().handshake(hnick, hservername, hdescription, jnumeric, hidentd);
             }
             if (modulea.equalsIgnoreCase("true")) {
                 getAs().handshake(anick, aservername, adescription, jnumeric, aidentd);
+            }
+            if (modulec.equalsIgnoreCase("true")) {
+                getCs().handshake(cnick, cservername, cdescription, jnumeric, cidentd);
             }
             System.out.println("Handshake complete...");
             if (moduleh.equalsIgnoreCase("true")) {
@@ -343,6 +356,19 @@ public class SocketThread implements Runnable, Userflags {
                             getBursts().put(channel.toLowerCase(), new Burst(channel.toLowerCase()));
                         }
                         getBursts().get(channel.toLowerCase()).getUsers().add(jnumeric + "AAC");
+                    }
+                }
+                System.out.println("Channels added...");
+            }
+            if (modulec.equalsIgnoreCase("true")) {
+                var list = getMi().getDb().getChannels();
+                System.out.printf("Adding %d channels for %s...\r\n", list.size(), cnick);
+                for (var channel : list) {
+                    if (channel[1].startsWith("#")) {
+                        if (!getBursts().containsKey(channel[1].toLowerCase())) {
+                            getBursts().put(channel[1].toLowerCase(), new Burst(channel[1].toLowerCase()));
+                        }
+                        getBursts().get(channel[1].toLowerCase()).getUsers().add(jnumeric + "AAD");
                     }
                 }
                 System.out.println("Channels added...");
@@ -393,7 +419,7 @@ public class SocketThread implements Runnable, Userflags {
                 var sb = new StringBuilder();
                 for (int i = 0; i < nicks1.length; i++) {
                     sb.append(nicks1[i]);
-                    if ((nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC"))) {
+                    if ((nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC") || nicks1[i].equals(jnumeric + "AAD"))) {
                         sb.append(":o");
                     }
                     if (i + 1 < nicks1.length) {
@@ -401,7 +427,7 @@ public class SocketThread implements Runnable, Userflags {
                     }
                 }
                 if (!sb.isEmpty()) {
-                    sendText("%s B %s %d %s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString());
+                    sendText("%s B %s %d +R %s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString());
                 }
             }
             System.out.println("Channels joined...");
@@ -983,6 +1009,20 @@ public class SocketThread implements Runnable, Userflags {
      */
     public void setBursts(HashMap<String, Burst> bursts) {
         this.bursts = bursts;
+    }
+
+    /**
+     * @return the cs
+     */
+    public ChanServ getCs() {
+        return cs;
+    }
+
+    /**
+     * @param cs the cs to set
+     */
+    public void setCs(ChanServ cs) {
+        this.cs = cs;
     }
 
 }

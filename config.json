@@ -12,6 +12,5 @@
 {"name":"dbpassword","value":"password"},
 {"name":"dbhost","value":"localhost"},
 {"name":"dbssl","value":"false"},
-{"name":"network","value":"MidiAndMore.Net"},
-{"name":"is_ircu","value":"true"}
+{"name":"network","value":"MidiAndMore.Net"}
 ]

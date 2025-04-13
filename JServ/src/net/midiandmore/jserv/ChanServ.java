@@ -249,7 +249,7 @@ public class ChanServ implements Userflags {
         } else {
             sendText("%sAAD C %s %d", getNumeric(), channel.toLowerCase(), time());
         }
-        sendText("%s M %s +R", getNumeric(), channel.toLowerCase());
+        sendText("%s M %s%s", getNumeric(), channel.toLowerCase(), getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? "" : " +R");
         sendText("%s M %s +o %sAAD", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 

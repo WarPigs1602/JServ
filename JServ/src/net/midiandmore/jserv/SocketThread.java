@@ -404,7 +404,7 @@ public class SocketThread implements Runnable, Userflags {
                                     if (isOp(Integer.parseInt(auth[0]))) {
                                         getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":o");
                                     } else if (isVoice(Integer.parseInt(auth[0]))) {
-                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":v");
+                                       getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":v");
                                     }
                                 }
                             }
@@ -417,17 +417,19 @@ public class SocketThread implements Runnable, Userflags {
             for (var burst : bursts) {
                 var nicks1 = getBursts().get(burst).getUsers().toArray();
                 var sb = new StringBuilder();
+                var firstOp = false;
                 for (int i = 0; i < nicks1.length; i++) {
                     sb.append(nicks1[i]);
-                    if ((nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC") || nicks1[i].equals(jnumeric + "AAD"))) {
+                    if (!firstOp && (nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC") || nicks1[i].equals(jnumeric + "AAD"))) {
                         sb.append(":o");
+                        firstOp = true;
                     }
                     if (i + 1 < nicks1.length) {
                         sb.append(",");
                     }
                 }
                 if (!sb.isEmpty()) {
-                    sendText("%s B %s %d +R %s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString());
+                    sendText("%s B %s %d %s%s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString().contains(jnumeric + "AAD") ? getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? "" : "+R " : "", sb.toString());
                 }
             }
             System.out.println("Channels joined...");

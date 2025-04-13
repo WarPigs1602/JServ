@@ -237,29 +237,6 @@ public class AuthServ implements Userflags {
                             sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? getMi().getDb().getTimestamp(auth[1]) : getMi().getDb().getFlags(auth[1]), getMi().getDb().getId(auth[1]));
                             sendText("%sAAA %s %s :You are now logged in as %s.", getNumeric(), notice, nick, auth[1]);
                             sendText("%sAAA %s %s :Remember: NO-ONE from %s will ever ask for your password.  NEVER send your password to ANYONE except %s", getNumeric(), notice, nick, network, server);
-                            var list = getMi().getDb().getChannels();
-                            var nicks = getMi().getDb().getData();
-                            for (var channels : list) {
-                                var cid = channels[0];
-                                for (var nick1 : nicks) {
-                                    var nid = nick1[0];
-                                    var auth1 = getMi().getDb().getChanUser(Long.parseLong(nid), Long.parseLong(cid));
-                                    if (auth1 != null) {
-                                        Users u = getSt().getUsers().get(nick);
-                                        if (u.getAccount().equalsIgnoreCase(nick1[1]) && getSt().getChannel().containsKey(channels[1].toLowerCase()) && getSt().getChannel().get(channels[1].toLowerCase()).getUsers().contains(nick)) {
-                                            if (getSt().isOwner(Integer.parseInt(auth1[0]))) {
-                                                sendText("%s M %s +q %s", getNumeric(), channels[1], nick);
-                                            } else if (getSt().isMaster(Integer.parseInt(auth1[0]))) {
-                                                sendText("%s M %s +a %s", getNumeric(), channels[1], nick);
-                                            } else if (getSt().isOp(Integer.parseInt(auth1[0]))) {
-                                                sendText("%s M %s +o %s", getNumeric(), channels[1], nick);
-                                            } else if (getSt().isVoice(Integer.parseInt(auth1[0]))) {
-                                                sendText("%s M %s +v %s", getNumeric(), channels[1], nick);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         } else {
                             sendText("%sAAA %s %s :Username or password incorrect.", getNumeric(), notice, nick);
                         }

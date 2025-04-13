@@ -38,7 +38,7 @@ public class Database {
      */
     public String getData(String key, String nick) {
         String flag = null;
-        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.users WHERE username=?")) {
+        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.users WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -59,7 +59,7 @@ public class Database {
      * @return The data
      */
     public void updateData(String key, String nick, String data) {
-        try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE username = ?")) {
+        try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, data);
             statement.setString(2, nick);
             var rows = statement.executeUpdate();
@@ -76,7 +76,7 @@ public class Database {
      * @return The data
      */
     public void updateData(String key, String nick, long data) {
-        try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE username = ?")) {
+        try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
             statement.setLong(1, data);
             statement.setString(2, nick);
             var rows = statement.executeUpdate();
@@ -127,7 +127,7 @@ public class Database {
 
     public int getIndex(String nick) {
         int index = 0;
-        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE username=?;")) {
+        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -547,7 +547,7 @@ public class Database {
      * @return The data
      */
     protected int getFlags(String nick) {
-        try (var statement = getConn().prepareStatement("SELECT flags FROM chanserv.users WHERE username = ?;")) {
+        try (var statement = getConn().prepareStatement("SELECT flags FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -586,7 +586,7 @@ public class Database {
      */
     protected String getTimestamp(String nick) {
         String dat = null;
-        try (var statement = getConn().prepareStatement("SELECT lastauth FROM chanserv.users WHERE username = ?;")) {
+        try (var statement = getConn().prepareStatement("SELECT lastauth FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -606,7 +606,7 @@ public class Database {
      */
     protected String getId(String nick) {
         String dat = null;
-        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE username = ?;")) {
+        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -626,7 +626,7 @@ public class Database {
      */
     protected boolean isRegistered(String nick, String password) {
         var dat = false;
-        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE username = ? AND password = ?;")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE LOWER(username) = LOWER(?) AND password = ?;")) {
             statement.setString(1, nick);
             statement.setString(2, password);
             try (var resultset = statement.executeQuery()) {

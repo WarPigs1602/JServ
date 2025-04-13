@@ -229,6 +229,7 @@ public class AuthServ implements Userflags {
                             getSt().getUsers().get(nick).setAccount(auth[1]);
                             getMi().getDb().updateData("lastuserhost", auth[1], getSt().getUsers().get(nick).getRealHost());
                             getMi().getDb().updateData("lastpasschng", auth[1], time());
+                            getMi().getDb().updateData("lastauth", auth[1], time());
                             var host = getSt().getUsers().get(nick).getHost();
                             getMi().getDb().addAuthHistory(auth[1], getSt().getUsers().get(nick).getNick(), getMi().getDb().getData("email", auth[1]), getSt().getUsers().get(nick).getRealHost().split("@")[0], getSt().getUsers().get(nick).getRealHost().split("@")[1]);
                             if (getSt().getUsers().get(nick).isX()) {

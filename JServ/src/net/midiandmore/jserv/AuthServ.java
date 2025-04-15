@@ -235,7 +235,11 @@ public class AuthServ implements Userflags {
                             if (getSt().getUsers().get(nick).isX()) {
                                 sendText("%s SH %s %s %s", getNumeric(), nick, host.split("@")[0], getSt().getUsers().get(nick).getAccount() + getMi().getConfig().getConfigFile().getProperty("reg_host"));
                             }
-                            sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? getMi().getDb().getTimestamp(auth[1]) : getMi().getDb().getFlags(auth[1]), getMi().getDb().getId(auth[1]));
+                            if (getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false")) {
+                                sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getDb().getTimestamp(auth[1]), getMi().getDb().getId(auth[1]));
+                            } else {
+                                sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getDb().getId(auth[1]),getMi().getDb().getFlags(auth[1]));
+                            }
                             sendText("%sAAA %s %s :You are now logged in as %s.", getNumeric(), notice, nick, auth[1]);
                             sendText("%sAAA %s %s :Remember: NO-ONE from %s will ever ask for your password.  NEVER send your password to ANYONE except %s", getNumeric(), notice, nick, network, server);
                         } else {

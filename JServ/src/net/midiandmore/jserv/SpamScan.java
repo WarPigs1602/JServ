@@ -191,7 +191,7 @@ public class SpamScan implements Software, Messages {
                         var channel = auth[1];
                         if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
-                        } else if (getMi().getDb().isChan(channel.toLowerCase())) {
+                        } else if (!getMi().getDb().isChan(channel.toLowerCase())) {
                             getMi().getDb().addChan(channel.toLowerCase());
                             joinChannel(channel.toLowerCase());
                             setReg(false);
@@ -202,14 +202,16 @@ public class SpamScan implements Software, Messages {
                         }
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELCHAN")) {
                         var channel = auth[1];
-                        if (getSt().getChannel().containsKey(channel.toLowerCase()) && getMi().getDb().isChan(channel.toLowerCase())) {
+                        if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
+                        } else if (getMi().getDb().isChan(channel.toLowerCase())) {
                             getMi().getDb().removeChan(channel.toLowerCase());
                             partChannel(channel.toLowerCase());
                             setReg(false);
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Cannot delete channel %s: The channel doesn't exists or %s isn't in the channel.",channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "%s isn't in the channel.",channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
                     } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("BADWORD")) {
                         var flag = auth[1];

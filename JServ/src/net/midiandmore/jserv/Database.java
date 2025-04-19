@@ -573,7 +573,7 @@ public class Database {
     protected boolean isChan(String channel) {
         connect();
         String dat = null;
-        try (var statement = getConn().prepareStatement("SELECT channel FROM spamscan.channels WHERE channel = ?;")) {
+        try (var statement = getConn().prepareStatement("SELECT channel FROM spamscan.channels WHERE LOWER(channel) = LOWER(?);")) {
             statement.setString(1, channel);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -590,7 +590,7 @@ public class Database {
     protected void removeChan(String channel) {
         connect();
         try {
-            try (var statement = getConn().prepareStatement("DELETE FROM spamscan.channels WHERE channel = ?;")) {
+            try (var statement = getConn().prepareStatement("DELETE FROM spamscan.channels WHERE LOWER(channel) = LOWER(?);")) {
                 statement.setString(1, channel);
                 statement.executeUpdate();
             }

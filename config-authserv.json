@@ -3,5 +3,6 @@
 {"name":"servername","value":"authserv.midiandmore.net"},
 {"name":"description","value":"MidiAndMore AuthServ"},
 {"name":"identd","value":"authserv"},
+{"name":"q9secret","value":"moo"},
 {"name":"is_ircu","value":"true"}
 ]

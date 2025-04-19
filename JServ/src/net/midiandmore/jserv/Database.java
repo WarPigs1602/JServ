@@ -216,7 +216,7 @@ public class Database {
     public boolean isMail(String email) {
         connect();
         var flag = false;
-        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE email=?")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE LOWER(email) = LOWER(?)")) {
             statement.setString(1, email);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -248,7 +248,7 @@ public class Database {
                 statement.setInt(9, index);
                 statement.executeUpdate();
             }
-            try (var statement = getConn().prepareStatement("INSERT INTO chanserv.email (userid, emailtype, prevemail) VALUES (?,?,?);")) {
+            try (var statement = getConn().prepareStatement("INSERT INTO chanserv.email (userid, emailtype, prevemail) VALUES (?,?,LOWER(?));")) {
                 statement.setInt(1, index);
                 statement.setInt(2, 1);
                 statement.setString(3, email);
@@ -282,7 +282,7 @@ public class Database {
     public void submitNewPassword(String email) {
         connect();
         try {
-            try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE email = ?")) {
+            try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(email) = LOWER(?)")) {
                 statement.setString(1, email);
                 try (var resultset = statement.executeQuery()) {
                     while (resultset.next()) {
@@ -298,7 +298,7 @@ public class Database {
     private void submitPassword(String email, int index) {
         connect();
         try {
-            try (var statement = getConn().prepareStatement("INSERT INTO chanserv.email (userid, emailtype, prevemail) VALUES (?,?,?);")) {
+            try (var statement = getConn().prepareStatement("INSERT INTO chanserv.email (userid, emailtype, prevemail) VALUES (?,?,LOWER(?));")) {
                 statement.setInt(1, index);
                 statement.setInt(2, 2);
                 statement.setString(3, email);
@@ -325,7 +325,7 @@ public class Database {
     }
 
     public void setAccountHistory(int id, String oldPassword, String newPassword, String oldMail, String newMail) {
-        try (var statement = getConn().prepareStatement("INSERT INTO chanserv.accounthistory (userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail) VALUES (?, ?, ?, ?, ?, ?, ?);")) {
+        try (var statement = getConn().prepareStatement("INSERT INTO chanserv.accounthistory (userID, changetime, authtime, oldpassword, newpassword, oldemail, newemail) VALUES (?, ?, ?, ?, ?, LOWER(?), LOWER(?));")) {
             statement.setInt(1, id);
             statement.setLong(2, getCurrentTime());
             statement.setLong(3, getCurrentTime());
@@ -436,7 +436,7 @@ public class Database {
      */
     public String getChannel(String key, String name) {
         connect();
-        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.channels WHERE name=?")) {
+        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.channels WHERE LOWER(name) = LOWER(?)")) {
             statement.setString(1, name);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -570,7 +570,7 @@ public class Database {
         }
     }
 
-    protected boolean isChan(String channel) {
+    protected String getChan(String channel) {
         connect();
         String dat = null;
         try (var statement = getConn().prepareStatement("SELECT channel FROM spamscan.channels WHERE LOWER(channel) = LOWER(?);")) {
@@ -584,7 +584,11 @@ public class Database {
         } catch (SQLException ex) {
             System.out.println("Access to database failed: " + ex.getMessage());
         }
-        return dat != null;
+        return dat;
+    }
+    
+    protected boolean isChan(String channel) {
+        return getChan(channel) != null;
     }
 
     protected void removeChan(String channel) {

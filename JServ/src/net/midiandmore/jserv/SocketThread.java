@@ -360,7 +360,7 @@ public class SocketThread implements Runnable, Userflags {
                 for (var channel : list) {
                     if (channel.startsWith("#")) {
                         if (!getBursts().containsKey(channel.toLowerCase())) {
-                            getBursts().put(channel.toLowerCase(), new Burst(channel.toLowerCase()));
+                            getBursts().put(channel.toLowerCase(), new Burst(channel));
                         }
                         getBursts().get(channel.toLowerCase()).getUsers().add(jnumeric + "AAC");
                     }
@@ -373,7 +373,7 @@ public class SocketThread implements Runnable, Userflags {
                 for (var channel : list) {
                     if (channel[1].startsWith("#")) {
                         if (!getBursts().containsKey(channel[1].toLowerCase())) {
-                            getBursts().put(channel[1].toLowerCase(), new Burst(channel[1].toLowerCase()));
+                            getBursts().put(channel[1].toLowerCase(), new Burst(channel[1]));
                         }
                         getBursts().get(channel[1].toLowerCase()).getUsers().add(jnumeric + "AAD");
                     }
@@ -387,10 +387,10 @@ public class SocketThread implements Runnable, Userflags {
             for (var channel : list) {
                 if (channel[1].startsWith("#")) {
                     if (!getBursts().containsKey(channel[1].toLowerCase())) {
-                        getBursts().put(channel[1].toLowerCase(), new Burst(channel[1].toLowerCase()));
+                        getBursts().put(channel[1].toLowerCase(), new Burst(channel[1]));
                     }
                     if (channel[27] != null && !channel[27].isBlank()) {
-                        getBursts().get(channel[1].toLowerCase()).setTime(Long.parseLong(channel[27]) < 1270075989 ? time() : Long.parseLong(channel[27]));
+                        getBursts().get(channel[1].toLowerCase()).setTime(Long.parseLong(channel[27]));
                     } else {
                         getBursts().get(channel[1].toLowerCase()).setTime(time());
                     }
@@ -436,7 +436,7 @@ public class SocketThread implements Runnable, Userflags {
                     }
                 }
                 if (!sb.isEmpty()) {
-                    sendText("%s B %s %d %s%s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString().contains(jnumeric + "AAD") ? getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? "" : "+R " : "", sb.toString());
+                    sendText("%s B %s %d %s%s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString().contains(jnumeric + "AAD") ? getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? "+tnCN " : "+tnNCR " : "", sb.toString());
                 }
             }
             System.out.println("Channels joined...");
@@ -448,7 +448,7 @@ public class SocketThread implements Runnable, Userflags {
                     if (content.startsWith("SERVER")) {
                         setServerNumeric(content.split(" ")[6].substring(0, 1));
                         System.out.println("Getting SERVER response...");
-                    } else if (elem[1].equals("EB")) {
+                    } else if (elem[1].equals("EB") && !isBurst()) {
                         setBurst(true);
                         sendText("%s EA", jnumeric);
                     } else if (elem[1].equals("J")) {

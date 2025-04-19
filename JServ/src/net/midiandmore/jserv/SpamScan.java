@@ -191,9 +191,9 @@ public class SpamScan implements Software, Messages {
                         var channel = auth[1];
                         if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
-                        } else if (!getMi().getDb().isChan(channel.toLowerCase())) {
+                        } else if (!getMi().getDb().isChan(channel)) {
                             getMi().getDb().addChan(channel.toLowerCase());
-                            joinChannel(channel.toLowerCase());
+                            joinChannel(channel);
                             setReg(false);
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
@@ -204,9 +204,9 @@ public class SpamScan implements Software, Messages {
                         var channel = auth[1];
                         if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
-                        } else if (getMi().getDb().isChan(channel.toLowerCase())) {
+                        } else if (getMi().getDb().isChan(channel)) {
                             getMi().getDb().removeChan(channel.toLowerCase());
-                            partChannel(channel.toLowerCase());
+                            partChannel(channel);
                             setReg(false);
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
@@ -356,11 +356,11 @@ public class SpamScan implements Software, Messages {
                 } else if (elem[1].equals("L")) {
                     var nick = elem[0];
                     var channel = elem[2].toLowerCase();
-                    getSt().removeUser(nick, channel.toLowerCase());
+                    getSt().removeUser(nick, channel);
                 } else if (elem[1].equals("K")) {
                     var nick = elem[0];
                     var channel = elem[2].toLowerCase();
-                    getSt().removeUser(nick, channel.toLowerCase());
+                    getSt().removeUser(nick, channel);
                 }
             }
         } catch (Exception e) {
@@ -370,25 +370,25 @@ public class SpamScan implements Software, Messages {
 
     private boolean isShorterAs5Minutes(String nick, String channel) {
         var flag = false;
-        if (getSt().getChannel().get(channel.toLowerCase()).getLastJoin().containsKey(nick)) {
-            flag = (System.currentTimeMillis() / 1000) - getSt().getChannel().get(channel.toLowerCase()).getLastJoin().get(nick) < 300;
+        if (getSt().getChannel().get(channel).getLastJoin().containsKey(nick)) {
+            flag = (System.currentTimeMillis() / 1000) - getSt().getChannel().get(channel).getLastJoin().get(nick) < 300;
         }
         return flag;
     }
 
     protected void joinChannel(String channel) {
         if (channel.startsWith("#")) {
-            if (getSt().getChannel().containsKey(channel.toLowerCase())) {
-                sendText("%sAAC J %s %d", getNumeric(), channel.toLowerCase(), time());
+            if (getSt().getChannel().containsKey(channel)) {
+                sendText("%sAAC J %s %d", getNumeric(), channel, time());
             } else {
-                sendText("%sAAC C %s %d", getNumeric(), channel.toLowerCase(), time());
+                sendText("%sAAC C %s %d", getNumeric(), channel, time());
             }
-            sendText("%s M %s +o %sAAC", getNumeric(), channel.toLowerCase(), getNumeric());
+            sendText("%s M %s +o %sAAC", getNumeric(), channel, getNumeric());
         }
     }
 
     private void partChannel(String channel) {
-        sendText("%sAAC L %s", getNumeric(), channel.toLowerCase());
+        sendText("%sAAC L %s", getNumeric(), channel);
     }
 
     private long time() {

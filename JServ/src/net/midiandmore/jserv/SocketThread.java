@@ -244,6 +244,13 @@ public class SocketThread implements Runnable, Userflags {
         }
     }
 
+    protected void sendNotice(String numeric, String user, String notice, String nick, String text, Object... args) {
+        var data = text.formatted(args).split("\n");
+        for (var content : data) {
+            sendText("%s%s %s %s :%s", numeric, user, notice, nick, content);
+        }
+    }
+
     protected String getUser(String nick) {
         for (String session : getUsers().keySet()) {
             if (getUsers().get(session).getNick().equalsIgnoreCase(nick)) {
@@ -404,7 +411,7 @@ public class SocketThread implements Runnable, Userflags {
                                     if (isOp(Integer.parseInt(auth[0]))) {
                                         getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":o");
                                     } else if (isVoice(Integer.parseInt(auth[0]))) {
-                                       getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":v");
+                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":v");
                                     }
                                 }
                             }
@@ -681,6 +688,9 @@ public class SocketThread implements Runnable, Userflags {
                     }
                     if (modulea.equalsIgnoreCase("true")) {
                         getAs().parseLine(content);
+                    }
+                    if (modulec.equalsIgnoreCase("true")) {
+                        getCs().parseLine(content);
                     }
                     if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
                         System.out.printf("DEBUG get text: %s\n", content);

@@ -25,7 +25,7 @@ import org.apache.commons.codec.digest.DigestUtils;
  *
  * @author Andreas Pschorn
  */
-public class ChanServ implements Userflags {
+public class ChanServ implements Userflags, Messages, Software {
 
     /**
      * @return the nick
@@ -168,11 +168,9 @@ public class ChanServ implements Userflags {
     protected void parseLine(String text) {
         try {
             text = text.trim();
-            var elem = text.split(" ");
             if (getSt().getServerNumeric() != null) {
-                var server = getMi().getConfig().getAuthFile().getProperty("nick") + "@" + getMi().getConfig().getConfigFile().getProperty("servername");
-                if (elem[1].equals("P") && (elem[2].equals(getNumeric() + "AAD") || server.equalsIgnoreCase(elem[2]))) {
-                    var target = elem[2];
+                var elem = text.split(" ");
+                if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAD")) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 3; i < elem.length; i++) {
                         sb.append(elem[i]);
@@ -182,15 +180,18 @@ public class ChanServ implements Userflags {
                     if (command.startsWith(":")) {
                         command = command.substring(1);
                     }
-                    var nick = elem[0];
-                    var nickname = getSt().getUsers().containsKey(nick) ? getSt().getUsers().get(nick).getNick() : null;
-                    var auth = command.split(" ");
-                    var network = getMi().getConfig().getConfigFile().getProperty("network");
+                    var nick = getSt().getUsers().get(elem[0]).getAccount();
                     var notice = "O";
-                    if (getSt().getUsers().containsKey(nick) && !getSt().getUsers().get(nick).getAccount().isBlank() && !getSt().isNotice(getSt().getUsers().get(nick).getAccount())) {
+                    if (!getSt().isNotice(nick)) {
                         notice = "P";
+                    }
+                    var auth = command.split(" ");
+                    if (auth[0].equalsIgnoreCase("VERSION")) {
+                        getSt().sendNotice(getNumeric(), "AAD", notice, elem[0], "ChanServ v%s by %s", VERSION, VENDOR);
+                        getSt().sendNotice(getNumeric(), "AAD", notice, elem[0], "Based on JServ v%s", VERSION);
+                        getSt().sendNotice(getNumeric(), "AAD", notice, elem[0], "Created by %s", AUTHOR);
                     } else {
-                        sendText("%sAAD %s %s :Unknown command %s. Type SHOWCOMMANDS for a list of available commands.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                        getSt().sendNotice(getNumeric(), "AAD", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
                     }
                 }
             }

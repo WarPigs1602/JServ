@@ -22,7 +22,7 @@ import java.util.HashMap;
  *
  * @author Andreas Pschorn
  */
-public class SpamScan implements Software {
+public class SpamScan implements Software, Messages {
 
     /**
      * @return the nick
@@ -182,21 +182,23 @@ public class SpamScan implements Software {
                     if (auth[0].equalsIgnoreCase("AUTH")) {
                         if (auth.length >= 3 && auth[1].equals(getMi().getConfig().getSpamFile().getProperty("authuser")) && auth[2].equals(getMi().getConfig().getSpamFile().getProperty("authpassword"))) {
                             setReg(true);
-                            sendText("%sAAC %s %s :Successfully authed.", getNumeric(), notice, elem[0]);
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
-                            sendText("%sAAC %s %s :Unknown command, or access denied.", getNumeric(), notice, elem[0]);
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_UNKNOWNCMD, auth[0]);
                         }
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
 
                         var channel = auth[1];
-                        if (getSt().getChannel().containsKey(channel.toLowerCase()) && !getMi().getDb().isChan(channel.toLowerCase())) {
+                        if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
+                        } else if (getMi().getDb().isChan(channel.toLowerCase())) {
                             getMi().getDb().addChan(channel.toLowerCase());
                             joinChannel(channel.toLowerCase());
                             setReg(false);
-                            sendText("%sAAC %s %s :Added channel %s", getNumeric(), notice, elem[0], channel.toLowerCase());
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
                             setReg(false);
-                            sendText("%sAAC %s %s :Cannot add channel %s: The channel doesn't exists or %s is allready in the channel...", getNumeric(), notice, elem[0], channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Cannot add channel %s: The channel doesn't exists or %s is already in the channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELCHAN")) {
                         var channel = auth[1];
@@ -204,10 +206,10 @@ public class SpamScan implements Software {
                             getMi().getDb().removeChan(channel.toLowerCase());
                             partChannel(channel.toLowerCase());
                             setReg(false);
-                            sendText("%sAAC %s %s :Removed channel %s", getNumeric(), notice, elem[0], channel.toLowerCase());
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
                             setReg(false);
-                            sendText("%sAAC %s %s :Cannot delete channel %s: The channel doesn't exists or %s isn't in the channel...", getNumeric(), notice, elem[0], channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Cannot delete channel %s: The channel doesn't exists or %s isn't in the channel.",channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
                     } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("BADWORD")) {
                         var flag = auth[1];
@@ -221,58 +223,55 @@ public class SpamScan implements Software {
                             var parsed = sb1.toString().trim();
                             if (b.containsKey(parsed.toLowerCase())) {
                                 if (flag.equalsIgnoreCase("ADD")) {
-                                    sendText("%sAAC %s %s :Badword (%s) allready exists.", getNumeric(), notice, elem[0], parsed);
+                                    getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Badword (%s) allready exists.", parsed);
                                 } else if (flag.equalsIgnoreCase("DELETE")) {
                                     b.remove(parsed.toLowerCase());
                                     getMi().getConfig().saveDataToJSON("badwords-spamscan.json", b, "name", "value");
-                                    sendText("%sAAC %s %s :Badword (%s) successfully removed.", getNumeric(), notice, elem[0], parsed);
+                                    getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Badword (%s) successfully removed.", parsed);
                                 }
                             } else {
                                 if (flag.equalsIgnoreCase("ADD")) {
                                     b.put(parsed.toLowerCase(), "");
                                     getMi().getConfig().saveDataToJSON("badwords-spamscan.json", b, "name", "value");
-                                    sendText("%sAAC %s %s :Badword (%s) successfully added.", getNumeric(), notice, elem[0], parsed);
+                                    getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Badword (%s) successfully added.", parsed);
                                 } else if (flag.equalsIgnoreCase("DELETE")) {
-                                    sendText("%sAAC %s %s :Badword (%s) doesn't exists.", getNumeric(), notice, elem[0], parsed);
+                                    getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Badword (%s) doesn't exists.", parsed);
                                 }
                             }
                         } else if (flag.equalsIgnoreCase("LIST")) {
-                            sendText("%sAAC %s %s :--- Badwords ---", getNumeric(), notice, elem[0]);
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "--- Badwords ---");
                             for (var key : b.keySet()) {
-                                sendText("%sAAC %s %s :%s", getNumeric(), notice, elem[0], key);
+                                getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "%s", key);
                             }
-                            sendText("%sAAC %s %s :--- End of list ---", getNumeric(), notice, elem[0]);
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "--- End of list ---");
                         } else {
-                            sendText("%sAAC %s %s :Unknown flag.", getNumeric(), notice, elem[0]);
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Unknown flag.");
                         }
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
-                        sendText("%sAAC %s %s :SpamScan Version %s", getNumeric(), notice, elem[0], VERSION);
-                        sendText("%sAAC %s %s :The following commands are available to you:", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_COMMANDLIST);  
                         if (getSt().isOper(nick)) {
-                            sendText("%sAAC %s %s :--- Commands available for opers ---", getNumeric(), notice, elem[0]);
-                            sendText("%sAAC %s %s :+o ADDCHAN      Addds a channel", getNumeric(), notice, elem[0]);
-                            sendText("%sAAC %s %s :+o BADWORD      Manage badwords", getNumeric(), notice, elem[0]);
-                            sendText("%sAAC %s %s :+o DELCHAN      Removes a channel", getNumeric(), notice, elem[0]);
-                        } else {
-                            sendText("%sAAC %s %s :--- Commands available for users ---", getNumeric(), notice, elem[0]);
-                        }
-                        sendText("%sAAC %s %s :   HELP         Show a help for an command", getNumeric(), notice, elem[0]);
-                        sendText("%sAAC %s %s :   SHOWCOMMANDS This message", getNumeric(), notice, elem[0]);
-                        sendText("%sAAC %s %s :   VERSION      Shows version information", getNumeric(), notice, elem[0]);
-                        sendText("%sAAC %s %s :End of list.", getNumeric(), notice, elem[0]);
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "+o ADDCHAN      Addds a channel");
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "+o BADWORD      Manage badwords");
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "+o DELCHAN      Removes a channel");
+                        } 
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "   HELP         Show a help for an command");
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "   SHOWCOMMANDS This message");
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "   VERSION      Shows version information");
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_ENDOFLIST);
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
-                        sendText("%sAAC %s %s :SpamScan v%s by %s", getNumeric(), notice, elem[0], VERSION, VENDOR);
-                        sendText("%sAAC %s %s :By %s", getNumeric(), notice, elem[0], AUTHOR);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "SpamScan v%s by %s", VERSION, VENDOR);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Based on JServ v%s", VERSION);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Created by %s", AUTHOR);
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDCHAN")) {
-                        sendText("%sAAC %s %s :ADDCHAN <#channel>", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "ADDCHAN <#channel>");
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("AUTH")) {
-                        sendText("%sAAC %s %s :AUTH <requestname> <requestpassword>", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "AUTH <requestname> <requestpassword>");
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("BADWORD")) {
-                        sendText("%sAAC %s %s :BADWORD <ADD|LIST|DELETE> [badword]", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "BADWORD <ADD|LIST|DELETE> [badword]");
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("DELCHAN")) {
-                        sendText("%sAAC %s %s :DELCHAN <#channel>", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "DELCHAN <#channel>");
                     } else {
-                        sendText("%sAAC %s %s :Unknown command, or access denied.", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
                     }
                 } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase()) && !getSt().getChannel().get(elem[2].toLowerCase()).getOwner().contains(elem[0]) && !getSt().getChannel().get(elem[2].toLowerCase()).getService().contains(elem[0]) && !getSt().getUsers().get(elem[0]).isOper() && !getSt().getUsers().get(elem[0]).isService()) {
                     if (!getSt().isOper(getSt().getUsers().get(elem[0]).getAccount())) {

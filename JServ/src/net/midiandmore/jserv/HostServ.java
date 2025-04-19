@@ -25,7 +25,7 @@ import org.apache.commons.codec.digest.DigestUtils;
  *
  * @author Andreas Pschorn
  */
-public class HostServ implements Software {
+public class HostServ implements Software, Messages {
 
     /**
      * @return the nick
@@ -248,23 +248,18 @@ public class HostServ implements Software {
                     }
                     var auth = command.split(" ");
                     if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
-                        sendText("%sAAB %s %s :HostServ Version %s", getNumeric(), notice, elem[0], VERSION);
-                        sendText("%sAAB %s %s :The following commands are available to you:", getNumeric(), notice, elem[0]);
-                        if (getSt().isOper(nick)) {
-                            sendText("%sAAB %s %s :--- Commands available for opers ---", getNumeric(), notice, elem[0]);
-                            sendText("%sAAB %s %s :+o HOST         Enables or disables host hiding.", getNumeric(), notice, elem[0]);
-                        } else {
-                            sendText("%sAAB %s %s :--- Commands available for users ---", getNumeric(), notice, elem[0]);
-                        }
-                        sendText("%sAAB %s %s :   HELP         Generic help for a command", getNumeric(), notice, elem[0]);
-                        sendText("%sAAB %s %s :   SHOWCOMMANDS View this list", getNumeric(), notice, elem[0]);
-                        sendText("%sAAB %s %s :   VERSION      Prints version information", getNumeric(), notice, elem[0]);
-                        sendText("%sAAB %s %s :End of list.", getNumeric(), notice, elem[0]);
+                        var authed = !getSt().getUsers().get(nick).getAccount().isBlank();
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_COMMANDLIST);                   
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   HELP             Shows a specific help to a command.");
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   SHOWCOMMANDS     Shows this list.");
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   VERSION          Print version info.");
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_ENDOFLIST);
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
-                        sendText("%sAAB %s %s :HostServ v%s by %s", getNumeric(), notice, elem[0], VERSION, VENDOR);
-                        sendText("%sAAB %s %s :By %s", getNumeric(), notice, elem[0], AUTHOR);
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "HostServ v%s by %s", VERSION, VENDOR);
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Based on JServ v%s", VERSION);
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Created by %s", AUTHOR);
                     } else {
-                        sendText("%sAAB %s %s :Unknown command, or access denied.", getNumeric(), notice, elem[0]);
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
                     }
                 }
             }

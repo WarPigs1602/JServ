@@ -15,17 +15,20 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.codec.digest.DigestUtils;
+import static org.apache.commons.codec.digest.HmacAlgorithms.HMAC_SHA_256;
+import org.apache.commons.codec.digest.HmacUtils;
 
 /**
  * Starts a new Thread
  *
  * @author Andreas Pschorn
  */
-public class AuthServ implements Userflags {
+public class AuthServ implements Userflags, Messages, Software {
 
     /**
      * @return the nick
@@ -74,6 +77,35 @@ public class AuthServ implements Userflags {
      */
     public String getDescription() {
         return description;
+    }
+
+    public int checkPasswordQuality(String pwd) {
+        int cntweak = 0, cntdigits = 0, cntletters = 0;
+        var password = pwd.toCharArray();
+        if (password.length < 6) {
+            return 1;
+        }
+        if (password.length > 10) {
+            return 2;
+        }
+        for (var i = 0; i < password.length; i++) {
+            if (password.length != i + 1 && (password[i] == password[i + 1] || password[i] + 1 == password[i + 1] || password[i] - 1 == password[i + 1])) {
+                cntweak++;
+            }
+            if (Character.isDigit(password[i])) {
+                cntdigits++;
+            }
+            if (Character.isLowerCase(password[i]) || Character.isUpperCase(password[i])) {
+                cntletters++;
+            }
+            if (password[i] < 32 || password[i] > 127) {
+                return 3;
+            }
+        }
+        if (cntweak > 3 || cntdigits == 0 || cntletters == 0) {
+            return 4;
+        }
+        return 0;
     }
 
     /**
@@ -192,39 +224,32 @@ public class AuthServ implements Userflags {
                     }
                     if (auth[0].equalsIgnoreCase("hello")) {
                         var authed = getSt().getUsers().get(nick).getAccount();
-                        if (auth.length == 1) {
-                            sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
-                        } else if (auth.length < 3) {
-                            sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                        if (auth.length < 3) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOTENOUGHPARAMS, auth[0].toUpperCase());
                         } else if (!auth[1].equalsIgnoreCase(auth[2])) {
-                            sendText("%sAAA %s %s :Sorry, but first and second email addresses don't match", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_EMAILDONTMATCH);
                         } else if (authed != null) {
-                            sendText("%sAAA %s %s :%s is not available once you have authed.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNAUTHEDONLY, auth[0].toUpperCase());
                         } else if (getMi().getDb().isRegistered(nickname)) {
-                            sendText("%sAAA %s %s :Someone already has the account name $0!", getNumeric(), notice, nick, nickname);
-                            sendText("%sAAA %s %s :If this is your account use AUTH to login, otherwise please change your nick using /NICK and try again.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_AUTHNAMEINUSE, nickname);
                         } else if (getMi().getDb().isMail(auth[1])) {
-                            sendText("%sAAA %s %s :Too many accounts  exist from this email address.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_ADDRESSLIMIT);
                         } else if (!isValidMail(auth[1])) {
-                            sendText("%sAAA %s %s :%s is not a valid email address", getNumeric(), notice, nick, auth[1]);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_INVALIDEMAIL, auth[1]);
                         } else if (!getSt().getUsers().get(nick).getAccount().isBlank()) {
-                            sendText("%sAAA %s %s :Sorry, the registration service is unavailable to you at this time. Please try again later.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_MAXHELLOLIMIT);
                         } else {
-                            sendText("%sAAA %s %s :Account %s created successfully.", getNumeric(), notice, nick, nickname);
-                            sendText("%sAAA %s %s :Information about how to access and use your new account will be sent to your email address, %s.", getNumeric(), notice, nick, auth[1]);
-                            sendText("%sAAA %s %s :If you do not see an email soon be sure to check your spam folder.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NEWACCOUNT, nickname, auth[1]);
                             getSt().getUsers().get(nick).setReg(true);
                             getMi().getDb().addUser(nickname, auth[1]);
                         }
                     } else if (auth[0].equalsIgnoreCase("auth")) {
                         if (!target.equalsIgnoreCase(server)) {
-                            sendText("%sAAA %s %s :To prevent sensitive information being accidentally send to malicious users", getNumeric(), notice, nick);
-                            sendText("%sAAA %s %s :non other networks, when using the %s command, you must use", getNumeric(), notice, nick, auth[0].toUpperCase());
-                            sendText("%sAAA %s %s :/msg %s.", getNumeric(), notice, nick, server);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_SECUREONLY, auth[0].toUpperCase(), server);
                         } else if (auth.length < 3) {
-                            sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOTENOUGHPARAMS, auth[0].toUpperCase());
                         } else if (getSt().getUsers().containsKey(nick) && !getSt().getUsers().get(nick).getAccount().isBlank()) {
-                            sendText("%sAAA %s %s :%s is not available once you have authed.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNAUTHEDONLY, auth[0].toUpperCase());
                         } else if (getMi().getDb().isRegistered(auth[1], auth[2])) {
                             getSt().getUsers().get(nick).setAccount(auth[1]);
                             getMi().getDb().updateData("lastuserhost", auth[1], getSt().getUsers().get(nick).getRealHost());
@@ -238,89 +263,123 @@ public class AuthServ implements Userflags {
                             if (getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false")) {
                                 sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getDb().getTimestamp(auth[1]), getMi().getDb().getId(auth[1]));
                             } else {
-                                sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getDb().getId(auth[1]),getMi().getDb().getFlags(auth[1]));
+                                sendText("%s AC %s %s %s %s", getNumeric(), nick, auth[1], getMi().getDb().getId(auth[1]), getMi().getDb().getFlags(auth[1]));
                             }
-                            sendText("%sAAA %s %s :You are now logged in as %s.", getNumeric(), notice, nick, auth[1]);
-                            sendText("%sAAA %s %s :Remember: NO-ONE from %s will ever ask for your password.  NEVER send your password to ANYONE except %s", getNumeric(), notice, nick, network, server);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_AUTHOK, auth[1], getMi().getConfig().getConfigFile().getProperty("network"), server);
                         } else {
-                            sendText("%sAAA %s %s :Username or password incorrect.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_AUTHFAIL);
                         }
                     } else if (auth[0].equalsIgnoreCase("email")) {
                         if (auth.length < 4) {
-                            sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOTENOUGHPARAMS, auth[0].toUpperCase());
                         } else if (!isValidMail(auth[2])) {
-                            sendText("%sAAA %s %s :%s is not a valid email address", getNumeric(), notice, nick, auth[2]);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_INVALIDEMAIL, auth[1]);
                         } else if (getSt().getUsers().get(nick).getAccount().isBlank()) {
-                            sendText("%sAAA %s %s :%s is only available to authed users. Try AUTH to authenticate with your", getNumeric(), notice, nick, auth[0].toUpperCase());
-                            sendText("%sAAA %s %s :account, or HELLO to create an account.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_AUTHEDONLY, auth[0].toUpperCase());
                         } else if (!auth[2].equalsIgnoreCase(auth[3])) {
-                            sendText("%sAAA %s %s :Sorry, but first and second email addresses don't match", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_EMAILDONTMATCH);
                         } else if (!getMi().getDb().isMail(auth[1])) {
-                            sendText("%sAAA %s %s :Sorry, no accounts have that email address.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_BADEMAIL);
                         } else {
-                            sendText("%sAAA %s %s :Ok, email changed to \"%s\".", getNumeric(), notice, nick, auth[2]);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_EMAILCHANGED, auth[2]);
                             getMi().getDb().updateData("email", getSt().getUsers().get(nick).getAccount(), auth[2]);
                         }
                     } else if (auth[0].equalsIgnoreCase("newpass")) {
                         if (!target.equalsIgnoreCase(server)) {
-                            sendText("%sAAA %s %s :To prevent sensitive information being accidentally send to malicious users", getNumeric(), notice, nick);
-                            sendText("%sAAA %s %s :non other networks, when using the %s command, you must use", getNumeric(), notice, nick, auth[0].toUpperCase());
-                            sendText("%sAAA %s %s :/msg %s.", getNumeric(), notice, nick, server);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_SECUREONLY, auth[0].toUpperCase(), server);
                         } else if (auth.length < 4) {
-                            sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOTENOUGHPARAMS, auth[0].toUpperCase());
                         } else if (getSt().getUsers().get(nick).getAccount().isBlank()) {
-                            sendText("%sAAA %s %s :%s is only available to authed users. Try AUTH to authenticate with your", getNumeric(), notice, nick, auth[0].toUpperCase());
-                            sendText("%sAAA %s %s :account, or HELLO to create an account.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNAUTHEDONLY, auth[0].toUpperCase());
+                        } else if (checkPasswordQuality(auth[2]) != 0) {
+                            var quality = checkPasswordQuality(auth[2]);
+                            if (quality == 1) {
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWTOSHORT);
+                            } else if (quality == 2) {
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWTOLONG);
+                            } else if (quality == 3) {
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWINVALID);
+                            } else if (quality == 4) {
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWTOWEAK);
+                            }
                         } else if (!auth[2].equals(auth[3])) {
-                            sendText("%sAAA %s %s :Sorry, but first and second new password don't match", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_EMAILDONTMATCH);
                         } else if (!getMi().getDb().getData("password", getSt().getUsers().get(nick).getAccount()).equals(auth[1])) {
-                            sendText("%sAAA %s %s :Password incorrect.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_AUTHFAIL);
+                        } else if (getMi().getDb().getLongData("lockuntil", getSt().getUsers().get(nick).getAccount()) > time() + 7 * 24 * 3600) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_ACCOUNTLOCKED, new Date(getMi().getDb().getLongData("lockuntil", getSt().getUsers().get(nick).getAccount())).toString());
                         } else {
-                            sendText("%sAAA %s %s :Ok, password changed", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWCHANGED);
                             getMi().getDb().updateData("password", getSt().getUsers().get(nick).getAccount(), auth[2]);
+                            getMi().getDb().updateData("lockuntil", getSt().getUsers().get(nick).getAccount(), time() + 7 * 24 * 3600);
+                            getMi().getDb().updateData("lastpasschng", getSt().getUsers().get(nick).getAccount(), time() + 7 * 24 * 3600);
                         }
                     } else if (auth[0].equalsIgnoreCase("requestpassword")) {
                         if (auth.length < 2) {
-                            sendText("%sAAA %s %s :You didn't provide enough parameters for %s.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOTENOUGHPARAMS, auth[0].toUpperCase());
                         } else if (!getSt().getUsers().get(nick).getAccount().isBlank()) {
-                            sendText("%sAAA %s %s :%s is not available once you have authed.", getNumeric(), notice, nick, auth[0].toUpperCase());
-                            sendText("%sAAA %s %s :account, or HELLO to create an account.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNAUTHEDONLY, auth[0].toUpperCase());
                         } else if (!getMi().getDb().isMail(auth[1])) {
-                            sendText("%sAAA %s %s :Sorry, no accounts have that email address.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_BADEMAIL);
                         } else {
-                            sendText("%sAAA %s %s :Mail queued for delivery", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_MAILQUEUED);
                             getMi().getDb().submitNewPassword(auth[1]);
+                        }
+                    } else if (auth[0].equalsIgnoreCase("reset")) {
+                        if (auth.length < 3) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOTENOUGHPARAMS, auth[0].toUpperCase());
+                        } else if (!getSt().getUsers().get(nick).getAccount().isBlank()) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNAUTHEDONLY, auth[0].toUpperCase());
+                        } else if (getMi().getDb().getLongData("lockuntil", getSt().getUsers().get(nick).getAccount()) > time() + 7 * 24 * 3600) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_ACCOUNTNOTLOCKED, auth[0].toUpperCase());
+                        } else {
+                            var data = getMi().getDb().getData();
+                            for (var userData : data) {
+                                var code = new HmacUtils(HMAC_SHA_256, "%s:codegenerator".formatted(getMi().getConfig().getAuthFile().getProperty("q9secret"))).hmacHex("%s:%s".formatted(userData[1], userData[10]));
+                                var user = userData[1].startsWith("#") ? userData[1].substring(1) : userData[1];
+                                var userId = getMi().getDb().getId(user);
+                                if (userId == null) {
+                                    continue;
+                                }
+                                var oldpass = getMi().getDb().getAccountHistory("oldpassword", Integer.valueOf(userId));
+                                if (oldpass != null && user.equalsIgnoreCase(auth[1]) && code.equals(auth[2])) {
+                                    getMi().getDb().updateData("password", user, oldpass);
+                                    getMi().getDb().updateData("lockuntil", user, 0);
+                                    getMi().getDb().deleteAccountHistory(Integer.valueOf(userId));
+                                    getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWCHANGED);
+                                    return;
+                                }
+                            }
                         }
                     } else if (auth[0].equalsIgnoreCase("userflags")) {
                         if (getSt().getUsers().get(nick).getAccount().isBlank()) {
-                            sendText("%sAAA %s %s :%s is only available to authed users. Try AUTH to authenticate with your", getNumeric(), notice, nick, auth[0].toUpperCase());
-                            sendText("%sAAA %s %s :account, or HELLO to create an account.", getNumeric(), notice, nick);
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_AUTHEDONLY, auth[0].toUpperCase());
                         } else if (auth.length == 1) {
-                            sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_CURUSERFLAGS, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
                         } else if (auth.length == 2) {
+                            if (!getSt().isOper(getSt().getUsers().get(nick).getAccount())) {
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOACCESSONUSER, auth[0], auth[1]);
+                                return;
+                            }
                             if (auth[1].startsWith("+")) {
                                 setUserFlags(getSt().getUsers().get(nick).getAccount(), auth[1], true, false);
-                                sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_CURUSERFLAGS, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
                                 return;
                             } else if (auth[1].startsWith("-")) {
                                 setUserFlags(getSt().getUsers().get(nick).getAccount(), auth[1], false, false);
-                                sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
-                                return;
-                            }
-                            if (!getSt().isOper(getSt().getUsers().get(nick).getAccount())) {
-                                sendText("%sAAA %s %s :You do not have sufficient privileges to use %s.", getNumeric(), notice, nick, auth[0]);
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_CURUSERFLAGS, getSt().getUsers().get(nick).getAccount(), getUserFlags(getSt().getUsers().get(nick).getAccount()));
                                 return;
                             }
                             var user = getSt().getUser(auth[1]);
                             if (user != null) {
-                                sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(user).getAccount(), getUserFlags(getSt().getUsers().get(user).getAccount()));
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_CURUSERFLAGS, getSt().getUsers().get(user).getAccount(), getUserFlags(getSt().getUsers().get(user).getAccount()));
                             } else {
-                                sendText("%sAAA %s %s :%s is not authed...", getNumeric(), notice, nick, auth[1]);
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_USERNOTAUTHED, auth[1]);
                             }
 
                         } else {
                             if (!getSt().isOper(getSt().getUsers().get(nick).getAccount())) {
-                                sendText("%sAAA %s %s :You do not have sufficient privileges to use %s.", getNumeric(), notice, nick, auth[0]);
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_NOACCESSONUSER, auth[0], auth[1]);
                                 return;
                             }
                             var user = getSt().getUser(auth[1]);
@@ -330,13 +389,46 @@ public class AuthServ implements Userflags {
                                 } else if (auth[2].startsWith("-")) {
                                     setUserFlags(getSt().getUsers().get(user).getAccount(), auth[2], false, true);
                                 }
-                                sendText("%sAAA %s %s :User flags for %s: %s", getNumeric(), notice, nick, getSt().getUsers().get(user).getAccount(), getUserFlags(getSt().getUsers().get(user).getAccount()));
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_CURUSERFLAGS, getSt().getUsers().get(user).getAccount(), getUserFlags(getSt().getUsers().get(user).getAccount()));
                             } else {
-                                sendText("%sAAA %s %s :%s is not authed...", getNumeric(), notice, nick, auth[1]);
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_USERNOTAUTHED, auth[1]);
                             }
                         }
+                    } else if (auth[0].equalsIgnoreCase("showcommands")) {
+                        var authed = !getSt().getUsers().get(nick).getAccount().isBlank();
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_COMMANDLIST);
+                        if (!authed) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   AUTH             Authenticates you on the bot");
+                        }
+                        if (authed) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   EMAIL            Change your email address.");
+                        }
+                        if (!authed) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   HELLO            Creates a new user account.");
+                        }                        
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   HELP             Shows a specific help to a command.");
+                        if (!authed) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   NEWPASS          Set your new password.");
+                        }
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   SHOWCOMMANDS     Shows this list.");
+                        if (!authed) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   REQUESTPASSWORD  Requests the current password by email.");
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   RESET            Restores the old details on an account after a change.");
+                        }
+                        if (getSt().isOper(nick)) {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "+o USERFLAGS        Shows and sets user flags.");
+                        } else {
+                            getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   USERFLAGS        Shows you user flags.");
+
+                        }
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   VERSION          Print version info.");
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_ENDOFLIST);
+                    } else if (auth[0].equalsIgnoreCase("VERSION")) {
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, "AuthServ v%s by %s", VERSION, VENDOR);
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, "Based on JServ v%s", VERSION);
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, "Created by %s", AUTHOR);
                     } else {
-                        sendText("%sAAA %s %s :Unknown command %s. Type SHOWCOMMANDS for a list of available commands.", getNumeric(), notice, nick, auth[0].toUpperCase());
+                        getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNKNOWNCMD, auth[0].toUpperCase());
                     }
                 }
             }

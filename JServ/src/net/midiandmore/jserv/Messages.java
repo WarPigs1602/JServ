@@ -139,7 +139,7 @@ public interface Messages {
     String QM_NOTYOUREMAIL = "\"%s\" is not your email address";
     String QM_NOUSERSONCHANLEV = "No known users found on %s.";
     String QM_OPERONCHAN = "You cannot use %s on %s since an oper is on the channel.";
-    String QM_OTHERUSERAUTHED = "Warning: %s (%s@%s) authed with your password.";
+    String QM_OTHERUSERAUTHED = "Warning: %s (%s) authed with your password.";
     String QM_OTHERUSERAUTHEDLIMIT = "Warning: %s (%s@%s) attempted to auth with your password but you already had %s users authed to your account.";
     String QM_PASSEMAILCHANGED = "Auth failed: account password has been changed since you logged in.";
     String QM_PERMBANALREADYSET = "That permanent ban already exists.";

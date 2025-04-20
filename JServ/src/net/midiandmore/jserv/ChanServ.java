@@ -244,16 +244,6 @@ public class ChanServ implements Userflags, Messages, Software {
         }
     }
 
-    protected void joinChannel(String channel) {
-        if (getSt().getChannel().containsKey(channel.toLowerCase())) {
-            sendText("%sAAD J %s %d", getNumeric(), channel, time());
-        } else {
-            sendText("%sAAD C %s %d", getNumeric(), channel, time());
-        }
-        sendText("%s M %s%s", getNumeric(), channel, getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? "" : " +R");
-        sendText("%s M %s +o %sAAD", getNumeric(), channel, getNumeric());
-    }
-
     private long time() {
         return System.currentTimeMillis() / 1000;
     }

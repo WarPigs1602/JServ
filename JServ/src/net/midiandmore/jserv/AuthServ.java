@@ -251,6 +251,16 @@ public class AuthServ implements Userflags, Messages, Software {
                         } else if (getSt().getUsers().containsKey(nick) && !getSt().getUsers().get(nick).getAccount().isBlank()) {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_UNAUTHEDONLY, auth[0].toUpperCase());
                         } else if (getMi().getDb().isRegistered(auth[1], auth[2])) {
+                            if (getSt().isAuthed(auth[1])) {
+                                var authe = getSt().checkAuthed(auth[1]);
+                                for (var account : authe) {
+                                    var notice1 = "O";
+                                    if (!getSt().isNotice(getSt().getUsers().get(account).getAccount())) {
+                                        notice1 = "P";
+                                    }
+                                    getSt().sendNotice(getNumeric(), "AAA", notice1, account, QM_OTHERUSERAUTHED, getSt().getUsers().get(nick).getNick(), getSt().getUsers().get(nick).getRealHost());
+                                }
+                            }
                             getSt().getUsers().get(nick).setAccount(auth[1]);
                             getMi().getDb().updateData("lastuserhost", auth[1], getSt().getUsers().get(nick).getRealHost());
                             getMi().getDb().updateData("lastpasschng", auth[1], time());
@@ -405,7 +415,7 @@ public class AuthServ implements Userflags, Messages, Software {
                         }
                         if (!authed) {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   HELLO            Creates a new user account.");
-                        }                        
+                        }
                         getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   HELP             Shows a specific help to a command.");
                         if (!authed) {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   NEWPASS          Set your new password.");
@@ -415,7 +425,7 @@ public class AuthServ implements Userflags, Messages, Software {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   REQUESTPASSWORD  Requests the current password by email.");
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   RESET            Restores the old details on an account after a change.");
                         }
-                        if (getSt().isOper(nick)) {
+                        if (authed && getSt().isOper(getSt().getUsers().get(nick).getAccount())) {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, "+o USERFLAGS        Shows and sets user flags.");
                         } else {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, "   USERFLAGS        Shows you user flags.");
@@ -479,15 +489,6 @@ public class AuthServ implements Userflags, Messages, Software {
         } else {
             return "+" + sb.toString();
         }
-    }
-
-    protected void joinChannel(String channel) {
-        if (getSt().getChannel().containsKey(channel.toLowerCase())) {
-            sendText("%sAAA J %s %d", getNumeric(), channel.toLowerCase(), time());
-        } else {
-            sendText("%sAAA C %s %d", getNumeric(), channel.toLowerCase(), time());
-        }
-        sendText("%s M %s +o %sAAA", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

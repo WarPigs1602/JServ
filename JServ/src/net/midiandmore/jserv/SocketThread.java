@@ -26,8 +26,17 @@ import org.apache.commons.codec.digest.DigestUtils;
  *
  * @author Andreas Pschorn
  */
-public class SocketThread implements Runnable, Userflags {
+public class SocketThread implements Runnable, Userflags, Messages {
 
+    protected void joinChannel(String channel, String numeric, String service) {
+        if (getChannel().containsKey(channel.toLowerCase())) {
+            sendText("%s%s J %s %d", numeric, service, channel, time());
+        } else {
+            sendText("%s%s C %s %d", numeric, service, channel, time());
+        }
+        sendText("%s M %s +o %s%s", numeric, channel, numeric, service);
+    }
+    
     /**
      * @return the burst
      */
@@ -451,8 +460,8 @@ public class SocketThread implements Runnable, Userflags {
                     } else if (elem[1].equals("EB") && !isBurst()) {
                         setBurst(true);
                         sendText("%s EA", jnumeric);
-                    } else if (elem[1].equals("J")) {
-                        var channel = elem[2].toLowerCase();
+                    } else if (elem[1].equals("J") || elem[1].equals("C")) {
+                        var channel = elem[2];
                         var names = elem[0];
                         var user = new String[1];
                         user[0] = names;
@@ -460,18 +469,9 @@ public class SocketThread implements Runnable, Userflags {
                             getChannel().get(channel.toLowerCase()).getUsers().add(names);
                             getChannel().get(channel.toLowerCase()).getLastJoin().put(names, time());
                         } else {
-                            getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), "", user));
+                            getChannel().put(channel.toLowerCase(), new Channel(channel, "", user));
                         }
-                        var c = getChannel().get(channel);
-                        var cu = c.getUsers();
-                        var sb = new StringBuilder();
-                        for (var u : cu.toArray()) {
-                            var u1 = getUsers().get(u);
-                            if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +o %s", jnumeric, channel, u);
-                            }
-                        }
-                    } else if (elem[1].equals("N") && elem.length > 4) {
+                     } else if (elem[1].equals("N") && elem.length > 4) {
                         var priv = elem[7].contains("r");
                         var hidden = elem[7].contains("h");
                         var service = elem[7].contains("k");
@@ -495,18 +495,24 @@ public class SocketThread implements Runnable, Userflags {
                                     nick = elem[12];
                                 } else {
                                     nick = elem[11];
-                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
+                                    if (moduleh.equalsIgnoreCase("true")) {
+                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
+                                    }
                                 }
                             } else {
                                 if (hidden) {
                                     nick = elem[11];
                                 } else {
                                     nick = elem[10];
-                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
+                                    if (moduleh.equalsIgnoreCase("true")) {
+                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
+                                    }
                                 }
                             }
                             if (x) {
-                                sendText("%s SH %s %s %s", jnumeric, nick, elem[5], acc + getMi().getConfig().getConfigFile().getProperty("reg_host"));
+                                if (moduleh.equalsIgnoreCase("true")) {
+                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], acc + getMi().getConfig().getConfigFile().getProperty("reg_host"));
+                                }
                             }
                         } else if (elem[9].contains("@")) {
                             acc = "";
@@ -517,7 +523,9 @@ public class SocketThread implements Runnable, Userflags {
                                 nick = elem[10];
                             } else {
                                 nick = elem[9];
-                                sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
+                                if (moduleh.equalsIgnoreCase("true")) {
+                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
+                                }
                             }
                         }
                         var hosts = elem[5] + "@" + elem[6];
@@ -543,46 +551,22 @@ public class SocketThread implements Runnable, Userflags {
                         var channel = elem[2].toLowerCase();
                         var modes = elem[4];
                         var names = elem[6].split(",");
-                        getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), modes, names));
-                        var c = getChannel().get(channel);
-                        var cu = c.getUsers();
-                        for (var u : cu.toArray()) {
-                            var u1 = getUsers().get(u);
-                            if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +o %s", jnumeric, channel, u);
-                            }
-                        }
+                        getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
                     } else if (elem[1].equals("B") && elem.length >= 6) {
                         var channel = elem[2].toLowerCase();
                         var modes = elem[4];
                         var names = elem[5].split(",");
-                        getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), modes, names));
-                        var c = getChannel().get(channel);
-                        var cu = c.getUsers();
-                        for (var u : cu.toArray()) {
-                            var u1 = getUsers().get(u);
-                            if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +o %s", jnumeric, channel, u);
-                            }
-                        }
+                        getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
                     } else if (elem[1].equals("B") && elem.length == 5) {
                         var channel = elem[2].toLowerCase();
                         var modes = "";
                         var names = elem[4].split(",");
-                        getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), modes, names));
-                        var c = getChannel().get(channel);
-                        var cu = c.getUsers();
-                        for (var u : cu.toArray()) {
-                            var u1 = getUsers().get(u);
-                            if (u1 != null && u1.isService()) {
-                                sendText("%s M %s +o %s", jnumeric, channel, u);
-                            }
-                        }
+                        getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
                     } else if (elem[1].equals("C")) {
                         var channel = elem[2].toLowerCase();
                         var names = new String[1];
                         names[0] = elem[0] + ":q";
-                        getChannel().put(channel.toLowerCase(), new Channel(channel.toLowerCase(), "", names));
+                        getChannel().put(channel.toLowerCase(), new Channel(channel, "", names));
                     } else if (elem[1].equals("AC") && getUsers().containsKey(elem[2])) {
                         var acc = elem[3];
                         var nick = elem[2];
@@ -726,6 +710,10 @@ public class SocketThread implements Runnable, Userflags {
         System.out.println("Disconnected...");
     }
 
+    protected void partChannel(String channel, String numeric, String service) {
+        sendText("%s%s L %s", numeric, service, channel);
+    }    
+    
     // Antikocker
     protected boolean antiKnocker(String nick, String ident) {
         if (ident.startsWith("~")) {
@@ -757,6 +745,21 @@ public class SocketThread implements Runnable, Userflags {
         if (getUsers().get(nick).getChannels().contains(channel.toLowerCase())) {
             getUsers().get(nick).getChannels().remove(channel.toLowerCase());
         }
+    }
+
+    protected boolean isAuthed(String nick) {
+        return !checkAuthed(nick).isEmpty();
+    }
+
+    protected ArrayList<String> checkAuthed(String nick) {
+        var list = new ArrayList<String>();
+        var users = getUsers().keySet();
+        for (var user : users) {
+            if (getUsers().get(user) != null && !getUsers().get(user).getAccount().isBlank() && getUsers().get(user).getAccount().equalsIgnoreCase(nick)) {
+                list.add(user);
+            }
+        }
+        return list;
     }
 
     protected boolean isNotice(String nick) {

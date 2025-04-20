@@ -248,7 +248,6 @@ public class HostServ implements Software, Messages {
                     }
                     var auth = command.split(" ");
                     if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
-                        var authed = !getSt().getUsers().get(nick).getAccount().isBlank();
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_COMMANDLIST);                   
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   HELP             Shows a specific help to a command.");
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   SHOWCOMMANDS     Shows this list.");
@@ -266,15 +265,6 @@ public class HostServ implements Software, Messages {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    protected void joinChannel(String channel) {
-        if (getSt().getChannel().containsKey(channel.toLowerCase())) {
-            sendText("%sAAB J %s %d", getNumeric(), channel.toLowerCase(), time());
-        } else {
-            sendText("%sAAB C %s %d", getNumeric(), channel.toLowerCase(), time());
-        }
-        sendText("%s M %s +o %sAAB", getNumeric(), channel.toLowerCase(), getNumeric());
     }
 
     private long time() {

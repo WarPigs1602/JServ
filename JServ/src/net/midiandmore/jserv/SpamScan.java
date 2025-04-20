@@ -192,26 +192,26 @@ public class SpamScan implements Software, Messages {
                         if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
                         } else if (!getMi().getDb().isChan(channel)) {
-                            getMi().getDb().addChan(channel.toLowerCase());
-                            joinChannel(channel);
+                            getMi().getDb().addChan(channel);
+                            getSt().joinChannel(channel, getNumeric(), "AAC");
                             setReg(false);
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Cannot add channel %s: The channel doesn't exists or %s is already in the channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Cannot add channel %s: %s is already on that channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELCHAN")) {
                         var channel = auth[1];
                         if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_EMPTYCHAN, channel);
                         } else if (getMi().getDb().isChan(channel)) {
-                            getMi().getDb().removeChan(channel.toLowerCase());
-                            partChannel(channel);
+                            getMi().getDb().removeChan(channel);
+                            getSt().partChannel(channel, getNumeric(), "AAC");
                             setReg(false);
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_DONE);
                         } else {
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "%s isn't in the channel.",channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "%s isn't in the channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
                         }
                     } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("BADWORD")) {
                         var flag = auth[1];
@@ -242,20 +242,24 @@ public class SpamScan implements Software, Messages {
                             }
                         } else if (flag.equalsIgnoreCase("LIST")) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "--- Badwords ---");
-                            for (var key : b.keySet()) {
-                                getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "%s", key);
+                            if (b.isEmpty()) {
+                                getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "  No badwords specified.");
+                            } else {
+                                for (var key : b.keySet()) {
+                                    getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "%s", key);
+                                }
                             }
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "--- End of list ---");
                         } else {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "Unknown flag.");
                         }
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
-                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_COMMANDLIST);  
+                        getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], QM_COMMANDLIST);
                         if (getSt().isOper(nick)) {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "+o ADDCHAN      Addds a channel");
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "+o BADWORD      Manage badwords");
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "+o DELCHAN      Removes a channel");
-                        } 
+                        }
                         getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "   HELP         Show a help for an command");
                         getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "   SHOWCOMMANDS This message");
                         getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], "   VERSION      Shows version information");
@@ -374,21 +378,6 @@ public class SpamScan implements Software, Messages {
             flag = (System.currentTimeMillis() / 1000) - getSt().getChannel().get(channel).getLastJoin().get(nick) < 300;
         }
         return flag;
-    }
-
-    protected void joinChannel(String channel) {
-        if (channel.startsWith("#")) {
-            if (getSt().getChannel().containsKey(channel)) {
-                sendText("%sAAC J %s %d", getNumeric(), channel, time());
-            } else {
-                sendText("%sAAC C %s %d", getNumeric(), channel, time());
-            }
-            sendText("%s M %s +o %sAAC", getNumeric(), channel, getNumeric());
-        }
-    }
-
-    private void partChannel(String channel) {
-        sendText("%sAAC L %s", getNumeric(), channel);
     }
 
     private long time() {

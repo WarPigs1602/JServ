@@ -286,7 +286,7 @@ public class Database {
                 statement.setString(1, email);
                 try (var resultset = statement.executeQuery()) {
                     while (resultset.next()) {
-                        submitPassword(email, resultset.getInt(1));
+                        submitPassword(email, resultset.getInt(1), 2);
                     }
                 }
             }
@@ -295,12 +295,12 @@ public class Database {
         }
     }
 
-    private void submitPassword(String email, int index) {
+    protected void submitPassword(String email, int index, int type) {
         connect();
         try {
             try (var statement = getConn().prepareStatement("INSERT INTO chanserv.email (userid, emailtype, prevemail) VALUES (?,?,LOWER(?));")) {
                 statement.setInt(1, index);
-                statement.setInt(2, 2);
+                statement.setInt(2, type);
                 statement.setString(3, email);
                 statement.executeUpdate();
             }

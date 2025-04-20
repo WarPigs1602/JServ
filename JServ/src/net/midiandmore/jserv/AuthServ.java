@@ -344,10 +344,14 @@ public class AuthServ implements Userflags, Messages, Software {
                             getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_ACCOUNTNOTLOCKED, auth[0].toUpperCase());
                         } else {
                             var data = getMi().getDb().getData();
+                            var found = false;
                             for (var userData : data) {
                                 var code = new HmacUtils(HMAC_SHA_256, "%s:codegenerator".formatted(getMi().getConfig().getAuthFile().getProperty("q9secret"))).hmacHex("%s:%s".formatted(userData[1], userData[10]));
                                 var user = userData[1].startsWith("#") ? userData[1].substring(1) : userData[1];
+                                var mail = userData[12];
+                                auth[1] = auth[1].startsWith("#") ? auth[1].substring(1) : auth[1];
                                 var userId = getMi().getDb().getId(user);
+                                
                                 if (userId == null) {
                                     continue;
                                 }
@@ -356,9 +360,14 @@ public class AuthServ implements Userflags, Messages, Software {
                                     getMi().getDb().updateData("password", user, oldpass);
                                     getMi().getDb().updateData("lockuntil", user, 0);
                                     getMi().getDb().deleteAccountHistory(Integer.valueOf(userId));
-                                    getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_PWCHANGED);
-                                    return;
+                                    getMi().getDb().submitPassword(mail, Integer.valueOf(userId), 4);
+                                    getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_RESETOK);
+                                    found = true;
+                                    break;
                                 }
+                            }
+                            if(!found) {
+                                getSt().sendNotice(getNumeric(), "AAA", notice, nick, QM_BADRESETCODE);                                
                             }
                         }
                     } else if (auth[0].equalsIgnoreCase("userflags")) {

@@ -72,7 +72,7 @@ public class Database {
         return flag;
     }
 
-        /**
+    /**
      * Fetching userdata
      *
      * @param key The key
@@ -94,7 +94,7 @@ public class Database {
         }
         return flag;
     }
-    
+
     /**
      * Fetching userdata
      *
@@ -129,7 +129,7 @@ public class Database {
             ex.printStackTrace();
         }
     }
-    
+
     /**
      * Fetching userdata
      *
@@ -239,12 +239,12 @@ public class Database {
                     + " VALUES (?,?,?,?,?,?,?,'',?,?,0,0,0,0,0,'','','','');")) {
                 statement.setString(1, nick);
                 statement.setLong(2, getCurrentTime());
-                statement.setLong(3, getCurrentTime());
-                statement.setLong(4, getCurrentTime());
+                statement.setLong(3, 0);
+                statement.setLong(4, 0);
                 statement.setInt(5, 4);
                 statement.setString(6, createRandomId());
                 statement.setString(7, email);
-                statement.setLong(8, getCurrentTime());
+                statement.setLong(8, 0);
                 statement.setInt(9, index);
                 statement.executeUpdate();
             }
@@ -259,10 +259,20 @@ public class Database {
         }
     }
 
-    public void addAuthHistory(String auth, String nick, String email, String username, String host) {
+    private long numericToLong(String numeric, int numericlen) {
+        long mynumeric = 0;
+        int i;
+        char numerictab[] = numeric.toCharArray();
+        for (i = 0; i < numericlen; i++) {
+            mynumeric = (mynumeric << 6) + numerictab[i++];
+        }
+
+        return mynumeric;
+    }
+
+    public void addAuthHistory(String auth, String nick, String username, String host, String numeric) {
         connect();
         try {
-            var index = getNumeric() + 1;
             try (var statement = getConn().prepareStatement("INSERT INTO chanserv.authhistory (userid, nick, username, host, authtime, disconnecttime, numeric)"
                     + " VALUES (?,?,?,?,?,?,?);")) {
                 statement.setInt(1, getIndex(auth));
@@ -271,7 +281,7 @@ public class Database {
                 statement.setString(4, host);
                 statement.setLong(5, getCurrentTime());
                 statement.setLong(6, 0);
-                statement.setInt(7, index);
+                statement.setLong(7, numericToLong(numeric, 5));
                 statement.executeUpdate();
             }
         } catch (SQLException ex) {
@@ -309,14 +319,14 @@ public class Database {
         }
     }
 
-    private String createRandomId() {
+    protected String createRandomId() {
         StringBuilder sb = new StringBuilder();
-        Random r = new Random(System.currentTimeMillis());
-        char[] id = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
+        var r = new Random(System.currentTimeMillis());
+        char[] id = "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!-".toCharArray();
         for (int i = 0; i < 10; i++) {
-            char col = id[Math.round(r.nextFloat() * (id.length - 1))];
-            sb.append(col);
+            sb.append(id[Math.round(r.nextFloat() * (id.length - 1))]);
         }
+        sb.append('\0');
         return sb.toString();
     }
 
@@ -586,7 +596,7 @@ public class Database {
         }
         return dat;
     }
-    
+
     protected boolean isChan(String channel) {
         return getChan(channel) != null;
     }

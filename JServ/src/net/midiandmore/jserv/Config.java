@@ -24,20 +24,6 @@ import java.util.Properties;
 public class Config {
 
     /**
-     * @return the chanFile
-     */
-    public Properties getChanFile() {
-        return chanFile;
-    }
-
-    /**
-     * @param chanFile the chanFile to set
-     */
-    public void setChanFile(Properties chanFile) {
-        this.chanFile = chanFile;
-    }
-
-    /**
      * @return the modulesFile
      */
     public Properties getModulesFile() {
@@ -79,28 +65,13 @@ public class Config {
         this.hostFile = hostFile;
     }
 
-    /**
-     * @return the authFile
-     */
-    public Properties getAuthFile() {
-        return authFile;
-    }
-
-    /**
-     * @param authFile the authFile to set
-     */
-    public void setAuthFile(Properties authFile) {
-        this.authFile = authFile;
-    }
-
     private JServ mi;
     private Properties configFile;
     private Properties badwordFile; 
     private Properties modulesFile;
     private Properties spamFile;     
     private Properties hostFile;  
-    private Properties authFile; 
-    private Properties chanFile;           
+         
     /**
      * Initiales the class
      *
@@ -167,10 +138,8 @@ public class Config {
     private void loadConfig() {
         setConfigFile(loadDataFromJSONasProperties("config.json", "name", "value"));
         setModulesFile(loadDataFromJSONasProperties("config-modules.json", "name", "value")); 
-        setAuthFile(loadDataFromJSONasProperties("config-authserv.json", "name", "value"));
         setHostFile(loadDataFromJSONasProperties("config-hostserv.json", "name", "value"));   
         setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
-        setChanFile(loadDataFromJSONasProperties("config-chanserv.json", "name", "value")); 
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 

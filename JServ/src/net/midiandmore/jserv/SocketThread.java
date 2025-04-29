@@ -8,25 +8,48 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import static org.apache.commons.codec.digest.HmacAlgorithms.HMAC_MD5;
+import static org.apache.commons.codec.digest.HmacAlgorithms.HMAC_SHA_256;
+import org.apache.commons.codec.digest.HmacUtils;
 
 /**
  * Starts a new Thread
  *
  * @author Andreas Pschorn
  */
-public class SocketThread implements Runnable, Userflags, Messages {
+public class SocketThread implements Runnable, Userflags, Messages, Software {
 
     protected void joinChannel(String channel, String numeric, String service) {
         if (getChannel().containsKey(channel.toLowerCase())) {
@@ -36,7 +59,7 @@ public class SocketThread implements Runnable, Userflags, Messages {
         }
         sendText("%s M %s +o %s%s", numeric, channel, numeric, service);
     }
-    
+
     /**
      * @return the burst
      */
@@ -77,20 +100,6 @@ public class SocketThread implements Runnable, Userflags, Messages {
      */
     public void setChannel(HashMap<String, Channel> channel) {
         this.channel = channel;
-    }
-
-    /**
-     * @return the as
-     */
-    public AuthServ getAs() {
-        return as;
-    }
-
-    /**
-     * @param as the as to set
-     */
-    public void setAs(AuthServ as) {
-        this.as = as;
     }
 
     /**
@@ -222,10 +231,8 @@ public class SocketThread implements Runnable, Userflags, Messages {
     private HashMap<String, Users> users;
     private HashMap<String, Channel> channel;
     private HashMap<String, Burst> bursts;
-    private AuthServ as;
     private HostServ hs;
     private SpamScan ss;
-    private ChanServ cs;
     private byte[] ip;
     private boolean reg;
 
@@ -278,6 +285,19 @@ public class SocketThread implements Runnable, Userflags, Messages {
         return null;
     }
 
+    protected String getUserNumeric(String nick) {
+        for (var session : getUsers().keySet()) {
+            if (getUsers().get(session).getNick().equalsIgnoreCase(nick)) {
+                return session;
+            }
+        }
+        return null;
+    }
+
+    protected String getUserName2(String nick) {
+        return getUsers().get(nick).getNick();
+    }
+
     protected String getUserName(String nick) {
         for (Users session : getUsers().values()) {
             if (session.getNick().equalsIgnoreCase(nick)) {
@@ -299,24 +319,16 @@ public class SocketThread implements Runnable, Userflags, Messages {
         var port = getMi().getConfig().getConfigFile().getProperty("port");
         var password = getMi().getConfig().getConfigFile().getProperty("password");
         var jservername = getMi().getConfig().getConfigFile().getProperty("servername");
-        var anick = getMi().getConfig().getAuthFile().getProperty("nick");
-        var aservername = getMi().getConfig().getAuthFile().getProperty("servername");
-        var adescription = getMi().getConfig().getAuthFile().getProperty("description");
         var hnick = getMi().getConfig().getHostFile().getProperty("nick");
-        var cnick = getMi().getConfig().getChanFile().getProperty("nick");
         var hservername = getMi().getConfig().getHostFile().getProperty("servername");
         var hdescription = getMi().getConfig().getHostFile().getProperty("description");
         var snick = getMi().getConfig().getSpamFile().getProperty("nick");
-        var cservername = getMi().getConfig().getChanFile().getProperty("servername");
         var sservername = getMi().getConfig().getSpamFile().getProperty("servername");
         var sdescription = getMi().getConfig().getSpamFile().getProperty("description");
         var jdescription = getMi().getConfig().getConfigFile().getProperty("description");
-        var cdescription = getMi().getConfig().getChanFile().getProperty("description");
         var jnumeric = getMi().getConfig().getConfigFile().getProperty("numeric");
-        var aidentd = getMi().getConfig().getAuthFile().getProperty("identd");
         var hidentd = getMi().getConfig().getHostFile().getProperty("identd");
         var sidentd = getMi().getConfig().getSpamFile().getProperty("identd");
-        var cidentd = getMi().getConfig().getChanFile().getProperty("identd");
         var modules = getMi().getConfig().getModulesFile().getProperty("spamscan");
         var moduleh = getMi().getConfig().getModulesFile().getProperty("hostserv");
         var modulea = getMi().getConfig().getModulesFile().getProperty("authserv");
@@ -329,8 +341,6 @@ public class SocketThread implements Runnable, Userflags, Messages {
             handshake(password, jservername, jdescription, jnumeric);
             setSs(new SpamScan(getMi(), this, getPw(), getBr()));
             setHs(new HostServ(getMi(), this, getPw(), getBr()));
-            setAs(new AuthServ(getMi(), this, getPw(), getBr()));
-            setCs(new ChanServ(getMi(), this, getPw(), getBr()));
             if (modules.equalsIgnoreCase("true")) {
                 getSs().handshake(snick, sservername, sdescription, jnumeric, sidentd);
                 getMi().getDb().createSchema();
@@ -340,12 +350,6 @@ public class SocketThread implements Runnable, Userflags, Messages {
             if (moduleh.equalsIgnoreCase("true")) {
                 getHs().handshake(hnick, hservername, hdescription, jnumeric, hidentd);
             }
-            if (modulea.equalsIgnoreCase("true")) {
-                getAs().handshake(anick, aservername, adescription, jnumeric, aidentd);
-            }
-            if (modulec.equalsIgnoreCase("true")) {
-                getCs().handshake(cnick, cservername, cdescription, jnumeric, cidentd);
-            }
             System.out.println("Handshake complete...");
             if (moduleh.equalsIgnoreCase("true")) {
                 System.out.printf("Adding 1 channel for %s...\r\n", hnick);
@@ -353,15 +357,7 @@ public class SocketThread implements Runnable, Userflags, Messages {
                     getBursts().put("#twilightzone", new Burst("#twilightzone"));
                 }
                 getBursts().get("#twilightzone").getUsers().add(jnumeric + "AAB");
-                System.out.printf("%s has successfully addeed...\r\n", hnick);
-            }
-            if (modulea.equalsIgnoreCase("true")) {
-                System.out.printf("Adding 1 channel for %s...\r\n", anick);
-                if (!getBursts().containsKey("#twilightzone")) {
-                    getBursts().put("#twilightzone", new Burst("#twilightzone"));
-                }
-                getBursts().get("#twilightzone").getUsers().add(jnumeric + "AAA");
-                System.out.printf("%s has successfully added...\r\n", anick);
+                System.out.printf("%s has successfully added...\r\n", hnick);
             }
             if (modules.equalsIgnoreCase("true")) {
                 var list = getMi().getDb().getChannel();
@@ -372,19 +368,6 @@ public class SocketThread implements Runnable, Userflags, Messages {
                             getBursts().put(channel.toLowerCase(), new Burst(channel));
                         }
                         getBursts().get(channel.toLowerCase()).getUsers().add(jnumeric + "AAC");
-                    }
-                }
-                System.out.println("Channels added...");
-            }
-            if (modulec.equalsIgnoreCase("true")) {
-                var list = getMi().getDb().getChannels();
-                System.out.printf("Adding %d channels for %s...\r\n", list.size(), cnick);
-                for (var channel : list) {
-                    if (channel[1].startsWith("#")) {
-                        if (!getBursts().containsKey(channel[1].toLowerCase())) {
-                            getBursts().put(channel[1].toLowerCase(), new Burst(channel[1]));
-                        }
-                        getBursts().get(channel[1].toLowerCase()).getUsers().add(jnumeric + "AAD");
                     }
                 }
                 System.out.println("Channels added...");
@@ -445,7 +428,7 @@ public class SocketThread implements Runnable, Userflags, Messages {
                     }
                 }
                 if (!sb.isEmpty()) {
-                    sendText("%s B %s %d %s%s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString().contains(jnumeric + "AAD") ? getMi().getConfig().getAuthFile().getOrDefault("is_ircu", "false").equals("false") ? "+tnCN " : "+tnNCR " : "", sb.toString());
+                    sendText("%s B %s %d %s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString());
                 }
             }
             System.out.println("Channels joined...");
@@ -471,7 +454,7 @@ public class SocketThread implements Runnable, Userflags, Messages {
                         } else {
                             getChannel().put(channel.toLowerCase(), new Channel(channel, "", user));
                         }
-                     } else if (elem[1].equals("N") && elem.length > 4) {
+                    } else if (elem[1].equals("N") && elem.length > 4) {
                         var priv = elem[7].contains("r");
                         var hidden = elem[7].contains("h");
                         var service = elem[7].contains("k");
@@ -670,12 +653,6 @@ public class SocketThread implements Runnable, Userflags, Messages {
                     if (moduleh.equalsIgnoreCase("true")) {
                         getHs().parseLine(content);
                     }
-                    if (modulea.equalsIgnoreCase("true")) {
-                        getAs().parseLine(content);
-                    }
-                    if (modulec.equalsIgnoreCase("true")) {
-                        getCs().parseLine(content);
-                    }
                     if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
                         System.out.printf("DEBUG get text: %s\n", content);
                     }
@@ -712,8 +689,8 @@ public class SocketThread implements Runnable, Userflags, Messages {
 
     protected void partChannel(String channel, String numeric, String service) {
         sendText("%s%s L %s", numeric, service, channel);
-    }    
-    
+    }
+
     // Antikocker
     protected boolean antiKnocker(String nick, String ident) {
         if (ident.startsWith("~")) {
@@ -1025,19 +1002,4 @@ public class SocketThread implements Runnable, Userflags, Messages {
     public void setBursts(HashMap<String, Burst> bursts) {
         this.bursts = bursts;
     }
-
-    /**
-     * @return the cs
-     */
-    public ChanServ getCs() {
-        return cs;
-    }
-
-    /**
-     * @param cs the cs to set
-     */
-    public void setCs(ChanServ cs) {
-        this.cs = cs;
-    }
-
 }

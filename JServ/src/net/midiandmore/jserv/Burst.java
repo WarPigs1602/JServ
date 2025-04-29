@@ -12,33 +12,6 @@ import java.util.ArrayList;
  */
 public class Burst {
 
-    /**
-     * @return the channel
-     */
-    public String getChannel() {
-        return channel;
-    }
-
-    /**
-     * @param channel the channel to set
-     */
-    public void setChannel(String channel) {
-        this.channel = channel;
-    }
-
-    /**
-     * @return the users
-     */
-    public ArrayList<String> getUsers() {
-        return users;
-    }
-
-    /**
-     * @param users the users to set
-     */
-    public void setUsers(ArrayList<String> users) {
-        this.users = users;
-    }
     private String channel;
     private ArrayList<String> users;
     private long time;    
@@ -47,6 +20,30 @@ public class Burst {
         setChannel(channel);
         setUsers(new ArrayList<>());
         setTime(System.currentTimeMillis() / 1000);
+    }
+    /**
+     * @return the channel
+     */
+    public String getChannel() {
+        return channel;
+    }
+    /**
+     * @param channel the channel to set
+     */
+    public void setChannel(String channel) {
+        this.channel = channel;
+    }
+    /**
+     * @return the users
+     */
+    public ArrayList<String> getUsers() {
+        return users;
+    }
+    /**
+     * @param users the users to set
+     */
+    public void setUsers(ArrayList<String> users) {
+        this.users = users;
     }
 
     /**

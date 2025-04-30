@@ -6,12 +6,10 @@ package net.midiandmore.jserv;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.logging.Logger;
 
-/**
- *
- * @author Andreas Pschorn
- */
-public class Channel {
+
+public final class Channel {
 
     /**
      * @return the owner
@@ -245,4 +243,5 @@ public class Channel {
     public void setAdmin(ArrayList<String> admin) {
         this.admin = admin;
     }
+    private static final Logger LOG = Logger.getLogger(Channel.class.getName());
 }

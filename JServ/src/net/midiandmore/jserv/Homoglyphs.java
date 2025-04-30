@@ -7,17 +7,13 @@ package net.midiandmore.jserv;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
-/**
- * Parses Homoglyphs
- *
- * @author windo
- */
-public class Homoglyphs {
+
+public final class Homoglyphs {
 
     private JServ mi;
     private ArrayList<Character> homoglyphs;
@@ -44,19 +40,19 @@ public class Homoglyphs {
 
     private void parseHomoglyphs() {
         System.out.printf("Loading Homoglyphs...\n");
-        File f = new File("chars.txt");
+        var f = new File("chars.txt");
         if (f.exists()) {
             try {
-                FileInputStream fis = new FileInputStream(f);
-                InputStreamReader isr = new InputStreamReader(fis);
-                BufferedReader br = new BufferedReader(isr);
+                var fis = new FileInputStream(f);
+                var isr = new InputStreamReader(fis);
+                var br = new BufferedReader(isr);
                 var line = "";
                 while ((line = br.readLine()) != null) {
                     if (line.startsWith("#")) {
                         continue;
                     }
                     var arr = line.toCharArray();
-                    for (char elem : arr) {
+                    for (var elem : arr) {
                         getHomoglyphs().add(elem);
                     }
                 }
@@ -73,7 +69,7 @@ public class Homoglyphs {
     protected boolean scanForHomoglyphs(String text) {
         var chars = text.trim().replace("\\s", "").toCharArray();
         var cl = chars.length;
-        for (int i = 0; i < cl; i++) {
+        for (var i = 0; i < cl; i++) {
             if (getHomoglyphs().contains(chars[i])) {
                 return false;
             }
@@ -94,4 +90,5 @@ public class Homoglyphs {
     public void setHomoglyphs(ArrayList<Character> homoglyphs) {
         this.homoglyphs = homoglyphs;
     }
+    private static final Logger LOG = Logger.getLogger(Homoglyphs.class.getName());
 }

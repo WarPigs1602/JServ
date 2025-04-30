@@ -5,12 +5,10 @@
 package net.midiandmore.jserv;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
-/**
- * Adds an user
- * @author Andreas Pschorn
- */
-public class Users {
+
+public final class Users {
 
     /**
      * @return the oper
@@ -222,4 +220,5 @@ public class Users {
     public void setId(String id) {
         this.id = id;
     }
+    private static final Logger LOG = Logger.getLogger(Users.class.getName());
 }

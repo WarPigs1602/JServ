@@ -4,20 +4,19 @@
  */
 package net.midiandmore.jserv;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Random;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  *
  * @author The database class
  */
-public class Database {
+public final class Database {
+    private static final Logger LOG = Logger.getLogger(Database.class.getName());
 
     private JServ mi;
     private Connection conn;
@@ -160,7 +159,7 @@ public class Database {
 
     public int getIndex() {
         connect();
-        int index = 0;
+        var index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users ORDER BY id DESC;")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -176,7 +175,7 @@ public class Database {
 
     public int getNumeric() {
         connect();
-        int index = 0;
+        var index = 0;
         try (var statement = getConn().prepareStatement("SELECT numeric FROM chanserv.authhistory ORDER BY numeric DESC;")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -192,7 +191,7 @@ public class Database {
 
     public int getIndex(String nick) {
         connect();
-        int index = 0;
+        var index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
@@ -262,7 +261,7 @@ public class Database {
     private long numericToLong(String numeric, int numericlen) {
         long mynumeric = 0;
         int i;
-        char numerictab[] = numeric.toCharArray();
+        var numerictab = numeric.toCharArray();
         for (i = 0; i < numericlen; i++) {
             mynumeric = (mynumeric << 6) + numerictab[i++];
         }
@@ -320,10 +319,10 @@ public class Database {
     }
 
     protected String createRandomId() {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         var r = new Random(System.currentTimeMillis());
-        char[] id = "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!-".toCharArray();
-        for (int i = 0; i < 10; i++) {
+        var id = "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!-".toCharArray();
+        for (var i = 0; i < 10; i++) {
             sb.append(id[Math.round(r.nextFloat() * (id.length - 1))]);
         }
         sb.append('\0');

@@ -7,11 +7,8 @@ package net.midiandmore.jserv;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author windo
- */
-public class WaitThread implements Runnable {
+
+public final class WaitThread implements Runnable {
 
     public WaitThread(JServ mi) {
         setMi(mi);
@@ -32,7 +29,7 @@ public class WaitThread implements Runnable {
         this.mi = mi;
     }
 
-    private Thread thread;
+    private final Thread thread;
     private JServ mi;
 
     @Override
@@ -70,5 +67,6 @@ public class WaitThread implements Runnable {
             }
         }
     }
+    private static final Logger LOG = Logger.getLogger(WaitThread.class.getName());
 
 }

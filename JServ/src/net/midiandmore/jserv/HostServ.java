@@ -5,27 +5,16 @@
 package net.midiandmore.jserv;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.codec.digest.DigestUtils;
 
-/**
- * Starts a new Thread
- *
- * @author Andreas Pschorn
- */
-public class HostServ implements Software, Messages {
+
+public final class HostServ implements Software, Messages {
 
     /**
      * @return the nick
@@ -142,15 +131,14 @@ public class HostServ implements Software, Messages {
      * @return
      */
     private int ipToInt(String addr) {
-        String[] addrArray = addr.split("\\.");
-        int[] num = new int[]{
+        var addrArray = addr.split("\\.");
+        var num = new int[]{
             Integer.parseInt(addrArray[0]),
             Integer.parseInt(addrArray[1]),
             Integer.parseInt(addrArray[2]),
             Integer.parseInt(addrArray[3])
         };
-
-        int result = ((num[0] & 255) << 24);
+        var result = ((num[0] & 255) << 24);
         result = result | ((num[1] & 255) << 16);
         result = result | ((num[2] & 255) << 8);
         result = result | (num[3] & 255);
@@ -211,7 +199,7 @@ public class HostServ implements Software, Messages {
     private String parse(String text) {
         var buf = DigestUtils.sha256Hex(text).toCharArray();
         var sb = new StringBuilder();
-        int i = 0;
+        var i = 0;
         for (var chr : buf) {
             sb.append(chr);
             if (i >= 3) {
@@ -232,8 +220,8 @@ public class HostServ implements Software, Messages {
                     if (target.startsWith("#") || target.startsWith("!") || target.startsWith("&")) {
                         return;
                     }
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 3; i < elem.length; i++) {
+                    var sb = new StringBuilder();
+                    for (var i = 3; i < elem.length; i++) {
                         sb.append(elem[i]);
                         sb.append(" ");
                     }
@@ -396,4 +384,5 @@ public class HostServ implements Software, Messages {
     public void setSt(SocketThread st) {
         this.st = st;
     }
+    private static final Logger LOG = Logger.getLogger(HostServ.class.getName());
 }

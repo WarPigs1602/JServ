@@ -8,48 +8,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HexFormat;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-import static org.apache.commons.codec.digest.HmacAlgorithms.HMAC_MD5;
-import static org.apache.commons.codec.digest.HmacAlgorithms.HMAC_SHA_256;
-import org.apache.commons.codec.digest.HmacUtils;
 
-/**
- * Starts a new Thread
- *
- * @author Andreas Pschorn
- */
-public class SocketThread implements Runnable, Userflags, Messages, Software {
+
+public final class SocketThread implements Runnable, Userflags, Messages, Software {
 
     protected void joinChannel(String channel, String numeric, String service) {
         if (getChannel().containsKey(channel.toLowerCase())) {
@@ -214,7 +179,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
         this.ip = ip;
     }
 
-    private Thread thread;
+    private final Thread thread;
     private JServ mi;
     private Socket socket;
     private PrintWriter pw;
@@ -268,7 +233,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
     }
 
     protected String getUser(String nick) {
-        for (String session : getUsers().keySet()) {
+        for (var session : getUsers().keySet()) {
             if (getUsers().get(session).getNick().equalsIgnoreCase(nick)) {
                 return session;
             }
@@ -277,7 +242,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
     }
 
     protected String getUserId(String auth) {
-        for (Users session : getUsers().values()) {
+        for (var session : getUsers().values()) {
             if (session.getAccount().equalsIgnoreCase(auth)) {
                 return session.getId();
             }
@@ -299,7 +264,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
     }
 
     protected String getUserName(String nick) {
-        for (Users session : getUsers().values()) {
+        for (var session : getUsers().values()) {
             if (session.getNick().equalsIgnoreCase(nick)) {
                 return session.getId();
             }
@@ -394,7 +359,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
                         if (auth != null) {
                             var users = getUsers().keySet();
                             for (var user : users) {
-                                Users u = getUsers().get(user);
+                                var u = getUsers().get(user);
                                 if (ua.contains(u.getId())) {
                                     continue;
                                 }
@@ -417,7 +382,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
                 var nicks1 = getBursts().get(burst).getUsers().toArray();
                 var sb = new StringBuilder();
                 var firstOp = false;
-                for (int i = 0; i < nicks1.length; i++) {
+                for (var i = 0; i < nicks1.length; i++) {
                     sb.append(nicks1[i]);
                     if (!firstOp && (nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC") || nicks1[i].equals(jnumeric + "AAD"))) {
                         sb.append(":o");
@@ -523,7 +488,7 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
                                 getMi().getDb().updateData("lastpasschng", acc, time());
                             }
                         } else {
-                            int count = getMi().getDb().getId();
+                            var count = getMi().getDb().getId();
                             count++;
                             getMi().getDb().addId("Spambot!");
                             sendText("%sAAC D %s %d : (You are detected as as Knocker Spambot, ID: %d)", jnumeric, nick, time(), count);
@@ -1002,4 +967,5 @@ public class SocketThread implements Runnable, Userflags, Messages, Software {
     public void setBursts(HashMap<String, Burst> bursts) {
         this.bursts = bursts;
     }
+    private static final Logger LOG = Logger.getLogger(SocketThread.class.getName());
 }

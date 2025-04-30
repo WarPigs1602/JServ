@@ -5,23 +5,18 @@
 package net.midiandmore.jserv;
 
 import jakarta.json.Json;
-import jakarta.json.JsonObjectBuilder;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.util.Properties;
+import java.util.logging.Logger;
 
-/**
- * Loads the iAuthd config
- *
- * @author Andreas Pschorn
- */
-public class Config {
+
+public final class Config {
 
     /**
      * @return the modulesFile
@@ -86,12 +81,12 @@ public class Config {
     }
 
     protected void createFileIfNotExists(String file) {
-        File f = new File(file);
+        var f = new File(file);
         if (!f.exists()) {
             try {
                 f.createNewFile();
-                FileWriter is = new FileWriter(file);
-                PrintWriter pw = new PrintWriter(is);
+                var is = new FileWriter(file);
+                var pw = new PrintWriter(is);
                 pw.println("[");
                 pw.println("]");
                 is.close();
@@ -109,11 +104,11 @@ public class Config {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        PrintWriter pw = new PrintWriter(is);
-        int i = 0;
+        var pw = new PrintWriter(is);
+        var i = 0;
         pw.println("[");
         for (var jsonValue : ar.keySet()) {
-            JsonObjectBuilder obj = Json.createObjectBuilder();
+            var obj = Json.createObjectBuilder();
             obj.add(name, (String) jsonValue);
             obj.add(value, ar.getProperty((String) jsonValue));
             pw.print(obj.build().toString());
@@ -164,7 +159,7 @@ public class Config {
                 ar.put(jobj.getString(obj), jobj.getString(obj2));
                 i++;
             }
-        } catch (Exception fne) {
+        } catch (FileNotFoundException fne) {
             fne.printStackTrace();
         }
         return ar;
@@ -211,4 +206,5 @@ public class Config {
     public void setBadwordFile(Properties badwordFile) {
         this.badwordFile = badwordFile;
     }
+    private static final Logger LOG = Logger.getLogger(Config.class.getName());
 }

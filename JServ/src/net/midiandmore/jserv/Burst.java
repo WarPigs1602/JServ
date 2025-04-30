@@ -5,12 +5,13 @@
 package net.midiandmore.jserv;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  *
  * @author windo
  */
-public class Burst {
+public final class Burst {
 
     private String channel;
     private ArrayList<String> users;
@@ -59,4 +60,5 @@ public class Burst {
     public void setTime(long time) {
         this.time = time;
     }
+    private static final Logger LOG = Logger.getLogger(Burst.class.getName());
 }

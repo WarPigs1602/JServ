@@ -4,11 +4,10 @@
  */
 package net.midiandmore.jserv;
 
-/**
- *
- * @author Andreas Pschorn
- */
-public class JServ implements Software {
+import java.util.logging.Logger;
+
+
+public final class JServ implements Software {
 
     /**
      * @return the waitThread
@@ -109,4 +108,5 @@ public class JServ implements Software {
     public void setHomoglyphs(Homoglyphs homoglyphs) {
         this.homoglyphs = homoglyphs;
     }
+    private static final Logger LOG = Logger.getLogger(JServ.class.getName());
 }

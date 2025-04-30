@@ -3,9 +3,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/C:/Users/windo/OneDrive/Documents/NetBeansProjects/JServ/src/net/midiandmore/jserv/Software.java</file>
             <file>file:/C:/Users/windo/OneDrive/Documents/NetBeansProjects/JServ/src/net/midiandmore/jserv/Database.java</file>
+            <file>file:/C:/Users/windo/OneDrive/Documents/NetBeansProjects/JServ/src/net/midiandmore/jserv/SpamScan.java</file>
+            <file>file:/C:/Users/windo/OneDrive/Documents/NetBeansProjects/JServ/src/net/midiandmore/jserv/Burst.java</file>
             <file>file:/C:/Users/windo/OneDrive/Documents/NetBeansProjects/JServ/src/net/midiandmore/jserv/SocketThread.java</file>
-            <file>file:/C:/Users/windo/OneDrive/Documents/NetBeansProjects/JServ/src/net/midiandmore/jserv/AuthServ.java</file>
         </group>
     </open-files>
 </project-private>

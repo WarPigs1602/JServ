@@ -4,20 +4,18 @@
  */
 package net.midiandmore.jserv;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Random;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  *
  * @author The database class
  */
-public class DatabaseGnuworld {
+public final class DatabaseGnuworld {
 
     private JServ mi;
     private Connection conn;
@@ -97,7 +95,7 @@ public class DatabaseGnuworld {
 
     public int getIndex() {
         connect();
-        int index = 0;
+        var index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM public.users ORDER BY id DESC;")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -113,7 +111,7 @@ public class DatabaseGnuworld {
 
     public int getNumeric() {
         connect();
-        int index = 0;
+        var index = 0;
         try (var statement = getConn().prepareStatement("SELECT numeric FROM chanserv.authhistory ORDER BY numeric DESC;")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -129,7 +127,7 @@ public class DatabaseGnuworld {
 
     public int getIndex(String nick) {
         connect();
-        int index = 0;
+        var index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM public.users WHERE LOWER(user_name) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
@@ -247,11 +245,11 @@ public class DatabaseGnuworld {
     }
 
     private String createRandomId() {
-        StringBuilder sb = new StringBuilder();
-        Random r = new Random(System.currentTimeMillis());
-        char[] id = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
-        for (int i = 0; i < 10; i++) {
-            char col = id[Math.round(r.nextFloat() * (id.length - 1))];
+        var sb = new StringBuilder();
+        var r = new Random(System.currentTimeMillis());
+        var id = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
+        for (var i = 0; i < 10; i++) {
+            var col = id[Math.round(r.nextFloat() * (id.length - 1))];
             sb.append(col);
         }
         return sb.toString();
@@ -699,4 +697,5 @@ public class DatabaseGnuworld {
     public void setConn(Connection conn) {
         this.conn = conn;
     }
+    private static final Logger LOG = Logger.getLogger(DatabaseGnuworld.class.getName());
 }

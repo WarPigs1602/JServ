@@ -5,24 +5,12 @@
 package net.midiandmore.jserv;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
+import java.util.logging.Logger;
 
-/**
- * Starts a new Thread
- *
- * @author Andreas Pschorn
- */
-public class SpamScan implements Software, Messages {
+
+public final class SpamScan implements Software, Messages {
 
     /**
      * @return the nick
@@ -135,15 +123,14 @@ public class SpamScan implements Software, Messages {
      * @return
      */
     private int ipToInt(String addr) {
-        String[] addrArray = addr.split("\\.");
-        int[] num = new int[]{
+        var addrArray = addr.split("\\.");
+        var num = new int[]{
             Integer.parseInt(addrArray[0]),
             Integer.parseInt(addrArray[1]),
             Integer.parseInt(addrArray[2]),
             Integer.parseInt(addrArray[3])
         };
-
-        int result = ((num[0] & 255) << 24);
+        var result = ((num[0] & 255) << 24);
         result = result | ((num[1] & 255) << 16);
         result = result | ((num[2] & 255) << 8);
         result = result | (num[3] & 255);
@@ -164,8 +151,8 @@ public class SpamScan implements Software, Messages {
             if (getSt().getServerNumeric() != null) {
                 var elem = text.split(" ");
                 if (elem[1].equals("P") && elem[2].equals(getNumeric() + "AAC")) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 3; i < elem.length; i++) {
+                    var sb = new StringBuilder();
+                    for (var i = 3; i < elem.length; i++) {
                         sb.append(elem[i]);
                         sb.append(" ");
                     }
@@ -217,8 +204,8 @@ public class SpamScan implements Software, Messages {
                         var flag = auth[1];
                         var b = getMi().getConfig().getBadwordFile();
                         if (flag.equalsIgnoreCase("ADD") || flag.equalsIgnoreCase("DELETE")) {
-                            StringBuilder sb1 = new StringBuilder();
-                            for (int i = 2; i < auth.length; i++) {
+                            var sb1 = new StringBuilder();
+                            for (var i = 2; i < auth.length; i++) {
                                 sb1.append(auth[i]);
                                 sb1.append(" ");
                             }
@@ -281,8 +268,8 @@ public class SpamScan implements Software, Messages {
                     }
                 } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase()) && !getSt().getChannel().get(elem[2].toLowerCase()).getOwner().contains(elem[0]) && !getSt().getChannel().get(elem[2].toLowerCase()).getService().contains(elem[0]) && !getSt().getUsers().get(elem[0]).isOper() && !getSt().getUsers().get(elem[0]).isService()) {
                     if (!getSt().isOper(getSt().getUsers().get(elem[0]).getAccount())) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 3; i < elem.length; i++) {
+                        var sb = new StringBuilder();
+                        for (var i = 3; i < elem.length; i++) {
                             if (elem[3].startsWith(":")) {
                                 elem[3] = elem[3].substring(1);
                             }
@@ -296,7 +283,7 @@ public class SpamScan implements Software, Messages {
                             list.add(elem[2].toLowerCase());
                         }
                         if (getMi().getHomoglyphs().scanForHomoglyphs(command) && time() - getSt().getChannel().get(elem[2].toLowerCase()).getLastJoin().get(nick) < 300) {
-                            int count = getMi().getDb().getId();
+                            var count = getMi().getDb().getId();
                             count++;
                             getMi().getDb().addId("Try to spamming with homoglyphs!");
                             if (getSt().getChannel().get(elem[2].toLowerCase()).isModerated() && getSt().getChannel().get(elem[2].toLowerCase()).getVoice().contains(nick)) {
@@ -311,7 +298,7 @@ public class SpamScan implements Software, Messages {
                             info = info + 1;
                             getSt().getUsers().get(nick).setRepeat(info);
                             if (info > 3) {
-                                int count = getMi().getDb().getId();
+                                var count = getMi().getDb().getId();
                                 count++;
                                 getMi().getDb().addId("Repeating lines!");
                                 if (getSt().getChannel().get(elem[2].toLowerCase()).isModerated() && getSt().getChannel().get(elem[2].toLowerCase()).getVoice().contains(nick)) {
@@ -330,7 +317,7 @@ public class SpamScan implements Software, Messages {
                         info = info + 1;
                         getSt().getUsers().get(nick).setFlood(info);
                         if (((time() - getSt().getChannel().get(elem[2].toLowerCase()).getLastJoin().get(nick) < 300) && info > 2) || info > 5) {
-                            int count = getMi().getDb().getId();
+                            var count = getMi().getDb().getId();
                             count++;
                             getMi().getDb().addId("Flooding!");
                             if (getSt().getChannel().get(elem[2].toLowerCase()).isModerated() && getSt().getChannel().get(elem[2].toLowerCase()).getVoice().contains(nick)) {
@@ -345,7 +332,7 @@ public class SpamScan implements Software, Messages {
                         for (var key : b.keySet()) {
                             var key1 = (String) key;
                             if (command.toLowerCase().contains(key1.toLowerCase())) {
-                                int count = getMi().getDb().getId();
+                                var count = getMi().getDb().getId();
                                 count++;
                                 getMi().getDb().addId("Using of badword: " + key1.toLowerCase() + "!");
                                 if (getSt().getChannel().get(elem[2].toLowerCase()).isModerated() && getSt().getChannel().get(elem[2].toLowerCase()).getVoice().contains(nick)) {
@@ -509,4 +496,5 @@ public class SpamScan implements Software, Messages {
     public void setSt(SocketThread st) {
         this.st = st;
     }
+    private static final Logger LOG = Logger.getLogger(SpamScan.class.getName());
 }

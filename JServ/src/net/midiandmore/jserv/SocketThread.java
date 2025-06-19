@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-
 public final class SocketThread implements Runnable, Userflags, Messages, Software {
 
     protected void joinChannel(String channel, String numeric, String service) {
@@ -214,7 +213,7 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected void handshake(String password, String servername, String description, String numeric) {
         System.out.println("Starting handshake...");
         sendText("PASS :%s", password);
-        sendText("SERVER %s %d %d %d J10 %s]]] +hs6n :%s", servername, 2, time(), time(), numeric, description);
+        sendText("SERVER %s %d %d %d J10 %s]]] +hs6 :%s", servername, 2, time(), time(), numeric, description);
     }
 
     protected void sendText(String text, Object... args) {
@@ -271,6 +270,15 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
         }
         return null;
     }
+    
+    protected String getUserAccount(String nick) {
+        for (var session : getUsers().values()) {
+            if (session.getNick().equalsIgnoreCase(nick)) {
+                return session.getAccount();
+            }
+        }
+        return null;
+    }    
 
     private long time() {
         return System.currentTimeMillis() / 1000;
@@ -443,23 +451,12 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                                     nick = elem[12];
                                 } else {
                                     nick = elem[11];
-                                    if (moduleh.equalsIgnoreCase("true")) {
-                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                    }
                                 }
                             } else {
                                 if (hidden) {
                                     nick = elem[11];
                                 } else {
                                     nick = elem[10];
-                                    if (moduleh.equalsIgnoreCase("true")) {
-                                        sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                    }
-                                }
-                            }
-                            if (x) {
-                                if (moduleh.equalsIgnoreCase("true")) {
-                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], acc + getMi().getConfig().getConfigFile().getProperty("reg_host"));
                                 }
                             }
                         } else if (elem[9].contains("@")) {
@@ -471,9 +468,6 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                                 nick = elem[10];
                             } else {
                                 nick = elem[9];
-                                if (moduleh.equalsIgnoreCase("true")) {
-                                    sendText("%s SH %s %s %s", jnumeric, nick, elem[5], getHs().parseCloak(elem[6]));
-                                }
                             }
                         }
                         var hosts = elem[5] + "@" + elem[6];
@@ -492,6 +486,13 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                             count++;
                             getMi().getDb().addId("Spambot!");
                             sendText("%sAAC D %s %d : (You are detected as as Knocker Spambot, ID: %d)", jnumeric, nick, time(), count);
+                        }
+                        if (!acc.isBlank() && getMi().getDb().isRegistered(acc) && moduleh.equalsIgnoreCase("true")) {
+                            var vhost = getMi().getDb().getHost(acc);
+                            if (vhost != null) {
+                                var sethost = vhost.split("@", 2);
+                                sendText("%s SH %s %s %s", jnumeric, nick, sethost[0], sethost[1]);
+                            }
                         }
                     } else if (elem[1].equals("N") && elem.length == 4) {
                         getUsers().get(elem[0]).setNick(elem[2]);
@@ -518,13 +519,16 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                     } else if (elem[1].equals("AC") && getUsers().containsKey(elem[2])) {
                         var acc = elem[3];
                         var nick = elem[2];
-                        if (getUsers().get(nick).isX()) {
-                            var hosts = getUsers().get(nick).getHost();
-                            sendText("%s SH %s %s %s", jnumeric, nick, hosts.split("@")[0], acc + getMi().getConfig().getConfigFile().getProperty("reg_host"));
-                        }
                         if (getUsers().get(nick).getAccount().isBlank()) {
                             getUsers().get(nick).setAccount(acc);
                         }
+                        if (!acc.isBlank() && getMi().getDb().isRegistered(acc) && moduleh.equalsIgnoreCase("true")) {
+                            var vhost = getMi().getDb().getHost(acc);
+                            if (vhost != null) {
+                                var sethost = vhost.split("@", 2);
+                                sendText("%s SH %s %s %s", jnumeric, nick, sethost[0], sethost[1]);
+                            }
+                        }                        
                     } else if (elem[1].equals("G")) {
                         sendText("%s Z %s", jnumeric, content.substring(5));
                     } else if (elem[1].equals("M") && elem.length == 4) {
@@ -537,10 +541,6 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                         }
                         if (elem[3].contains("o")) {
                             getUsers().get(nick).setOper(true);
-                        }
-                        if (elem[3].contains("x") && getUsers().get(nick).getNick().equalsIgnoreCase(elem[2]) && !getUsers().get(nick).getAccount().isBlank()) {
-                            var hosts = getUsers().get(nick).getHost();
-                            sendText("%s SH %s %s %s", jnumeric, nick, hosts.split("@")[0], getUsers().get(nick).getAccount() + getMi().getConfig().getConfigFile().getProperty("reg_host"));
                         }
                     } else if (elem[1].equals("M")) {
                         var nick = elem[0];
@@ -720,6 +720,9 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
             }
             if (oper == false) {
                 oper = isDev(flags);
+            }
+            if (oper == false) {
+                oper = isStaff(flags);
             }
             return oper;
         }

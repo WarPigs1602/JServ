@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.logging.Logger;
 import org.apache.commons.codec.digest.DigestUtils;
 
-
 public final class HostServ implements Software, Messages {
 
     /**
@@ -121,7 +120,7 @@ public final class HostServ implements Software, Messages {
         setDescription(description);
         setNumeric(numeric);
         System.out.println("Registering nick: " + getNick());
-        sendText("%s N %s 2 %d %s %s +oikrd %s %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
+        sendText("%s N %s 2 %d %s %s +oikr %s U]AEB %sAAB :%s", getNumeric(), getNick(), time(), getIdentd(), getServername(), getNick(), getNumeric(), getDescription());
     }
 
     /**
@@ -235,10 +234,59 @@ public final class HostServ implements Software, Messages {
                         notice = "P";
                     }
                     var auth = command.split(" ");
-                    if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
-                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_COMMANDLIST);                   
+                    if (auth[0].equalsIgnoreCase("VHOST")) {
+                        if (auth.length <= 2) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "To few parameters...");
+                        } else if (!getSt().isAuthed(nick)) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "You are not authed");
+                        } else if (!isMoreAsAnWeek(getMi().getDb().getHostTimestamp(nick)) && !getSt().isPrivileged(nick)) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "You cannot change currently the VHost, please try again in few days...");
+                        } else if (checkHostChars(auth[2]) == 0 && checkIdentChars(auth[1]) == 0) {
+                            sendText("%s SH %s %s %s", getNumeric(), elem[0], auth[1], auth[2]);
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "%s@%s is now your VHost...", auth[1], auth[2]);
+                            getMi().getDb().addHost(nick, auth[1], auth[2]);
+                        } else if (checkHostChars(auth[2]) == 2 && checkIdentChars(auth[1]) == 2) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Your VHost is too long...");
+                        } else if (checkHostChars(auth[2]) == 4 && checkIdentChars(auth[1]) == 4) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Your VHost contains invalid characters...");
+                        } else if (checkHostChars(auth[2]) == 3 && checkIdentChars(auth[1]) == 3) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Your VHost is too weak...");
+                        } else {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Invalid host...");
+                        }
+                    } else if (auth[0].equalsIgnoreCase("UHOST")) {
+                        if (!getSt().isAuthed(nick)) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
+                        } else if (!getSt().isPrivileged(nick)) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
+                        } else if (auth.length <= 3) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "To few parameters...");
+                        } else if (checkHostChars(auth[3]) == 0 && checkIdentChars(auth[2]) == 0) {
+                            var users = getSt().getUserName(auth[1]);
+                            var unu = getSt().getUserAccount(auth[1]);
+                            sendText("%s SH %s %s %s", getNumeric(), users, auth[2], auth[3]);
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "%s has now the VHost: %s@%s", auth[1], auth[2], auth[3]);
+                            getSt().sendNotice(getNumeric(), "AAB", notice, users, "%s has changed your VHost to %s@%s", nick, auth[2], auth[3]);
+                            if (getSt().isAuthed(auth[1])) {
+                                getMi().getDb().addHost(unu, auth[2], auth[3]);
+                            }
+                        } else if (checkHostChars(auth[3]) == 2 && checkIdentChars(auth[2]) == 2) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "The VHost is too long...");
+                        } else if (checkHostChars(auth[3]) == 4 && checkIdentChars(auth[2]) == 4) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "The VHost contains invalid characters...");
+                        } else if (checkHostChars(auth[3]) == 3 && checkIdentChars(auth[2]) == 3) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "The VHost is too weak...");
+                        } else {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Invalid host...");
+                        }
+                    } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_COMMANDLIST);
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   HELP             Shows a specific help to a command.");
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   SHOWCOMMANDS     Shows this list.");
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   VHOST            Sets your VHost. (You must be authed)");
+                        if (getSt().isAuthed(nick) && getSt().isPrivileged(nick)) {
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   UHOST            Sets VHost for other users.");
+                        }
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   VERSION          Print version info.");
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_ENDOFLIST);
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
@@ -253,6 +301,42 @@ public final class HostServ implements Software, Messages {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean isMoreAsAnWeek(long timestamp) {
+        var week = time() - 3600 * 24 * 7;
+        if (timestamp > week) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private int checkHostChars(String host) {
+        var vhost = host.toCharArray();
+        if (vhost.length > 63) {
+            return 2;
+        }
+        if (vhost.length < 1) {
+            return 3;
+        }
+        if (host.matches("[a-zA-Z0-9.:\\-\\/_\\´\\[\\]|]*")) {
+            return 0;
+        }
+        return 4;
+    }
+
+    private int checkIdentChars(String host) {
+        if (host.length() > 10) {
+            return 2;
+        }
+        if (host.length() < 1) {
+            return 3;
+        }
+        if (host.matches("[a-zA-Z0-9.:\\-\\/_\\´\\[\\]|]*")) {
+            return 0;
+        }
+        return 4;
     }
 
     private long time() {

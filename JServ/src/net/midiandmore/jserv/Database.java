@@ -16,6 +16,7 @@ import java.util.logging.Logger;
  * @author The database class
  */
 public final class Database {
+
     private static final Logger LOG = Logger.getLogger(Database.class.getName());
 
     private JServ mi;
@@ -258,6 +259,80 @@ public final class Database {
         }
     }
 
+    public String getHost(String nick) {
+        connect();
+        long index = Integer.parseInt(getId(nick));
+        String host = null;
+        try (var statement = getConn().prepareStatement("SELECT ident,host FROM hostserv.hosts WHERE uid = ?;")) {
+            statement.setLong(1, index);
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    host = "%s@%s".formatted(resultset.getString("ident"), resultset.getString("host"));
+                    break;
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Access to database failed: " + ex.getMessage());
+        }
+        return host;
+    }
+
+    public long getHostTimestamp(String nick) {
+        connect();
+        long index = Integer.parseInt(getId(nick));
+        try (var statement = getConn().prepareStatement("SELECT timestamp FROM hostserv.hosts WHERE uid = ?;")) {
+            statement.setLong(1, index);
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    return resultset.getLong("timestamp");
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Access to database failed: " + ex.getMessage());
+        }
+        return 0;
+    }
+
+    public void addHost(String nick, String ident, String host) {
+        connect();
+        int index = Integer.parseInt(getId(nick));
+        boolean isHost = false;
+        try (var statement = getConn().prepareStatement("SELECT uid FROM hostserv.hosts WHERE uid = ?;")) {
+            statement.setLong(1, index);
+            try (var resultset = statement.executeQuery()) {
+                while (resultset.next()) {
+                    isHost = true;
+                    break;
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Access to database failed: " + ex.getMessage());
+        }
+        if (!isHost) {
+            try {
+                try (var statement = getConn().prepareStatement("INSERT INTO hostserv.hosts (uid, ident, host, timestamp) VALUES (?,?,?,?);")) {
+                    statement.setInt(1, index);
+                    statement.setString(2, ident);
+                    statement.setString(3, host);
+                    statement.setLong(4, getCurrentTime());
+                    statement.executeUpdate();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            try (var statement = getConn().prepareStatement("UPDATE hostserv.hosts SET ident = ?, host = ?, timestamp = ? WHERE uid = ?")) {
+                statement.setString(1, ident);
+                statement.setString(2, host);
+                statement.setLong(3, getCurrentTime());
+                statement.setInt(4, index);
+                var rows = statement.executeUpdate();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
     private long numericToLong(String numeric, int numericlen) {
         long mynumeric = 0;
         int i;
@@ -492,11 +567,7 @@ public final class Database {
         props.setProperty("password", (String) config.get("dbpassword"));
         props.setProperty("ssl", (String) config.get("dbssl"));
         try {
-            if (getConn() == null) {
-                System.out.println("Connecting to database...");
-                setConn(DriverManager.getConnection(url, props));
-                System.out.println("Successfully connected to databse...");
-            } else if (getConn().isClosed()) {
+            if (getConn() == null || getConn().isClosed()) {
                 System.out.println("Reconnecting to database...");
                 setConn(DriverManager.getConnection(url, props));
                 System.out.println("Successfully reconnected to databse...");
@@ -548,6 +619,9 @@ public final class Database {
         connect();
         try {
             try (var statement = getConn().prepareStatement("CREATE SCHEMA IF NOT EXISTS spamscan;")) {
+                statement.executeUpdate();
+            }
+            try (var statement = getConn().prepareStatement("CREATE SCHEMA IF NOT EXISTS hostserv")) {
                 statement.executeUpdate();
             }
         } catch (SQLException ex) {
@@ -622,6 +696,9 @@ public final class Database {
                 statement.executeUpdate();
             }
             try (var statement = getConn().prepareStatement("CREATE TABLE IF NOT EXISTS spamscan.id (id SERIAL PRIMARY KEY, reason VARCHAR(255));")) {
+                statement.executeUpdate();
+            }
+            try (var statement = getConn().prepareStatement("CREATE TABLE IF NOT EXISTS hostserv.hosts (uid INTEGER, ident VARCHAR(10), host VARCHAR(63), timestamp INTEGER);")) {
                 statement.executeUpdate();
             }
         } catch (SQLException ex) {

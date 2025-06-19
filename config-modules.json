@@ -1,6 +1,4 @@
 [
 {"name":"spamscan","value":"true"},
-{"name":"hostserv","value":"true"},
-{"name":"authserv","value":"true"},
-{"name":"chanserv","value":"false"}
+{"name":"hostserv","value":"true"}
 ]

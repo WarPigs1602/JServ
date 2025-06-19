@@ -2,7 +2,7 @@
  Attention! This service runs only with midircd and snircd.
  Contains the newserv compatible SpamScan and HostServ in one package<br>
  SpamScan detect spammers and removes it.<br>
- HostServ manages the hidden hosts from users (1x per week) and opers can set user hidden hosts manualy.<br>
+ HostServ manages the hidden hosts from users (It can be changed 1x per week) and opers can set user hidden hosts manualy.<br>
  <br>
  It's recommened to compile the sources with NetBeans<br>
  <br>

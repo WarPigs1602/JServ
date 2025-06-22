@@ -60,7 +60,7 @@ public final class WaitThread implements Runnable {
                         getMi().setSocketThread(new SocketThread(getMi()));
                     }
                 }
-                thread.sleep(2000L);
+                thread.sleep(3000L);
             } catch (InterruptedException ex) {
                 Logger.getLogger(WaitThread.class.getName()).log(Level.SEVERE, null, ex);
                 System.exit(1);

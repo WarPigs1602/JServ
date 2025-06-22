@@ -78,6 +78,7 @@ public final class JServ implements Software {
         setConfig(new Config(this, "config-jserv.json"));
         setHomoglyphs(new Homoglyphs(this));
         setDb(new Database(this));
+        getDb().connect();
         setWaitThread(new WaitThread(this));
     }
 

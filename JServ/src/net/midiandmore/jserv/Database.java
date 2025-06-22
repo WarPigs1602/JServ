@@ -34,7 +34,7 @@ public final class Database {
      * @return The data
      */
     public long getLongData(String key, String nick) {
-        connect();
+
         long flag = 0;
         try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.users WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, nick);
@@ -57,7 +57,7 @@ public final class Database {
      * @return The data
      */
     public String getData(String key, String nick) {
-        connect();
+
         String flag = null;
         try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.users WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, nick);
@@ -80,7 +80,7 @@ public final class Database {
      * @return The data
      */
     public String getAccountHistory(String key, int userId) {
-        connect();
+
         String flag = null;
         try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.accounthistory WHERE userID = ?;")) {
             statement.setInt(1, userId);
@@ -103,7 +103,7 @@ public final class Database {
      * @return The data
      */
     public void updateData(String key, String nick, String data) {
-        connect();
+
         try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, data);
             statement.setString(2, nick);
@@ -121,7 +121,7 @@ public final class Database {
      * @return The data
      */
     public void deleteAccountHistory(int userId) {
-        connect();
+
         try (var statement = getConn().prepareStatement("DELETE FROM chanserv.accounthistory WHERE userID = ?;")) {
             statement.setInt(1, userId);
             var rows = statement.executeUpdate();
@@ -138,7 +138,7 @@ public final class Database {
      * @return The data
      */
     public void updateData(String key, String nick, long data) {
-        connect();
+
         try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
             statement.setLong(1, data);
             statement.setString(2, nick);
@@ -159,7 +159,7 @@ public final class Database {
     }
 
     public int getIndex() {
-        connect();
+
         var index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users ORDER BY id DESC;")) {
             try (var resultset = statement.executeQuery()) {
@@ -175,7 +175,7 @@ public final class Database {
     }
 
     public int getNumeric() {
-        connect();
+
         var index = 0;
         try (var statement = getConn().prepareStatement("SELECT numeric FROM chanserv.authhistory ORDER BY numeric DESC;")) {
             try (var resultset = statement.executeQuery()) {
@@ -191,7 +191,7 @@ public final class Database {
     }
 
     public int getIndex(String nick) {
-        connect();
+
         var index = 0;
         try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
@@ -214,7 +214,7 @@ public final class Database {
      * @return If true or false
      */
     public boolean isMail(String email) {
-        connect();
+
         var flag = false;
         try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE LOWER(email) = LOWER(?)")) {
             statement.setString(1, email);
@@ -231,7 +231,7 @@ public final class Database {
     }
 
     public void addUser(String nick, String email) {
-        connect();
+
         try {
             var index = getIndex() + 1;
             try (var statement = getConn().prepareStatement("INSERT INTO chanserv.users (username, created, lastauth, lastemailchng, flags, password, email, "
@@ -260,7 +260,7 @@ public final class Database {
     }
 
     public String getHost(String nick) {
-        connect();
+
         long index = Integer.parseInt(getId(nick));
         String host = null;
         try (var statement = getConn().prepareStatement("SELECT ident,host FROM hostserv.hosts WHERE uid = ?;")) {
@@ -278,7 +278,7 @@ public final class Database {
     }
 
     public long getHostTimestamp(String nick) {
-        connect();
+
         long index = Integer.parseInt(getId(nick));
         try (var statement = getConn().prepareStatement("SELECT timestamp FROM hostserv.hosts WHERE uid = ?;")) {
             statement.setLong(1, index);
@@ -294,7 +294,7 @@ public final class Database {
     }
 
     public void addHost(String nick, String ident, String host) {
-        connect();
+
         int index = Integer.parseInt(getId(nick));
         boolean isHost = false;
         try (var statement = getConn().prepareStatement("SELECT uid FROM hostserv.hosts WHERE uid = ?;")) {
@@ -345,7 +345,7 @@ public final class Database {
     }
 
     public void addAuthHistory(String auth, String nick, String username, String host, String numeric) {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("INSERT INTO chanserv.authhistory (userid, nick, username, host, authtime, disconnecttime, numeric)"
                     + " VALUES (?,?,?,?,?,?,?);")) {
@@ -364,7 +364,7 @@ public final class Database {
     }
 
     public void submitNewPassword(String email) {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(email) = LOWER(?)")) {
                 statement.setString(1, email);
@@ -380,7 +380,7 @@ public final class Database {
     }
 
     protected void submitPassword(String email, int index, int type) {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("INSERT INTO chanserv.email (userid, emailtype, prevemail) VALUES (?,?,LOWER(?));")) {
                 statement.setInt(1, index);
@@ -429,7 +429,7 @@ public final class Database {
      * @return The data as array list
      */
     public ArrayList<String[]> getData() {
-        connect();
+
         var list = new ArrayList<String[]>();
         try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users")) {
             try (var resultset = statement.executeQuery()) {
@@ -469,7 +469,7 @@ public final class Database {
      * @return The data as array list
      */
     public ArrayList<String[]> getChannels() {
-        connect();
+
         var list = new ArrayList<String[]>();
         try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.channels")) {
             try (var resultset = statement.executeQuery()) {
@@ -519,7 +519,7 @@ public final class Database {
      * @return The data as array list
      */
     public String getChannel(String key, String name) {
-        connect();
+
         try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.channels WHERE LOWER(name) = LOWER(?)")) {
             statement.setString(1, name);
             try (var resultset = statement.executeQuery()) {
@@ -539,7 +539,7 @@ public final class Database {
      * @return The data as array list
      */
     public String[] getChanUser(long id, long chanid) {
-        connect();
+
         try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.chanusers WHERE userid=? AND channelid=?")) {
             statement.setLong(1, id);
             statement.setLong(2, chanid);
@@ -559,7 +559,7 @@ public final class Database {
         return null;
     }
 
-    private void connect() {
+    protected void connect() {
         var config = getMi().getConfig().getConfigFile();
         var url = "jdbc:postgresql://%s/%s".formatted(config.get("dbhost"), config.get("db"));
         var props = new Properties();
@@ -598,7 +598,7 @@ public final class Database {
     }
 
     protected int getId() {
-        connect();
+
         var dat = 0;
         try (var statement = getConn().prepareStatement("SELECT COUNT(*) FROM spamscan.id")) {
             try (var resultset = statement.executeQuery()) {
@@ -616,7 +616,7 @@ public final class Database {
      * Create schema
      */
     protected void createSchema() {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("CREATE SCHEMA IF NOT EXISTS spamscan;")) {
                 statement.executeUpdate();
@@ -630,7 +630,7 @@ public final class Database {
     }
 
     protected void addId(String reason) {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("INSERT INTO spamscan.id (reason) VALUES (?);")) {
                 statement.setString(1, reason);
@@ -642,7 +642,7 @@ public final class Database {
     }
 
     protected void addChan(String channel) {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("INSERT INTO spamscan.channels (channel) VALUES (?);")) {
                 statement.setString(1, channel);
@@ -654,7 +654,7 @@ public final class Database {
     }
 
     protected String getChan(String channel) {
-        connect();
+
         String dat = null;
         try (var statement = getConn().prepareStatement("SELECT channel FROM spamscan.channels WHERE LOWER(channel) = LOWER(?);")) {
             statement.setString(1, channel);
@@ -675,7 +675,7 @@ public final class Database {
     }
 
     protected void removeChan(String channel) {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("DELETE FROM spamscan.channels WHERE LOWER(channel) = LOWER(?);")) {
                 statement.setString(1, channel);
@@ -690,7 +690,7 @@ public final class Database {
      * Create table
      */
     protected void createTable() {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("CREATE TABLE IF NOT EXISTS spamscan.channels (id SERIAL PRIMARY KEY, channel VARCHAR(255));")) {
                 statement.executeUpdate();
@@ -710,7 +710,7 @@ public final class Database {
      * Commits
      */
     protected void commit() {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("COMMIT")) {
                 statement.executeUpdate();
@@ -724,7 +724,7 @@ public final class Database {
      * Begins a transaction
      */
     protected void transcation() {
-        connect();
+
         try {
             try (var statement = getConn().prepareStatement("BEGIN TRANSACTION")) {
                 statement.executeUpdate();
@@ -740,7 +740,7 @@ public final class Database {
      * @return The data
      */
     protected int getFlags(String nick) {
-        connect();
+
         try (var statement = getConn().prepareStatement("SELECT flags FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
@@ -760,7 +760,7 @@ public final class Database {
      * @return The data
      */
     protected HashMap<String, Integer> getFlags() {
-        connect();
+
         var dat = new HashMap<String, Integer>();
         try (var statement = getConn().prepareStatement("SELECT flags, username FROM chanserv.users WHERE flags > 4;")) {
             try (var resultset = statement.executeQuery()) {
@@ -780,7 +780,7 @@ public final class Database {
      * @return The data
      */
     protected String getTimestamp(String nick) {
-        connect();
+
         String dat = null;
         try (var statement = getConn().prepareStatement("SELECT lastauth FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
@@ -801,7 +801,7 @@ public final class Database {
      * @return The data
      */
     protected String getId(String nick) {
-        connect();
+
         String dat = null;
         try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
@@ -822,7 +822,7 @@ public final class Database {
      * @return The data
      */
     protected boolean isRegistered(String nick, String password) {
-        connect();
+
         var dat = false;
         try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE LOWER(username) = LOWER(?) AND password = ?;")) {
             statement.setString(1, nick);

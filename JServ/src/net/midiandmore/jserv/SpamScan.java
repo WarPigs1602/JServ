@@ -297,7 +297,7 @@ public final class SpamScan implements Software, Messages {
                             var info = getSt().getUsers().get(nick).getRepeat();
                             info = info + 1;
                             getSt().getUsers().get(nick).setRepeat(info);
-                            if (info > 3) {
+                            if ((info > 3 && time() - getSt().getChannel().get(elem[2].toLowerCase()).getLastJoin().get(nick) < 300) || info > 7) {
                                 var count = getMi().getDb().getId();
                                 count++;
                                 getMi().getDb().addId("Repeating lines!");
@@ -316,7 +316,7 @@ public final class SpamScan implements Software, Messages {
                         var info = getSt().getUsers().get(nick).getFlood();
                         info = info + 1;
                         getSt().getUsers().get(nick).setFlood(info);
-                        if (((time() - getSt().getChannel().get(elem[2].toLowerCase()).getLastJoin().get(nick) < 300) && info > 2) || info > 5) {
+                        if ((time() - getSt().getChannel().get(elem[2].toLowerCase()).getLastJoin().get(nick) < 300 && info > 2) || info > 5) {
                             var count = getMi().getDb().getId();
                             count++;
                             getMi().getDb().addId("Flooding!");

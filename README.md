@@ -7,6 +7,6 @@
  <br>
  It's recommenend to use an IDE with Maven support, for compilig the sources<br>
  <br>
- [Here](https://github.com/user-attachments/files/20854303/JServ.zip) is a precompiled release, it needs JRE17 or higher and Postgresql.
+ [Here](https://github.com/user-attachments/files/21146940/JServ.zip) is a precompiled release, it needs JRE17 or higher and Postgresql.
  <br>
  To run this package, just enter "java -jar JServ.jar &" and then logout with "exit".<br>

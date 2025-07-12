@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.logging.Logger;
 import org.apache.commons.codec.digest.DigestUtils;
 
-public final class HostServ implements Software, Messages {
+public final class HostServ implements Software {
 
     /**
      * @return the nick
@@ -224,7 +224,7 @@ public final class HostServ implements Software, Messages {
                         sb.append(elem[i]);
                         sb.append(" ");
                     }
-                    var command = sb.toString().trim();
+                    var command = String.join(" ", java.util.Arrays.copyOfRange(elem, 3, elem.length)).trim();
                     if (command.startsWith(":")) {
                         command = command.substring(1);
                     }
@@ -256,9 +256,9 @@ public final class HostServ implements Software, Messages {
                         }
                     } else if (auth[0].equalsIgnoreCase("UHOST")) {
                         if (!getSt().isAuthed(nick)) {
-                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                         } else if (!getSt().isPrivileged(nick)) {
-                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
+                            getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                         } else if (auth.length <= 3) {
                             getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "To few parameters...");
                         } else if (checkHostChars(auth[3]) == 0 && checkIdentChars(auth[2]) == 0) {
@@ -280,7 +280,7 @@ public final class HostServ implements Software, Messages {
                             getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Invalid host...");
                         }
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
-                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_COMMANDLIST);
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], Messages.get("QM_COMMANDLIST"));
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   HELP             Shows a specific help to a command.");
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   SHOWCOMMANDS     Shows this list.");
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   VHOST            Sets your VHost. (You must be authed)");
@@ -288,13 +288,13 @@ public final class HostServ implements Software, Messages {
                             getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   UHOST            Sets VHost for other users.");
                         }
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "   VERSION          Print version info.");
-                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_ENDOFLIST);
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], Messages.get("QM_ENDOFLIST"));
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "HostServ v%s by %s", VERSION, VENDOR);
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Based on JServ v%s", VERSION);
                         getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], "Created by %s", AUTHOR);
                     } else {
-                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], QM_UNKNOWNCMD, auth[0].toUpperCase());
+                        getSt().sendNotice(getNumeric(), "AAB", notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                     }
                 }
             }
@@ -304,39 +304,39 @@ public final class HostServ implements Software, Messages {
     }
 
     private boolean isMoreAsAnWeek(long timestamp) {
-        var week = time() - 3600 * 24 * 7;
-        if (timestamp > week) {
-            return false;
-        } else {
-            return true;
-        }
+        return timestamp <= (time() - 3600 * 24 * 7);
     }
+
+    private static final int HOST_OK = 0;
+    private static final int HOST_TOO_LONG = 2;
+    private static final int HOST_TOO_SHORT = 3;
+    private static final int HOST_INVALID = 4;
 
     private int checkHostChars(String host) {
         var vhost = host.toCharArray();
         if (vhost.length > 63) {
-            return 2;
+            return HOST_TOO_LONG;
         }
         if (vhost.length < 1) {
-            return 3;
+            return HOST_TOO_SHORT;
         }
         if (host.matches("[a-zA-Z0-9.:\\-\\/_\\´\\[\\]|]*")) {
-            return 0;
+            return HOST_OK;
         }
-        return 4;
+        return HOST_INVALID;
     }
 
     private int checkIdentChars(String host) {
         if (host.length() > 10) {
-            return 2;
+            return HOST_TOO_LONG;
         }
         if (host.length() < 1) {
-            return 3;
+            return HOST_TOO_SHORT;
         }
         if (host.matches("[a-zA-Z0-9.:\\-\\/_\\´\\[\\]|]*")) {
-            return 0;
+            return HOST_OK;
         }
-        return 4;
+        return HOST_INVALID;
     }
 
     private long time() {

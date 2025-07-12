@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-public final class SocketThread implements Runnable, Userflags, Messages, Software {
+public final class SocketThread implements Runnable, Software {
 
     protected void joinChannel(String channel, String numeric, String service) {
         if (getChannel().containsKey(channel.toLowerCase())) {
@@ -310,6 +310,7 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
             setSocket(new Socket(host, Integer.parseInt(port)));
             setPw(new PrintWriter(getSocket().getOutputStream()));
             setBr(new BufferedReader(new InputStreamReader(getSocket().getInputStream())));
+
             var content = "";
             handshake(password, jservername, jdescription, jnumeric);
             setSs(new SpamScan(getMi(), this, getPw(), getBr()));
@@ -326,10 +327,10 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
             System.out.println("Handshake complete...");
             if (moduleh.equalsIgnoreCase("true")) {
                 System.out.printf("Adding 1 channel for %s...\r\n", hnick);
-                if (!getBursts().containsKey("#twilightzone")) {
-                    getBursts().put("#twilightzone", new Burst("#twilightzone"));
+                if (!getBursts().containsKey(CHANNEL_TWILIGHTZONE)) {
+                    getBursts().put(CHANNEL_TWILIGHTZONE, new Burst(CHANNEL_TWILIGHTZONE));
                 }
-                getBursts().get("#twilightzone").getUsers().add(jnumeric + "AAB");
+                getBursts().get(CHANNEL_TWILIGHTZONE).getUsers().add(jnumeric + "AAB");
                 System.out.printf("%s has successfully added...\r\n", hnick);
             }
             if (modules.equalsIgnoreCase("true")) {
@@ -347,7 +348,7 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
             }
             var list = getMi().getDb().getChannels();
             var nicks = getMi().getDb().getData();
-            var exist = new ArrayList();
+            var exist = new ArrayList<String>();
             System.out.printf("Joining %d channels for the services with a burst...\r\n", list.size());
             for (var channel : list) {
                 if (channel[1].startsWith("#")) {
@@ -360,7 +361,7 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                         getBursts().get(channel[1].toLowerCase()).setTime(time());
                     }
                     var cid = channel[0];
-                    var ua = new ArrayList();
+                    var ua = new ArrayList<String>();
                     for (var nick : nicks) {
                         var nid = nick[0];
                         var auth = getMi().getDb().getChanUser(Long.parseLong(nid), Long.parseLong(cid));
@@ -411,7 +412,7 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                 try {
                     var elem = content.split(" ");
                     if (content.startsWith("SERVER")) {
-                        setServerNumeric(content.split(" ")[6].substring(0, 1));
+                        setServerNumeric(content.split(" ")[SERVERNAME_INDEX].substring(0, 1));
                         System.out.println("Getting SERVER response...");
                     } else if (elem[1].equals("EB") && !isBurst()) {
                         setBurst(true);
@@ -626,30 +627,17 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
                 }
             }
         } catch (IOException | NumberFormatException ex) {
+            LOG.severe("Fehler beim Verbindungsaufbau: " + ex.getMessage());
+        } finally {
+            if (getPw() != null) getPw().close();
+            if (getBr() != null) try { getBr().close(); } catch (IOException ignored) {}
+            if (getSocket() != null) try { getSocket().close(); } catch (IOException ignored) {}
+            setPw(null);
+            setBr(null);
+            setSocket(null);
+            setRuns(false);
+            System.out.println("Disconnected...");
         }
-        if (getPw() != null) {
-            try {
-                getPw().close();
-            } catch (Exception ex) {
-            }
-        }
-        if (getBr() != null) {
-            try {
-                getBr().close();
-            } catch (IOException ex) {
-            }
-        }
-        if (getSocket() != null && !getSocket().isClosed()) {
-            try {
-                getSocket().close();
-            } catch (IOException ex) {
-            }
-        }
-        setPw(null);
-        setBr(null);
-        setSocket(null);
-        setRuns(false);
-        System.out.println("Disconnected...");
     }
 
     protected void partChannel(String channel, String numeric, String service) {
@@ -732,8 +720,8 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected boolean isPrivileged(String nick) {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
-            var oper = flags & (QUFLAG_OPER | QUFLAG_DEV | QUFLAG_PROTECT | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF);
-            return oper != 0;
+            var oper = (Userflags.hasFlag(flags, Userflags.Flag.OPER) | Userflags.hasFlag(flags, Userflags.Flag.DEV) | Userflags.hasFlag(flags, Userflags.Flag.PROTECT) | Userflags.hasFlag(flags, Userflags.Flag.HELPER) | Userflags.hasFlag(flags, Userflags.Flag.ADMIN) | Userflags.hasFlag(flags, Userflags.Flag.STAFF));
+            return oper;
         }
         return false;
     }
@@ -741,8 +729,8 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected boolean isHelper(String nick) {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
-            var oper = flags & (QUFLAG_HELPER);
-            return oper != 0;
+            var oper = (Userflags.hasFlag(flags, Userflags.Flag.HELPER));
+            return oper;
         }
         return false;
     }
@@ -750,8 +738,8 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected boolean isStaff(String nick) {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
-            var oper = flags & (QUFLAG_HELPER | QUFLAG_STAFF);
-            return oper != 0;
+            var oper = (Userflags.hasFlag(flags, Userflags.Flag.HELPER) | Userflags.hasFlag(flags, Userflags.Flag.STAFF));
+            return oper;
         }
         return false;
     }
@@ -759,8 +747,8 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected boolean isOper(String nick) {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
-            var oper = flags & (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_STAFF);
-            return oper != 0;
+            var oper = (Userflags.hasFlag(flags, Userflags.Flag.OPER) | Userflags.hasFlag(flags, Userflags.Flag.HELPER) | Userflags.hasFlag(flags, Userflags.Flag.STAFF));
+            return oper;
         }
         return false;
     }
@@ -768,8 +756,8 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected boolean isAdmin(String nick) {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
-            var oper = flags & (QUFLAG_OPER | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF);
-            return oper != 0;
+            var oper = (Userflags.hasFlag(flags, Userflags.Flag.OPER) | Userflags.hasFlag(flags, Userflags.Flag.HELPER) | Userflags.hasFlag(flags, Userflags.Flag.ADMIN) | Userflags.hasFlag(flags, Userflags.Flag.STAFF));
+            return oper;
         }
         return false;
     }
@@ -777,26 +765,26 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     protected boolean isDev(String nick) {
         if (!nick.isBlank()) {
             var flags = getMi().getDb().getFlags(nick);
-            var oper = flags & (QUFLAG_OPER | QUFLAG_DEV | QUFLAG_HELPER | QUFLAG_ADMIN | QUFLAG_STAFF);
-            return oper != 0;
+            var oper = (Userflags.hasFlag(flags, Userflags.Flag.OPER) | Userflags.hasFlag(flags, Userflags.Flag.DEV) | Userflags.hasFlag(flags, Userflags.Flag.HELPER) | Userflags.hasFlag(flags, Userflags.Flag.ADMIN) | Userflags.hasFlag(flags, Userflags.Flag.STAFF));
+            return oper;
         }
         return false;
     }
 
     protected boolean isMaster(int flags) {
-        return (flags & QCUFLAG_MASTER) != 0;
+        return (flags & Userflags.QCUFLAG_MASTER) != 0;
     }
 
     protected boolean isOwner(int flags) {
-        return (flags & QCUFLAG_OWNER) != 0;
+        return (flags & Userflags.QCUFLAG_OWNER) != 0;
     }
 
     protected boolean isOp(int flags) {
-        return (flags & QCUFLAG_OP) != 0;
+        return (flags & Userflags.QCUFLAG_OP) != 0;
     }
 
     protected boolean isVoice(int flags) {
-        return (flags & QCUFLAG_VOICE) != 0;
+        return (flags & Userflags.QCUFLAG_VOICE) != 0;
     }
 
     protected boolean isNoInfo(int flags) {
@@ -804,59 +792,59 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
     }
 
     protected boolean isInactive(int flags) {
-        return (flags & QUFLAG_INACTIVE) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.INACTIVE);
     }
 
     protected boolean isGline(int flags) {
-        return (flags & QUFLAG_GLINE) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.GLINE);
     }
 
     protected boolean isNotice(int flags) {
-        return (flags & QUFLAG_NOTICE) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.NOTICE);
     }
 
     protected boolean isSuspended(int flags) {
-        return (flags & QUFLAG_SUSPENDED) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.SUSPENDED);
     }
 
     protected boolean isOper(int flags) {
-        return (flags & QUFLAG_OPER) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.OPER);
     }
 
     protected boolean isDev(int flags) {
-        return (flags & QUFLAG_DEV) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.DEV);
     }
 
     protected boolean isProtect(int flags) {
-        return (flags & QUFLAG_PROTECT) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.PROTECT);
     }
 
     protected boolean isHelper(int flags) {
-        return (flags & QUFLAG_HELPER) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.HELPER);
     }
 
     protected boolean isAdmin(int flags) {
-        return (flags & QUFLAG_ADMIN) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.ADMIN);
     }
 
     protected boolean isInfo(int flags) {
-        return (flags & QUFLAG_INFO) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.INFO);
     }
 
     protected boolean isDelayedGline(int flags) {
-        return (flags & QUFLAG_DELAYEDGLINE) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.DELAYEDGLINE);
     }
 
     protected boolean isNoAuthLimit(int flags) {
-        return (flags & QUFLAG_NOAUTHLIMIT) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.NOAUTHLIMIT);
     }
 
     protected boolean isCleanupExempt(int flags) {
-        return (flags & QUFLAG_CLEANUPEXEMPT) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.CLEANUPEXEMPT);
     }
 
     protected boolean isStaff(int flags) {
-        return (flags & QUFLAG_STAFF) != 0;
+        return Userflags.hasFlag(flags, Userflags.Flag.STAFF);
     }
 
     /**
@@ -971,4 +959,6 @@ public final class SocketThread implements Runnable, Userflags, Messages, Softwa
         this.bursts = bursts;
     }
     private static final Logger LOG = Logger.getLogger(SocketThread.class.getName());
+    private static final String CHANNEL_TWILIGHTZONE = "#twilightzone";
+    private static final int SERVERNAME_INDEX = 6;
 }

@@ -7,8 +7,11 @@ package net.midiandmore.jserv;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -24,6 +27,12 @@ public final class DatabaseGnuworld {
         setMi(mi);
     }
 
+    private static final List<String> ALLOWED_USER_COLUMNS = List.of(
+        "id", "user_name", "created", "lastauth", "lastemailchng", "flags", "password", "email",
+        "lastemail", "lastpasschng", "language", "suspendby", "suspendexp", "suspendtime", "lockuntil",
+        "lastuserhost", "suspendreason", "comment", "info"
+    );
+
     /**
      * Fetching userdata
      *
@@ -32,17 +41,20 @@ public final class DatabaseGnuworld {
      * @return The data
      */
     public String getData(String key, String nick) {
+        if (!ALLOWED_USER_COLUMNS.contains(key)) {
+            throw new IllegalArgumentException("Invalid key: " + key);
+        }
         connect();
         String flag = null;
-        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM public.users WHERE LOWER(user_name) = LOWER(?)")) {
+        String sql = "SELECT " + key + " FROM public.users WHERE LOWER(user_name) = LOWER(?)";
+        try (var statement = getConn().prepareStatement(sql)) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
-                while (resultset.next()) {
+                if (resultset.next()) {
                     flag = resultset.getString(key);
                 }
             }
         } catch (SQLException ex) {
-            ex.printStackTrace();
         }
         return flag;
     }
@@ -246,11 +258,10 @@ public final class DatabaseGnuworld {
 
     private String createRandomId() {
         var sb = new StringBuilder();
-        var r = new Random(System.currentTimeMillis());
         var id = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
-        for (var i = 0; i < 10; i++) {
-            var col = id[Math.round(r.nextFloat() * (id.length - 1))];
-            sb.append(col);
+        var r = ThreadLocalRandom.current();
+        for (int i = 0; i < 10; i++) {
+            sb.append(id[r.nextInt(id.length)]);
         }
         return sb.toString();
     }
@@ -553,15 +564,15 @@ public final class DatabaseGnuworld {
     /**
      * Begins a transaction
      */
-    protected void transcation() {
+    public void beginTransaction() throws SQLException {
         connect();
-        try {
-            try (var statement = getConn().prepareStatement("BEGIN TRANSACTION")) {
-                statement.executeUpdate();
-            }
-        } catch (SQLException ex) {
-            System.out.println("Access to database failed: " + ex.getMessage());
-        }
+        getConn().setAutoCommit(false);
+    }
+
+    public void commitTransaction() throws SQLException {
+        connect();
+        getConn().commit();
+        getConn().setAutoCommit(true);
     }
 
     /**
@@ -698,4 +709,9 @@ public final class DatabaseGnuworld {
         this.conn = conn;
     }
     private static final Logger LOG = Logger.getLogger(DatabaseGnuworld.class.getName());
+
+    public Optional<String> getDataOptional(String key, String nick) {
+        String result = getData(key, nick);
+        return Optional.ofNullable(result);
+    }
 }

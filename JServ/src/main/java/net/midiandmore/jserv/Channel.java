@@ -4,75 +4,10 @@
  */
 package net.midiandmore.jserv;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.logging.Logger;
 
-
 public final class Channel {
-
-    /**
-     * @return the owner
-     */
-    public ArrayList<String> getOwner() {
-        return owner;
-    }
-
-    /**
-     * @param owner the owner to set
-     */
-    public void setOwner(ArrayList<String> owner) {
-        this.owner = owner;
-    }
-
-    /**
-     * @return the hop
-     */
-    public ArrayList<String> getHop() {
-        return hop;
-    }
-
-    /**
-     * @param hop the hop to set
-     */
-    public void setHop(ArrayList<String> hop) {
-        this.hop = hop;
-    }
-
-    /**
-     * @return the service
-     */
-    public ArrayList<String> getService() {
-        return service;
-    }
-
-    /**
-     * @param service the service to set
-     */
-    public void setService(ArrayList<String> service) {
-        this.service = service;
-    }
-
-    /**
-     * @return the lastJoin
-     */
-    public HashMap<String, Long> getLastJoin() {
-        return lastJoin;
-    }
-
-    /**
-     * @param lastJoin the lastJoin to set
-     */
-    public void setLastJoin(HashMap<String, Long> lastJoin) {
-        this.lastJoin = lastJoin;
-    }
-
-    /**
-     * @return the moderated
-     */
-    public boolean isModerated() {
-        return moderated;
-    }
 
     /**
      * @param moderated the moderated to set
@@ -81,26 +16,61 @@ public final class Channel {
         this.moderated = moderated;
     }
 
-    /**
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
+    private final String name;
+    private String modes;
+    private boolean moderated;
+    private final List<String> users = new ArrayList<>();
+    private final List<String> hop = new ArrayList<>();
+    private final List<String> admin = new ArrayList<>();
+    private final List<String> service = new ArrayList<>();
+    private final List<String> op = new ArrayList<>();
+    private final List<String> voice = new ArrayList<>();
+    private final List<String> owner = new ArrayList<>();
+    private final Map<String, Long> lastJoin = new HashMap<>();
+    private static final Logger LOG = Logger.getLogger(Channel.class.getName());
 
-    /**
-     * @param name the name to set
-     */
-    public void setName(String name) {
+    public Channel(String name, String modes, String[] names) {
         this.name = name;
+        this.modes = modes;
+        this.moderated = modes.contains("m");
+        for (String nick : names) {
+            boolean voice = false, op = false, hop = false, service = false, owner = false, admin = false;
+            if (nick.contains(":")) {
+                String[] elem = nick.split(":", 2);
+                nick = elem[0];
+                for (char status : elem[1].toCharArray()) {
+                    switch (status) {
+                        case 'O': service = true; break;
+                        case 'q': owner = true; break;
+                        case 'a': admin = true; break;
+                        case 'o': op = true; break;
+                        case 'h': hop = true; break;
+                        case 'v': voice = true; break;
+                    }
+                }
+            }
+            if (op) this.op.add(nick);
+            if (voice) this.voice.add(nick);
+            if (hop) this.hop.add(nick);
+            if (service) this.service.add(nick);
+            if (admin) this.admin.add(nick);
+            if (owner) this.owner.add(nick);
+            this.users.add(nick);
+            this.lastJoin.put(nick, System.currentTimeMillis() / 1000);
+        }
     }
 
-    /**
-     * @return the modes
-     */
-    public String getModes() {
-        return modes;
-    }
+    public String getName() { return name; }
+    public String getModes() { return modes; }
+    public boolean isModerated() { return moderated; }
+    public List<String> getUsers() { return Collections.unmodifiableList(users); }
+    public List<String> getOp() { return Collections.unmodifiableList(op); }
+    public List<String> getVoice() { return Collections.unmodifiableList(voice); }
+    public List<String> getHop() { return Collections.unmodifiableList(hop); }
+    public List<String> getAdmin() { return Collections.unmodifiableList(admin); }
+    public List<String> getService() { return Collections.unmodifiableList(service); }
+    public List<String> getOwner() { return Collections.unmodifiableList(owner); }
+    public Map<String, Long> getLastJoin() { return Collections.unmodifiableMap(lastJoin); }
 
     /**
      * @param modes the modes to set
@@ -108,140 +78,4 @@ public final class Channel {
     public void setModes(String modes) {
         this.modes = modes;
     }
-
-    /**
-     * @return the users
-     */
-    public ArrayList<String> getUsers() {
-        return users;
-    }
-
-    /**
-     * @param users the users to set
-     */
-    public void setUsers(ArrayList<String> users) {
-        this.users = users;
-    }
-
-    /**
-     * @return the op
-     */
-    public ArrayList<String> getOp() {
-        return op;
-    }
-
-    /**
-     * @param op the op to set
-     */
-    public void setOp(ArrayList<String> op) {
-        this.op = op;
-    }
-
-    /**
-     * @return the voice
-     */
-    public ArrayList<String> getVoice() {
-        return voice;
-    }
-
-    /**
-     * @param voice the voice to set
-     */
-    public void setVoice(ArrayList<String> voice) {
-        this.voice = voice;
-    }
-
-    private String name;
-    private String modes;
-    private boolean moderated;
-    private ArrayList<String> users;
-    private ArrayList<String> hop;
-    private ArrayList<String> admin;
-    private ArrayList<String> service;
-    private ArrayList<String> op;
-    private ArrayList<String> voice;
-    private ArrayList<String> owner;
-    private HashMap<String, Long> lastJoin;
-
-    public Channel(String name, String modes, String[] names) {
-        setName(name);
-        setModes(modes);
-        setUsers(new ArrayList<>());
-        setOp(new ArrayList<>());
-        setVoice(new ArrayList<>());
-        setHop(new ArrayList<>());
-        setAdmin(new ArrayList<>());
-        setService(new ArrayList<>());
-        setOwner(new ArrayList<>());
-        setLastJoin(new HashMap<>());
-        setModerated(modes.contains("m"));
-        for (var nick : names) {
-            var voice = false;
-            var op = false;
-            var hop = false;
-            var service = false;
-            var owner = false;
-            var admin = false;
-            if (nick.contains(":")) {
-                var elem = nick.split(":", 2);
-                nick = elem[0];
-                var stats = elem[1].split("");
-                for (var status : stats) {
-                    if (status.contains("O")) {
-                        service = true;
-                    }
-                    if (status.contains("q")) {
-                        owner = true;
-                    }
-                    if (status.contains("a")) {
-                        admin = true;
-                    }
-                    if (status.contains("o")) {
-                        op = true;
-                    }
-                    if (status.contains("h")) {
-                        hop = true;
-                    }
-                    if (status.contains("v")) {
-                        voice = true;
-                    }
-                }
-            }
-            if (op) {
-                getOp().add(nick);
-            }
-            if (voice) {
-                getVoice().add(nick);
-            }
-            if (hop) {
-                getHop().add(nick);
-            }
-            if (service) {
-                getService().add(nick);
-            }
-            if (admin) {
-                getAdmin().add(nick);
-            }
-            if (owner) {
-                getOwner().add(nick);
-            }
-            getUsers().add(nick);
-            getLastJoin().put(nick, System.currentTimeMillis() / 1000);
-        }
-    }
-
-    /**
-     * @return the admin
-     */
-    public ArrayList<String> getAdmin() {
-        return admin;
-    }
-
-    /**
-     * @param admin the admin to set
-     */
-    public void setAdmin(ArrayList<String> admin) {
-        this.admin = admin;
-    }
-    private static final Logger LOG = Logger.getLogger(Channel.class.getName());
 }

@@ -6,7 +6,10 @@ package net.midiandmore.jserv;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -18,12 +21,24 @@ import java.util.logging.Logger;
 public final class Database {
 
     private static final Logger LOG = Logger.getLogger(Database.class.getName());
+    private static final HashSet<String> USER_COLUMNS = new HashSet<>(Arrays.asList(
+    "id", "username", "created", "lastauth", "lastemailchng", "flags", "language", "suspendby",
+    "suspendexp", "suspendtime", "lockuntil", "password", "email", "lastemail", "lastuserhost",
+    "suspendreason", "comment", "info", "lastpasschng"
+));
+
+private static final String USER_TABLE = "chanserv.users";
+private static final String CHANNEL_TABLE = "chanserv.channels";
 
     private JServ mi;
     private Connection conn;
 
     protected Database(JServ mi) {
         setMi(mi);
+    }
+
+    private boolean isValidUserColumn(String column) {
+    return USER_COLUMNS.contains(column);
     }
 
     /**
@@ -34,9 +49,10 @@ public final class Database {
      * @return The data
      */
     public long getLongData(String key, String nick) {
+        if (!isValidUserColumn(key)) throw new IllegalArgumentException("Invalid key: " + key);
 
         long flag = 0;
-        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.users WHERE LOWER(username) = LOWER(?)")) {
+        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -57,9 +73,10 @@ public final class Database {
      * @return The data
      */
     public String getData(String key, String nick) {
+        if (!isValidUserColumn(key)) throw new IllegalArgumentException("Invalid key: " + key);
 
         String flag = null;
-        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.users WHERE LOWER(username) = LOWER(?)")) {
+        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -103,8 +120,9 @@ public final class Database {
      * @return The data
      */
     public void updateData(String key, String nick, String data) {
+        if (!isValidUserColumn(key)) throw new IllegalArgumentException("Invalid key: " + key);
 
-        try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
+        try (var statement = getConn().prepareStatement("UPDATE " + USER_TABLE + " SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
             statement.setString(1, data);
             statement.setString(2, nick);
             var rows = statement.executeUpdate();
@@ -138,8 +156,9 @@ public final class Database {
      * @return The data
      */
     public void updateData(String key, String nick, long data) {
+        if (!isValidUserColumn(key)) throw new IllegalArgumentException("Invalid key: " + key);
 
-        try (var statement = getConn().prepareStatement("UPDATE chanserv.users SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
+        try (var statement = getConn().prepareStatement("UPDATE " + USER_TABLE + " SET " + key + " = ? WHERE LOWER(username) = LOWER(?)")) {
             statement.setLong(1, data);
             statement.setString(2, nick);
             var rows = statement.executeUpdate();
@@ -161,7 +180,7 @@ public final class Database {
     public int getIndex() {
 
         var index = 0;
-        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users ORDER BY id DESC;")) {
+        try (var statement = getConn().prepareStatement("SELECT id FROM " + USER_TABLE + " ORDER BY id DESC;")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
                     index = resultset.getInt(1);
@@ -193,7 +212,7 @@ public final class Database {
     public int getIndex(String nick) {
 
         var index = 0;
-        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
+        try (var statement = getConn().prepareStatement("SELECT id FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -216,7 +235,7 @@ public final class Database {
     public boolean isMail(String email) {
 
         var flag = false;
-        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE LOWER(email) = LOWER(?)")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM " + USER_TABLE + " WHERE LOWER(email) = LOWER(?)")) {
             statement.setString(1, email);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -234,7 +253,7 @@ public final class Database {
 
         try {
             var index = getIndex() + 1;
-            try (var statement = getConn().prepareStatement("INSERT INTO chanserv.users (username, created, lastauth, lastemailchng, flags, password, email, "
+            try (var statement = getConn().prepareStatement("INSERT INTO " + USER_TABLE + " (username, created, lastauth, lastemailchng, flags, password, email, "
                     + "lastemail, lastpasschng, id, language, suspendby, suspendexp, suspendtime, lockuntil, lastuserhost, suspendreason, comment, info)"
                     + " VALUES (?,?,?,?,?,?,?,'',?,?,0,0,0,0,0,'','','','');")) {
                 statement.setString(1, nick);
@@ -366,7 +385,7 @@ public final class Database {
     public void submitNewPassword(String email) {
 
         try {
-            try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(email) = LOWER(?)")) {
+            try (var statement = getConn().prepareStatement("SELECT id FROM " + USER_TABLE + " WHERE LOWER(email) = LOWER(?)")) {
                 statement.setString(1, email);
                 try (var resultset = statement.executeQuery()) {
                     while (resultset.next()) {
@@ -431,7 +450,7 @@ public final class Database {
     public ArrayList<String[]> getData() {
 
         var list = new ArrayList<String[]>();
-        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM " + USER_TABLE)) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
                     var dat = new String[19];
@@ -471,7 +490,7 @@ public final class Database {
     public ArrayList<String[]> getChannels() {
 
         var list = new ArrayList<String[]>();
-        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.channels")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM " + CHANNEL_TABLE)) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
                     var dat = new String[28];
@@ -520,7 +539,7 @@ public final class Database {
      */
     public String getChannel(String key, String name) {
 
-        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM chanserv.channels WHERE LOWER(name) = LOWER(?)")) {
+        try (var statement = getConn().prepareStatement("SELECT " + key + " FROM " + CHANNEL_TABLE + " WHERE LOWER(name) = LOWER(?)")) {
             statement.setString(1, name);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -723,15 +742,13 @@ public final class Database {
     /**
      * Begins a transaction
      */
-    protected void transcation() {
+    public void beginTransaction() throws SQLException {
+        getConn().setAutoCommit(false);
+    }
 
-        try {
-            try (var statement = getConn().prepareStatement("BEGIN TRANSACTION")) {
-                statement.executeUpdate();
-            }
-        } catch (SQLException ex) {
-            System.out.println("Access to database failed: " + ex.getMessage());
-        }
+    public void commitTransaction() throws SQLException {
+        getConn().commit();
+        getConn().setAutoCommit(true);
     }
 
     /**
@@ -741,7 +758,7 @@ public final class Database {
      */
     protected int getFlags(String nick) {
 
-        try (var statement = getConn().prepareStatement("SELECT flags FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
+        try (var statement = getConn().prepareStatement("SELECT flags FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -762,7 +779,7 @@ public final class Database {
     protected HashMap<String, Integer> getFlags() {
 
         var dat = new HashMap<String, Integer>();
-        try (var statement = getConn().prepareStatement("SELECT flags, username FROM chanserv.users WHERE flags > 4;")) {
+        try (var statement = getConn().prepareStatement("SELECT flags, username FROM " + USER_TABLE + " WHERE flags > 4;")) {
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
                     dat.put(resultset.getString("username"), resultset.getInt("flags"));
@@ -782,7 +799,7 @@ public final class Database {
     protected String getTimestamp(String nick) {
 
         String dat = null;
-        try (var statement = getConn().prepareStatement("SELECT lastauth FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
+        try (var statement = getConn().prepareStatement("SELECT lastauth FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -803,7 +820,7 @@ public final class Database {
     protected String getId(String nick) {
 
         String dat = null;
-        try (var statement = getConn().prepareStatement("SELECT id FROM chanserv.users WHERE LOWER(username) = LOWER(?);")) {
+        try (var statement = getConn().prepareStatement("SELECT id FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?);")) {
             statement.setString(1, nick);
             try (var resultset = statement.executeQuery()) {
                 while (resultset.next()) {
@@ -824,7 +841,7 @@ public final class Database {
     protected boolean isRegistered(String nick, String password) {
 
         var dat = false;
-        try (var statement = getConn().prepareStatement("SELECT * FROM chanserv.users WHERE LOWER(username) = LOWER(?) AND password = ?;")) {
+        try (var statement = getConn().prepareStatement("SELECT * FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?) AND password = ?;")) {
             statement.setString(1, nick);
             statement.setString(2, password);
             try (var resultset = statement.executeQuery()) {
@@ -866,5 +883,26 @@ public final class Database {
      */
     public void setConn(Connection conn) {
         this.conn = conn;
+    }
+
+    public String getUserField(String field, String nick) {
+        if (!isValidUserColumn(field)) throw new IllegalArgumentException("Invalid key: " + field);
+        String sql = "SELECT " + field + " FROM " + USER_TABLE + " WHERE LOWER(username) = LOWER(?)";
+        try (var statement = getConn().prepareStatement(sql)) {
+            statement.setString(1, nick);
+            try (var resultset = statement.executeQuery()) {
+                if (resultset.next()) {
+                    return resultset.getString(field);
+                }
+            }
+        } catch (SQLException ex) {
+            LOG.severe("SQL-Fehler: " + ex.getMessage());
+        }
+        return null;
+    }
+
+    public Optional<String> getUserFieldOptional(String field, String nick) {
+        String result = getUserField(field, nick);
+        return Optional.ofNullable(result);
     }
 }

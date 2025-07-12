@@ -1,12 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package net.midiandmore.jserv;
 
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 public final class WaitThread implements Runnable {
 
@@ -15,58 +11,52 @@ public final class WaitThread implements Runnable {
         (thread = new Thread(this)).start();
     }
 
-    /**
-     * @return the mi
-     */
     public JServ getMi() {
         return mi;
     }
 
-    /**
-     * @param mi the mi to set
-     */
     public void setMi(JServ mi) {
         this.mi = mi;
     }
 
     private final Thread thread;
     private JServ mi;
+    private static final Logger LOG = Logger.getLogger(WaitThread.class.getName());
 
     @Override
     public void run() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             try {
-                if (getMi().getSocketThread() == null) {
+                SocketThread socketThread = getMi().getSocketThread();
+                if (socketThread == null) {
                     getMi().setSocketThread(new SocketThread(getMi()));
-                } else if (getMi().getSocketThread().getSocket() == null) {
-                    getMi().getSocketThread().setRuns(false);
+                } else if (socketThread.getSocket() == null) {
+                    socketThread.setRuns(false);
                     getMi().setSocketThread(null);
-                } else if (getMi().getSocketThread().isRuns()
-                        && getMi().getSocketThread().getSocket().isClosed()) {
-                    getMi().getSocketThread().setRuns(false);
+                } else if (socketThread.isRuns() && socketThread.getSocket().isClosed()) {
+                    socketThread.setRuns(false);
                     getMi().setSocketThread(null);
                 } else {
-                    if (getMi().getSocketThread().getUsers() != null) {
-                        var set = getMi().getSocketThread().getUsers().keySet();
-                        for (var nick : set) {
-                            var flood = getMi().getSocketThread().getUsers().get(nick).getFlood();
+                    Map<String, Users> users = socketThread.getUsers();
+                    if (users != null) {
+                        for (String nick : users.keySet()) {
+                            Users user = users.get(nick);
+                            int flood = user.getFlood();
                             if (flood != 0) {
-                                getMi().getSocketThread().getUsers().get(nick).setFlood(flood - 1);
+                                user.setFlood(flood - 1);
                             }
                         }
                     } else {
-                        getMi().getSocketThread().setRuns(false);
+                        socketThread.setRuns(false);
                         getMi().setSocketThread(null);
                         getMi().setSocketThread(new SocketThread(getMi()));
                     }
                 }
-                thread.sleep(3000L);
+                Thread.sleep(3000L);
             } catch (InterruptedException ex) {
-                Logger.getLogger(WaitThread.class.getName()).log(Level.SEVERE, null, ex);
-                System.exit(1);
+                LOG.log(Level.SEVERE, "Thread interrupted", ex);
+                Thread.currentThread().interrupt();
             }
         }
     }
-    private static final Logger LOG = Logger.getLogger(WaitThread.class.getName());
-
 }

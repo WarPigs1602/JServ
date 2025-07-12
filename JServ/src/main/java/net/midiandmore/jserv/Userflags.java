@@ -4,96 +4,97 @@
  */
 package net.midiandmore.jserv;
 
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  * @author windo
  */
-public interface Userflags {
-
-    int QUFLAG_INACTIVE = 0x0001;
-    /* +I */
-    int QUFLAG_GLINE = 0x0002;
-    /* +g */
-    int QUFLAG_NOTICE = 0x0004;
-    /* +n */
-    int QUFLAG_STAFF = 0x0008;
-    /* +q */
-    int QUFLAG_SUSPENDED = 0x0010;
-    /* +z */
-    int QUFLAG_OPER = 0x0020;
-    /* +o */
-    int QUFLAG_DEV = 0x0040;
-    /* +d */
-    int QUFLAG_PROTECT = 0x0080;
-    /* +p */
-    int QUFLAG_HELPER = 0x0100;
-    /* +h */
-    int QUFLAG_ADMIN = 0x0200;
-    /* +a */
-    int QUFLAG_INFO = 0x0400;
-    /* +i */
-    int QUFLAG_DELAYEDGLINE = 0x0800;
-    /* +G */
-    int QUFLAG_NOAUTHLIMIT = 0x1000;
-    /* +L */
-    int QUFLAG_ACHIEVEMENTS = 0x2000;
-    /* +c */
-    int QUFLAG_CLEANUPEXEMPT = 0x4000;
-    /* +D */
-    int QUFLAG_TRUST = 0x8000;
-    /* +T */
-    int QUFLAG_ALL = 0xffff;
+public class Userflags {
 
     //chanlev
-    int QCUFLAG_OWNER = 0x8000;
+    protected static int QCUFLAG_OWNER = 0x8000;
     /* +n */
-    int QCUFLAG_MASTER = 0x4000;
+    protected static int QCUFLAG_MASTER = 0x4000;
     /* +m */
-    int QCUFLAG_OP = 0x2000;
+    protected static int QCUFLAG_OP = 0x2000;
     /* +o */
-    int QCUFLAG_VOICE = 0x1000;
+    protected static int QCUFLAG_VOICE = 0x1000;
     /* +v */
-    int QCUFLAG_AUTOOP = 0x0001;
+    protected static int QCUFLAG_AUTOOP = 0x0001;
     /* +a */
-    int QCUFLAG_BANNED = 0x0002;
+    protected static int QCUFLAG_BANNED = 0x0002;
     /* +b */
-    int QCUFLAG_DENY = 0x0004;
+    protected static int QCUFLAG_DENY = 0x0004;
     /* +d */
-    int QCUFLAG_AUTOVOICE = 0x0008;
+    protected static int QCUFLAG_AUTOVOICE = 0x0008;
     /* +g */
-    int QCUFLAG_QUIET = 0x0010;
+    protected static int QCUFLAG_QUIET = 0x0010;
     /* +q */
-    int QCUFLAG_NOINFO = 0x0020;
+    protected static int QCUFLAG_NOINFO = 0x0020;
     /* +s */
-    int QCUFLAG_TOPIC = 0x0040;
+    protected static int QCUFLAG_TOPIC = 0x0040;
     /* +t */
-    int QCUFLAG_HIDEWELCOME = 0x0080;
+    protected static int QCUFLAG_HIDEWELCOME = 0x0080;
     /* +w */
-    int QCUFLAG_PROTECT = 0x0100;
+    protected static int QCUFLAG_PROTECT = 0x0100;
     /* +p */
-    int QCUFLAG_INFO = 0x0200;
+    protected static int QCUFLAG_INFO = 0x0200;
     /* +i */
-    int QCUFLAG_KNOWN = 0x0400;
+    protected static int QCUFLAG_KNOWN = 0x0400;
     /* +k */
-    int QCUFLAG_AUTOINVITE = 0x0800;
+    protected static int QCUFLAG_AUTOINVITE = 0x0800;
     /* +j */
+    
+    public enum Flag {
+        INACTIVE('I', 0x0001),
+        GLINE('g', 0x0002),
+        NOTICE('n', 0x0004),
+        STAFF('q', 0x0008),
+        SUSPENDED('z', 0x0010),
+        OPER('o', 0x0020),
+        DEV('d', 0x0040),
+        PROTECT('p', 0x0080),
+        HELPER('h', 0x0100),
+        ADMIN('a', 0x0200),
+        INFO('i', 0x0400),
+        DELAYEDGLINE('G', 0x0800),
+        NOAUTHLIMIT('L', 0x1000),
+        ACHIEVEMENTS('c', 0x2000),
+        CLEANUPEXEMPT('D', 0x4000),
+        TRUST('T', 0x8000);
 
-    char[][] userFlags = {
-        {'a', QUFLAG_ADMIN},
-        {'c', QUFLAG_ACHIEVEMENTS},
-        {'d', QUFLAG_DEV},
-        {'D', QUFLAG_CLEANUPEXEMPT},
-        {'g', QUFLAG_GLINE},
-        {'G', QUFLAG_DELAYEDGLINE},
-        {'h', QUFLAG_HELPER},
-        {'i', QUFLAG_INFO},
-        {'L', QUFLAG_NOAUTHLIMIT},
-        {'n', QUFLAG_NOTICE},
-        {'o', QUFLAG_OPER},
-        {'p', QUFLAG_PROTECT},
-        {'q', QUFLAG_STAFF},
-        //  { 's',  QUFLAG_NOINFO },
-        {'I', QUFLAG_INACTIVE},
-        {'T', QUFLAG_TRUST},
-        {'z', QUFLAG_SUSPENDED}};
+        public final char code;
+        public final int value;
+
+        Flag(char code, int value) {
+            this.code = code;
+            this.value = value;
+        }
+    }
+
+    private static final Map<Character, Flag> FLAG_MAP = new HashMap<>();
+    static {
+        for (Flag flag : Flag.values()) {
+            FLAG_MAP.put(flag.code, flag);
+        }
+    }
+
+    public static Flag fromChar(char c) {
+        return FLAG_MAP.get(c);
+    }
+
+    public static int setFlag(int flags, Flag flag) {
+        return flags | flag.value;
+    }
+
+    public static int clearFlag(int flags, Flag flag) {
+        return flags & ~flag.value;
+    }
+
+    public static boolean hasFlag(int flags, Flag flag) {
+        return (flags & flag.value) != 0;
+    }
 }

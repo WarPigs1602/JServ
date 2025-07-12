@@ -81,52 +81,38 @@ public final class Config {
     }
 
     protected void createFileIfNotExists(String file) {
-        var f = new File(file);
+        File f = new File(file);
         if (!f.exists()) {
-            try {
-                f.createNewFile();
-                var is = new FileWriter(file);
-                var pw = new PrintWriter(is);
-                pw.println("[");
-                pw.println("]");
-                is.close();
+            try (FileWriter fw = new FileWriter(f)) {
+                fw.write("[]");
             } catch (IOException ex) {
-                ex.printStackTrace();
+                LOG.severe("Fehler beim Erstellen der Datei " + file + ": " + ex.getMessage());
             }
         }
     }
 
     protected void saveDataToJSON(String file, Properties ar, String name, String value) {
         createFileIfNotExists(file);
-        FileWriter is = null;
-        try {
-            is = new FileWriter(file);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        var pw = new PrintWriter(is);
-        var i = 0;
-        pw.println("[");
-        for (var jsonValue : ar.keySet()) {
-            var obj = Json.createObjectBuilder();
-            obj.add(name, (String) jsonValue);
-            obj.add(value, ar.getProperty((String) jsonValue));
-            pw.print(obj.build().toString());
-            i++;
-            if (ar.size() != i) {
-                pw.println(",");
-            } else {
-                pw.println("");
+        try (FileWriter fw = new FileWriter(file);
+             PrintWriter pw = new PrintWriter(fw)) {
+            pw.println("[");
+            int i = 0;
+            int size = ar.size();
+            for (String key : ar.stringPropertyNames()) {
+                var obj = Json.createObjectBuilder()
+                    .add(name, key)
+                    .add(value, ar.getProperty(key))
+                    .build();
+                pw.print(obj.toString());
+                i++;
+                pw.println(i < size ? "," : "");
             }
-        }
-        pw.println("]");
-        try {
-            is.close();
+            pw.println("]");
         } catch (IOException ex) {
-            ex.printStackTrace();
+            LOG.severe("Fehler beim Speichern in " + file + ": " + ex.getMessage());
         }
     }
-    
+
     /**
      * Loads the config files in the Properties
      */
@@ -148,19 +134,16 @@ public final class Config {
      */
     protected Properties loadDataFromJSONasProperties(String file, String obj, String obj2) {
         createFileIfNotExists(file);
-        var ar = new Properties();
-        try {
-            InputStream is = new FileInputStream(file);
-            var rdr = Json.createReader(is);
+        Properties ar = new Properties();
+        try (InputStream is = new FileInputStream(file);
+             var rdr = Json.createReader(is)) {
             var results = rdr.readArray();
-            var i = 0;
             for (var jsonValue : results) {
-                var jobj = results.getJsonObject(i);
+                var jobj = jsonValue.asJsonObject();
                 ar.put(jobj.getString(obj), jobj.getString(obj2));
-                i++;
             }
-        } catch (FileNotFoundException fne) {
-            fne.printStackTrace();
+        } catch (IOException ex) {
+            LOG.severe("Fehler beim Laden von " + file + ": " + ex.getMessage());
         }
         return ar;
     }

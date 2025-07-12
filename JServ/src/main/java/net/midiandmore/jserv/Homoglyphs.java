@@ -9,14 +9,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
 public final class Homoglyphs {
 
     private JServ mi;
-    private ArrayList<Character> homoglyphs;
+    private Set<Character> homoglyphs;
+
+    private static final Logger LOG = Logger.getLogger(Homoglyphs.class.getName());
 
     /**
      * @return the mi
@@ -34,43 +38,41 @@ public final class Homoglyphs {
 
     public Homoglyphs(JServ mi) {
         setMi(mi);
-        setHomoglyphs(new ArrayList<>());
+        setHomoglyphs(new HashSet<>());
         parseHomoglyphs();
     }
 
     private void parseHomoglyphs() {
-        System.out.printf("Loading Homoglyphs...\n");
+        LOG.info("Loading Homoglyphs...");
         var f = new File("chars.txt");
         if (f.exists()) {
-            try {
-                var fis = new FileInputStream(f);
-                var isr = new InputStreamReader(fis);
-                var br = new BufferedReader(isr);
-                var line = "";
+            try (var fis = new FileInputStream(f);
+                 var isr = new InputStreamReader(fis);
+                 var br = new BufferedReader(isr)) {
+                String line;
                 while ((line = br.readLine()) != null) {
                     if (line.startsWith("#")) {
                         continue;
                     }
-                    var arr = line.toCharArray();
-                    for (var elem : arr) {
-                        getHomoglyphs().add(elem);
+                    for (char elem : line.toCharArray()) {
+                        homoglyphs.add(elem);
                     }
                 }
-                System.out.printf("Loaded %d Homoglyphs...\n", getHomoglyphs().size());
+                LOG.info(String.format("Loaded %d Homoglyphs...", homoglyphs.size()));
             } catch (IOException e) {
-
+                LOG.log(Level.SEVERE, "Fehler beim Laden der Homoglyphen", e);
+                throw new RuntimeException("Fehler beim Laden der Homoglyphen", e);
             }
         } else {
-            System.err.printf("File chars.txt not found...\n");
-            System.exit(1);
+            LOG.severe("File chars.txt not found...");
+            throw new IllegalStateException("File chars.txt not found...");
         }
     }
 
     protected boolean scanForHomoglyphs(String text) {
-        var chars = text.trim().replace("\\s", "").toCharArray();
-        var cl = chars.length;
-        for (var i = 0; i < cl; i++) {
-            if (getHomoglyphs().contains(chars[i])) {
+        var chars = text.trim().replaceAll("\\s", "").toCharArray();
+        for (char c : chars) {
+            if (homoglyphs.contains(c)) {
                 return false;
             }
         }
@@ -80,15 +82,14 @@ public final class Homoglyphs {
     /**
      * @return the homoglyphs
      */
-    public ArrayList<Character> getHomoglyphs() {
+    public Set<Character> getHomoglyphs() {
         return homoglyphs;
     }
 
     /**
      * @param homoglyphs the homoglyphs to set
      */
-    public void setHomoglyphs(ArrayList<Character> homoglyphs) {
+    public void setHomoglyphs(Set<Character> homoglyphs) {
         this.homoglyphs = homoglyphs;
     }
-    private static final Logger LOG = Logger.getLogger(Homoglyphs.class.getName());
 }

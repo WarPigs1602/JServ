@@ -423,8 +423,7 @@ public final class SocketThread implements Runnable, Software {
                         var user = new String[1];
                         user[0] = names;
                         if (getChannel().containsKey(channel.toLowerCase())) {
-                            getChannel().get(channel.toLowerCase()).getUsers().add(names);
-                            getChannel().get(channel.toLowerCase()).getLastJoin().put(names, time());
+                            getChannel().get(channel.toLowerCase()).addUser(names);
                         } else {
                             getChannel().put(channel.toLowerCase(), new Channel(channel, "", user));
                         }
@@ -555,28 +554,43 @@ public final class SocketThread implements Runnable, Software {
                                     set = false;
                                 } else if (mode.equals("+")) {
                                     set = true;
-                                } else if (set && mode.equals("o")) {
+                                }
+                                if (set && mode.equals("o")) {
                                     var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getOp().add(users[0]);
-                                } else if (set && mode.equals("v")) {
+                                    getChannel().get(channel.toLowerCase()).addOp(users[0]);
+                                } if (set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getVoice().add(users[0]);
-                                } else if (!set && mode.equals("o")) {
+                                    getChannel().get(channel.toLowerCase()).addVoice(users[0]);
+                                } if (set && mode.equals("h")) {
                                     var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getOp().remove(users[0]);
-                                } else if (!set && mode.equals("v")) {
+                                    getChannel().get(channel.toLowerCase()).addHop(users[0]);
+                                } if (set && mode.equals("a")) {
                                     var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).getVoice().remove(users[0]);
-                                } else if (set) {
-                                    getChannel().get(channel.toLowerCase()).setModes(getChannel().get(channel.toLowerCase()).getModes() + mode);
-                                    if (mode.equals("m")) {
-                                        getChannel().get(channel.toLowerCase()).setModerated(true);
-                                    }
-                                } else {
-                                    getChannel().get(channel.toLowerCase()).setModes(getChannel().get(channel.toLowerCase()).getModes().replace(mode, ""));
-                                    if (mode.equals("m")) {
-                                        getChannel().get(channel.toLowerCase()).setModerated(false);
-                                    }
+                                    getChannel().get(channel.toLowerCase()).addAdmin(users[0]);
+                                } if (set && mode.equals("q")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).addOwner(users[0]);
+                                } if (set && mode.equals("S")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).addService(users[0]);
+                                } if (!set && mode.equals("o")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).removeOp(users[0]);
+                                } if (!set && mode.equals("v")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).removeVoice(users[0]);
+                                } if (!set && mode.equals("h")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).removeHop(users[0]);
+                                } if (!set && mode.equals("a")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).removeAdmin(users[0]);
+                                } if (!set && mode.equals("q")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).removeOwner(users[0]);
+                                } if (!set && mode.equals("S")) {
+                                    var users = elem[4].split(" ");
+                                    getChannel().get(channel.toLowerCase()).removeService(users[0]);
                                 }
                             }
                         }
@@ -657,19 +671,18 @@ public final class SocketThread implements Runnable, Software {
         if (!getChannel().containsKey(channel.toLowerCase())) {
             return;
         }
-        if (getChannel().get(channel.toLowerCase()).getUsers().contains(nick)) {
-            getChannel().get(channel.toLowerCase()).getUsers().remove(nick);
+        var ch = getChannel().get(channel.toLowerCase());
+        ch.removeUser(nick);
+        ch.removeOp(nick);
+        ch.removeVoice(nick);
+        ch.removeHop(nick);
+        ch.removeAdmin(nick);
+        ch.removeOwner(nick);
+        ch.removeService(nick);
+        if (ch.getLastJoin().containsKey(nick)) {
+            ch.getLastJoin().remove(nick);
         }
-        if (getChannel().get(channel.toLowerCase()).getOp().contains(nick)) {
-            getChannel().get(channel.toLowerCase()).getOp().remove(nick);
-        }
-        if (getChannel().get(channel.toLowerCase()).getVoice().contains(nick)) {
-            getChannel().get(channel.toLowerCase()).getVoice().remove(nick);
-        }
-        if (getChannel().get(channel.toLowerCase()).getLastJoin().containsKey(nick)) {
-            getChannel().get(channel.toLowerCase()).getLastJoin().remove(nick);
-        }
-        if (getChannel().get(channel.toLowerCase()).getUsers().isEmpty()) {
+        if (ch.getUsers().isEmpty()) {
             getChannel().remove(channel.toLowerCase());
         }
         if (getUsers().get(nick).getChannels().contains(channel.toLowerCase())) {
@@ -772,19 +785,19 @@ public final class SocketThread implements Runnable, Software {
     }
 
     protected boolean isMaster(int flags) {
-        return (flags & Userflags.QCUFLAG_MASTER) != 0;
+        return Userflags.hasQCUFlag(flags, Userflags.QCUFlag.MASTER);
     }
 
     protected boolean isOwner(int flags) {
-        return (flags & Userflags.QCUFLAG_OWNER) != 0;
+        return Userflags.hasQCUFlag(flags, Userflags.QCUFlag.OWNER);
     }
 
     protected boolean isOp(int flags) {
-        return (flags & Userflags.QCUFLAG_OP) != 0;
+        return Userflags.hasQCUFlag(flags, Userflags.QCUFlag.OP);
     }
 
     protected boolean isVoice(int flags) {
-        return (flags & Userflags.QCUFLAG_VOICE) != 0;
+        return Userflags.hasQCUFlag(flags, Userflags.QCUFlag.VOICE);
     }
 
     protected boolean isNoInfo(int flags) {

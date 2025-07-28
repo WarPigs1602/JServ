@@ -4,6 +4,7 @@
  */
 package net.midiandmore.jserv;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,39 +15,58 @@ import java.util.Map;
  */
 public class Userflags {
 
-    //chanlev
-    protected static int QCUFLAG_OWNER = 0x8000;
-    /* +n */
-    protected static int QCUFLAG_MASTER = 0x4000;
-    /* +m */
-    protected static int QCUFLAG_OP = 0x2000;
-    /* +o */
-    protected static int QCUFLAG_VOICE = 0x1000;
-    /* +v */
-    protected static int QCUFLAG_AUTOOP = 0x0001;
-    /* +a */
-    protected static int QCUFLAG_BANNED = 0x0002;
-    /* +b */
-    protected static int QCUFLAG_DENY = 0x0004;
-    /* +d */
-    protected static int QCUFLAG_AUTOVOICE = 0x0008;
-    /* +g */
-    protected static int QCUFLAG_QUIET = 0x0010;
-    /* +q */
-    protected static int QCUFLAG_NOINFO = 0x0020;
-    /* +s */
-    protected static int QCUFLAG_TOPIC = 0x0040;
-    /* +t */
-    protected static int QCUFLAG_HIDEWELCOME = 0x0080;
-    /* +w */
-    protected static int QCUFLAG_PROTECT = 0x0100;
-    /* +p */
-    protected static int QCUFLAG_INFO = 0x0200;
-    /* +i */
-    protected static int QCUFLAG_KNOWN = 0x0400;
-    /* +k */
-    protected static int QCUFLAG_AUTOINVITE = 0x0800;
-    /* +j */
+    public enum QCUFlag {
+        OWNER('n', 0x8000),
+        MASTER('m', 0x4000),
+        OP('o', 0x2000),
+        VOICE('v', 0x1000),
+        AUTOOP('a', 0x0001),
+        BANNED('b', 0x0002),
+        DENY('d', 0x0004),
+        AUTOVOICE('g', 0x0008),
+        QUIET('q', 0x0010),
+        NOINFO('s', 0x0020),
+        TOPIC('t', 0x0040),
+        HIDEWELCOME('w', 0x0080),
+        PROTECT('p', 0x0100),
+        INFO('i', 0x0200),
+        KNOWN('k', 0x0400),
+        AUTOINVITE('j', 0x0800);
+
+        public final char code;
+        public final int value;
+
+        QCUFlag(char code, int value) {
+            this.code = code;
+            this.value = value;
+        }
+    }
+
+    private static final Map<Character, QCUFlag> QCUFLAG_MAP;
+    static {
+        Map<Character, QCUFlag> map = new HashMap<>();
+        for (QCUFlag flag : QCUFlag.values()) {
+            map.put(flag.code, flag);
+        }
+        QCUFLAG_MAP = Collections.unmodifiableMap(map);
+    }
+
+    public static QCUFlag qcuFlagFromChar(char c) {
+        return QCUFLAG_MAP.get(c);
+    }
+
+    public static int setQCUFlag(int flags, QCUFlag flag) {
+        return flags | flag.value;
+    }
+
+    public static int clearQCUFlag(int flags, QCUFlag flag) {
+        return flags & ~flag.value;
+    }
+
+    public static boolean hasQCUFlag(int flags, QCUFlag flag) {
+        return (flags & flag.value) != 0;
+    }
+
     
     public enum Flag {
         INACTIVE('I', 0x0001),

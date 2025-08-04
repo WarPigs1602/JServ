@@ -22,7 +22,7 @@
    It is recommended to use an IDE with Maven support to compile the sources.
 
 2. **Precompiled Release:**  
-   A precompiled release is available [here](https://github.com/user-attachments/files/21146940/JServ.zip).
+   A precompiled release is available [here](https://github.com/user-attachments/files/21579038/JServ.zip).
    - Make sure you have JRE 17 or higher and PostgreSQL installed.
 
 ## Usage

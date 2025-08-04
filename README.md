@@ -1,6 +1,6 @@
 # JServ
 
-**JServ** is a robust Java-based service that seamlessly integrates two essential IRC modules—**SpamScan** and **HostServ**—into a single, efficient package. Designed specifically for use with `midircd` and `snircd`, JServ streamlines spam detection and hidden host management for IRC networks.
+**JServ** is a robust Java-based service that integrates two essential IRC modules—**SpamScan** and **HostServ**—into a single, efficient package. Designed specifically for use with `midircd` and `snircd`, JServ streamlines spam detection and hidden host management for IRC networks.
 
 ## Key Features
 
@@ -16,6 +16,21 @@
 - **Weekly Host Change:** Users can change their hidden host once every seven days.
 - **Operator Privileges:** Opers can manually set or update hidden hosts for any user.
 - **Secure Storage:** Host information is securely stored and managed via PostgreSQL.
+
+### Channel and User Management
+- **Channel Modes and Permissions:** Manage channel modes, user roles (op, voice, admin, service, owner, etc.), and moderation status.
+- **User Tracking:** Track users, their flood/repeat status, channels, registration, operator status, and service flags.
+- **Account History:** Log changes to user accounts, including password and email updates.
+- **Channel Statistics:** Track channel creation, last active time, stats resets, ban durations, founder, and user join stats.
+
+### Database Integration
+- **PostgreSQL Backend:** All persistent data (host info, channel/user details, configs) are handled via PostgreSQL for reliability and security.
+- **Transaction Support:** Robust transaction handling (begin, commit) for data integrity.
+- **Schema Management:** Automatic creation and management of database schema and tables.
+
+### Configuration and Extensibility
+- **Configurable via JSON:** Both core service and spam/badword management are configured in JSON files for easy customization.
+- **Self-Healing Setup:** Automatic generation of missing configurations and database tables at startup.
 
 ## Compatibility
 
@@ -48,31 +63,13 @@ exit
 
 ## Operator & User Commands
 
-- **SpamScan Commands:**
-  - `/badword add <word>`
-  - `/badword list`
-  - `/badword delete <word>`
-  - `/spamscan help`
-- **HostServ Commands:**
-  - `/hostserv set <host>`
-  - `/hostserv info`
-  - `/hostserv help`
-
-Refer to the documentation or in-service help commands for a full list and syntax.
+Refer to the built-in help system or project wiki for a complete list of operator and user commands for SpamScan and HostServ.
 
 ## Important Notes
 
-- JServ operates exclusively with `midircd` and `snircd` IRC daemons.
-- All configuration and management tasks can be performed via IRC operator commands.
-- The system automatically maintains configuration files and database integrity.
-- Security and privacy for users are prioritized via proper host masking and secure storage.
+- Ensure PostgreSQL is running and accessible by JServ before starting the service.
+- Configuration files are auto-generated if missing, but manual review is recommended for customization.
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for full details.
-
----
-
-**Author:** Andreas Pschorn (WarPigs)  
-**Vendor:** MidiAndMore.Net  
-**Version:** 1.0
+MIT License © 2024-2025 Andreas Pschorn

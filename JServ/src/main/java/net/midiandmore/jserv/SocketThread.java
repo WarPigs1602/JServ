@@ -15,13 +15,15 @@ import java.util.logging.Logger;
 
 public final class SocketThread implements Runnable, Software {
 
+    private final long serverStartTime = System.currentTimeMillis() / 1000;
+
     protected void joinChannel(String channel, String numeric, String service) {
         if (getChannel().containsKey(channel.toLowerCase())) {
-            sendText("%s%s J %s %d", numeric, service, channel, time());
+            sendText("%s J %s %d", service, channel, time());
         } else {
-            sendText("%s%s C %s %d", numeric, service, channel, time());
+            sendText("%s C %s %d", service, channel, time());
         }
-        sendText("%s M %s +o %s%s", numeric, channel, numeric, service);
+        sendText("%s M %s +o %s", numeric, channel, service);
     }
 
     /**
@@ -213,7 +215,7 @@ public final class SocketThread implements Runnable, Software {
     protected void handshake(String password, String servername, String description, String numeric) {
         System.out.println("Starting handshake...");
         sendText("PASS :%s", password);
-        sendText("SERVER %s %d %d %d J10 %s]]] +hs6 :%s", servername, 2, time(), time(), numeric, description);
+        sendText("SERVER %s 2 %d %d J10 %s]]] +hs6n :%s", servername, time(), time(), numeric, description);
     }
 
     protected void sendText(String text, Object... args) {
@@ -270,7 +272,7 @@ public final class SocketThread implements Runnable, Software {
         }
         return null;
     }
-    
+
     protected String getUserAccount(String nick) {
         for (var session : getUsers().values()) {
             if (session.getNick().equalsIgnoreCase(nick)) {
@@ -278,7 +280,7 @@ public final class SocketThread implements Runnable, Software {
             }
         }
         return null;
-    }    
+    }
 
     private long time() {
         return System.currentTimeMillis() / 1000;
@@ -349,7 +351,6 @@ public final class SocketThread implements Runnable, Software {
             var list = getMi().getDb().getChannels();
             var nicks = getMi().getDb().getData();
             var exist = new ArrayList<String>();
-            System.out.printf("Joining %d channels for the services with a burst...\r\n", list.size());
             for (var channel : list) {
                 if (channel[1].startsWith("#")) {
                     if (!getBursts().containsKey(channel[1].toLowerCase())) {
@@ -386,26 +387,6 @@ public final class SocketThread implements Runnable, Software {
                     }
                 }
             }
-            var bursts = getBursts().keySet();
-            for (var burst : bursts) {
-                var nicks1 = getBursts().get(burst).getUsers().toArray();
-                var sb = new StringBuilder();
-                var firstOp = false;
-                for (var i = 0; i < nicks1.length; i++) {
-                    sb.append(nicks1[i]);
-                    if (!firstOp && (nicks1[i].equals(jnumeric + "AAA") || nicks1[i].equals(jnumeric + "AAB") || nicks1[i].equals(jnumeric + "AAC") || nicks1[i].equals(jnumeric + "AAD"))) {
-                        sb.append(":o");
-                        firstOp = true;
-                    }
-                    if (i + 1 < nicks1.length) {
-                        sb.append(",");
-                    }
-                }
-                if (!sb.isEmpty()) {
-                    sendText("%s B %s %d %s", jnumeric, burst, getBursts().get(burst).getTime(), sb.toString());
-                }
-            }
-            System.out.println("Channels joined...");
             System.out.println("Successfully connected...");
             sendText("%s EB", jnumeric);
             while (!getSocket().isClosed() && (content = getBr().readLine()) != null && isRuns()) {
@@ -417,6 +398,18 @@ public final class SocketThread implements Runnable, Software {
                     } else if (elem[1].equals("EB") && !isBurst()) {
                         setBurst(true);
                         sendText("%s EA", jnumeric);
+                        System.out.printf("Joining %d channels for the services...\r\n", list.size());
+                        var bursts = getBursts().keySet();
+                        for (var burst : bursts) {
+                            var nicks1 = getBursts().get(burst).getUsers().toArray();
+                            for (var nameObj : nicks1) {
+                                var name = String.valueOf(nameObj);
+                                if (name.startsWith(jnumeric)) {
+                                    joinChannel(burst, jnumeric, name);
+                                }
+                            }
+                        }
+                        System.out.println("Channels joined...");
                     } else if (elem[1].equals("J") || elem[1].equals("C")) {
                         var channel = elem[2];
                         var names = elem[0];
@@ -528,7 +521,7 @@ public final class SocketThread implements Runnable, Software {
                                 var sethost = vhost.split("@", 2);
                                 sendText("%s SH %s %s %s", jnumeric, nick, sethost[0], sethost[1]);
                             }
-                        }                        
+                        }
                     } else if (elem[1].equals("G")) {
                         sendText("%s Z %s", jnumeric, content.substring(5));
                     } else if (elem[1].equals("M") && elem.length == 4) {
@@ -558,37 +551,48 @@ public final class SocketThread implements Runnable, Software {
                                 if (set && mode.equals("o")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addOp(users[0]);
-                                } if (set && mode.equals("v")) {
+                                }
+                                if (set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addVoice(users[0]);
-                                } if (set && mode.equals("h")) {
+                                }
+                                if (set && mode.equals("h")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addHop(users[0]);
-                                } if (set && mode.equals("a")) {
+                                }
+                                if (set && mode.equals("a")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addAdmin(users[0]);
-                                } if (set && mode.equals("q")) {
+                                }
+                                if (set && mode.equals("q")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addOwner(users[0]);
-                                } if (set && mode.equals("S")) {
+                                }
+                                if (set && mode.equals("S")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addService(users[0]);
-                                } if (!set && mode.equals("o")) {
+                                }
+                                if (!set && mode.equals("o")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeOp(users[0]);
-                                } if (!set && mode.equals("v")) {
+                                }
+                                if (!set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeVoice(users[0]);
-                                } if (!set && mode.equals("h")) {
+                                }
+                                if (!set && mode.equals("h")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeHop(users[0]);
-                                } if (!set && mode.equals("a")) {
+                                }
+                                if (!set && mode.equals("a")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeAdmin(users[0]);
-                                } if (!set && mode.equals("q")) {
+                                }
+                                if (!set && mode.equals("q")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeOwner(users[0]);
-                                } if (!set && mode.equals("S")) {
+                                }
+                                if (!set && mode.equals("S")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeService(users[0]);
                                 }
@@ -643,9 +647,17 @@ public final class SocketThread implements Runnable, Software {
         } catch (IOException | NumberFormatException ex) {
             LOG.severe("Fehler beim Verbindungsaufbau: " + ex.getMessage());
         } finally {
-            if (getPw() != null) getPw().close();
-            if (getBr() != null) try { getBr().close(); } catch (IOException ignored) {}
-            if (getSocket() != null) try { getSocket().close(); } catch (IOException ignored) {}
+            if (getPw() != null) {
+                getPw().close();
+            }
+            if (getBr() != null) try {
+                getBr().close();
+            } catch (IOException ignored) {
+            }
+            if (getSocket() != null) try {
+                getSocket().close();
+            } catch (IOException ignored) {
+            }
             setPw(null);
             setBr(null);
             setSocket(null);

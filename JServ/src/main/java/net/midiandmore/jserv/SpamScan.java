@@ -179,7 +179,7 @@ public final class SpamScan implements Software {
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], Messages.get("QM_EMPTYCHAN", channel));
                         } else if (!getMi().getDb().isChan(channel)) {
                             getMi().getDb().addChan(channel);
-                            getSt().joinChannel(channel, getNumeric(), "AAC");
+                            getSt().joinChannel(channel, getNumeric(), getNumeric() + "AAC");
                             setReg(false);
                             getSt().sendNotice(getNumeric(), "AAC", notice, elem[0], Messages.get("QM_DONE"));
                         } else {

@@ -20,6 +20,7 @@ public final class Users {
     private String line = "";    
     private int flood = 0;
     private int repeat = 0;
+    private int capsCount = 0;
     private List<String> channels = new ArrayList<>();
     private boolean oper = false;    
     private boolean reg = false;    
@@ -51,8 +52,31 @@ public final class Users {
     public void setFlood(int flood) { this.flood = flood; }
     public int getRepeat() { return repeat; }
     public void setRepeat(int repeat) { this.repeat = repeat; }
+    public int getCapsCount() { return capsCount; }
+    public void setCapsCount(int capsCount) { this.capsCount = capsCount; }
     public List<String> getChannels() { return Collections.unmodifiableList(channels); }
     public void setChannels(List<String> channels) { this.channels = new ArrayList<>(channels); }
+    
+    /**
+     * Add a channel to the user's channel list
+     * @param channel Channel name (will be converted to lowercase)
+     */
+    public void addChannel(String channel) {
+        if (channel != null && !channels.contains(channel.toLowerCase())) {
+            channels.add(channel.toLowerCase());
+        }
+    }
+    
+    /**
+     * Remove a channel from the user's channel list
+     * @param channel Channel name (will be converted to lowercase)
+     */
+    public void removeChannel(String channel) {
+        if (channel != null) {
+            channels.remove(channel.toLowerCase());
+        }
+    }
+    
     public boolean isOper() { return oper; }
     public void setOper(boolean oper) { this.oper = oper; }
     public boolean isReg() { return reg; }

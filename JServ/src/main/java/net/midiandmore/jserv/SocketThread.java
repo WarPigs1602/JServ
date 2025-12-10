@@ -69,31 +69,53 @@ public final class SocketThread implements Runnable, Software {
     }
 
     /**
-     * @return the hs
+     * @return the module manager
      */
+    public ModuleManager getModuleManager() {
+        return moduleManager;
+    }
+
+    /**
+     * @param moduleManager the module manager to set
+     */
+    public void setModuleManager(ModuleManager moduleManager) {
+        this.moduleManager = moduleManager;
+    }
+
+    /**
+     * @return the hs (deprecated - use ModuleManager)
+     * @deprecated Use getModuleManager().getModule("HostServ") instead
+     */
+    @Deprecated
     public HostServ getHs() {
-        return hs;
+        return (HostServ) getModuleManager().getModule("HostServ");
     }
 
     /**
-     * @param hs the hs to set
+     * @param hs the hs to set (deprecated - use ModuleManager)
+     * @deprecated Modules are managed by ModuleManager
      */
+    @Deprecated
     public void setHs(HostServ hs) {
-        this.hs = hs;
+        // No-op - modules are managed by ModuleManager
     }
 
     /**
-     * @return the ss
+     * @return the ss (deprecated - use ModuleManager)
+     * @deprecated Use getModuleManager().getModule("SpamScan") instead
      */
+    @Deprecated
     public SpamScan getSs() {
-        return ss;
+        return (SpamScan) getModuleManager().getModule("SpamScan");
     }
 
     /**
-     * @param ss the ss to set
+     * @param ss the ss to set (deprecated - use ModuleManager)
+     * @deprecated Modules are managed by ModuleManager
      */
+    @Deprecated
     public void setSs(SpamScan ss) {
-        this.ss = ss;
+        // No-op - modules are managed by ModuleManager
     }
 
     /**
@@ -197,8 +219,7 @@ public final class SocketThread implements Runnable, Software {
     private HashMap<String, Users> users;
     private HashMap<String, Channel> channel;
     private HashMap<String, Burst> bursts;
-    private HostServ hs;
-    private SpamScan ss;
+    private ModuleManager moduleManager;
     private byte[] ip;
     private boolean reg;
 
@@ -209,6 +230,7 @@ public final class SocketThread implements Runnable, Software {
         setAuthed(new HashMap<>());
         setBurst(false);
         setBursts(new HashMap<>());
+        setModuleManager(new ModuleManager(mi, this));
         (thread = new Thread(this)).start();
     }
 
@@ -285,6 +307,24 @@ public final class SocketThread implements Runnable, Software {
     private long time() {
         return System.currentTimeMillis() / 1000;
     }
+    
+    /**
+     * Extracts the user numeric from a P10 N command
+     * The numeric is always the element directly before the ":" in the realname part
+     */
+    private String extractNumericFromNCommand(String[] elem) {
+        // Find the element that starts with ":" (realname)
+        for (int i = elem.length - 1; i >= 0; i--) {
+            if (elem[i].startsWith(":")) {
+                // The numeric is the element before this one
+                if (i > 0) {
+                    return elem[i - 1];
+                }
+            }
+        }
+        // Fallback to old method if no ":" found
+        return elem[elem.length - 1];
+    }
 
     @Override
     public void run() {
@@ -294,20 +334,8 @@ public final class SocketThread implements Runnable, Software {
         var port = getMi().getConfig().getConfigFile().getProperty("port");
         var password = getMi().getConfig().getConfigFile().getProperty("password");
         var jservername = getMi().getConfig().getConfigFile().getProperty("servername");
-        var hnick = getMi().getConfig().getHostFile().getProperty("nick");
-        var hservername = getMi().getConfig().getHostFile().getProperty("servername");
-        var hdescription = getMi().getConfig().getHostFile().getProperty("description");
-        var snick = getMi().getConfig().getSpamFile().getProperty("nick");
-        var sservername = getMi().getConfig().getSpamFile().getProperty("servername");
-        var sdescription = getMi().getConfig().getSpamFile().getProperty("description");
         var jdescription = getMi().getConfig().getConfigFile().getProperty("description");
         var jnumeric = getMi().getConfig().getConfigFile().getProperty("numeric");
-        var hidentd = getMi().getConfig().getHostFile().getProperty("identd");
-        var sidentd = getMi().getConfig().getSpamFile().getProperty("identd");
-        var modules = getMi().getConfig().getModulesFile().getProperty("spamscan");
-        var moduleh = getMi().getConfig().getModulesFile().getProperty("hostserv");
-        var modulea = getMi().getConfig().getModulesFile().getProperty("authserv");
-        var modulec = getMi().getConfig().getModulesFile().getProperty("chanserv");
         try {
             setSocket(new Socket(host, Integer.parseInt(port)));
             setPw(new PrintWriter(getSocket().getOutputStream()));
@@ -315,42 +343,36 @@ public final class SocketThread implements Runnable, Software {
 
             var content = "";
             handshake(password, jservername, jdescription, jnumeric);
-            setSs(new SpamScan(getMi(), this, getPw(), getBr()));
-            setHs(new HostServ(getMi(), this, getPw(), getBr()));
-            if (modules.equalsIgnoreCase("true")) {
-                getSs().handshake(snick, sservername, sdescription, jnumeric, sidentd);
-                getMi().getDb().createSchema();
-                getMi().getDb().createTable();
-                getMi().getDb().commit();
+            
+            // Initialize ModuleManager with streams
+            getModuleManager().setStreams(getPw(), getBr());
+            
+            // Load modules from configuration file
+            // This replaces the old manual registration and enabling
+            String moduleConfigFile = "config-modules-extended.json";
+            getModuleManager().loadModulesFromConfig(moduleConfigFile);
+            
+            // Perform post-load initialization for all enabled modules
+            for (Module module : getModuleManager().getAllModules().values()) {
+                if (module.isEnabled()) {
+                    module.postLoadInitialization();
+                }
             }
-            if (moduleh.equalsIgnoreCase("true")) {
-                getHs().handshake(hnick, hservername, hdescription, jnumeric, hidentd);
-            }
+            
+            // Perform handshakes for enabled modules
+            getModuleManager().performHandshakes(jnumeric);
+            
             System.out.println("Handshake complete...");
-            if (moduleh.equalsIgnoreCase("true")) {
-                System.out.printf("Adding 1 channel for %s...\r\n", hnick);
-                if (!getBursts().containsKey(CHANNEL_TWILIGHTZONE)) {
-                    getBursts().put(CHANNEL_TWILIGHTZONE, new Burst(CHANNEL_TWILIGHTZONE));
+            
+            // Let modules register their burst channels
+            for (Module module : getModuleManager().getAllModules().values()) {
+                if (module.isEnabled()) {
+                    module.registerBurstChannels(getBursts(), jnumeric);
                 }
-                getBursts().get(CHANNEL_TWILIGHTZONE).getUsers().add(jnumeric + "AAB");
-                System.out.printf("%s has successfully added...\r\n", hnick);
             }
-            if (modules.equalsIgnoreCase("true")) {
-                var list = getMi().getDb().getChannel();
-                System.out.printf("Adding %d channels for %s...\r\n", list.size(), snick);
-                for (var channel : list) {
-                    if (channel.startsWith("#")) {
-                        if (!getBursts().containsKey(channel.toLowerCase())) {
-                            getBursts().put(channel.toLowerCase(), new Burst(channel));
-                        }
-                        getBursts().get(channel.toLowerCase()).getUsers().add(jnumeric + "AAC");
-                    }
-                }
-                System.out.println("Channels added...");
-            }
+            
             var list = getMi().getDb().getChannels();
             var nicks = getMi().getDb().getData();
-            var exist = new ArrayList<String>();
             for (var channel : list) {
                 if (channel[1].startsWith("#")) {
                     if (!getBursts().containsKey(channel[1].toLowerCase())) {
@@ -417,55 +439,49 @@ public final class SocketThread implements Runnable, Software {
                         user[0] = names;
                         if (getChannel().containsKey(channel.toLowerCase())) {
                             getChannel().get(channel.toLowerCase()).addUser(names);
+                            getChannel().get(channel.toLowerCase()).getLastJoin().put(names, time());
                         } else {
                             getChannel().put(channel.toLowerCase(), new Channel(channel, "", user));
                         }
+                        // Add channel to user's channel list
+                        if (getUsers().containsKey(names)) {
+                            getUsers().get(names).addChannel(channel.toLowerCase());
+                        }
                     } else if (elem[1].equals("N") && elem.length > 4) {
                         var priv = elem[7].contains("r");
-                        var hidden = elem[7].contains("h");
                         var service = elem[7].contains("k");
                         var x = elem[7].contains("x");
                         var o = elem[7].contains("o");
-                        var ssl = elem[7].contains("z");
                         String acc = null;
-                        String nick = null;
+                        String nick = extractNumericFromNCommand(elem);
+                        
                         if (priv) {
-                            var other = false;
                             if (elem[9].contains(":")) {
                                 acc = elem[9].split(":", 2)[0];
-                                other = true;
                             } else if (elem[8].contains(":")) {
                                 acc = elem[8].split(":", 2)[0];
                             } else {
                                 acc = "";
                             }
-                            if (other) {
-                                if (hidden) {
-                                    nick = elem[12];
-                                } else {
-                                    nick = elem[11];
-                                }
-                            } else {
-                                if (hidden) {
-                                    nick = elem[11];
-                                } else {
-                                    nick = elem[10];
-                                }
-                            }
                         } else if (elem[9].contains("@")) {
                             acc = "";
-                            nick = elem[11];
                         } else {
                             acc = "";
-                            if (hidden) {
-                                nick = elem[10];
-                            } else {
-                                nick = elem[9];
-                            }
                         }
                         var hosts = elem[5] + "@" + elem[6];
-                        // Antiknocker
-                        if (!antiKnocker(elem[2], elem[5])) {
+                        
+                        // Let modules handle new user (e.g., SpamScan checks for bots, HostServ sets vhost)
+                        boolean userHandled = false;
+                        for (Module module : getModuleManager().getAllModules().values()) {
+                            if (module.isEnabled()) {
+                                if (module.handleNewUser(nick, elem[2], elem[5], elem[6], acc, jnumeric)) {
+                                    userHandled = true;
+                                    break; // User was killed/handled by module
+                                }
+                            }
+                        }
+                        
+                        if (!userHandled) {
                             getUsers().put(nick, new Users(nick, elem[2], acc, hosts));
                             getUsers().get(nick).setX(x);
                             getUsers().get(nick).setService(service);
@@ -473,18 +489,6 @@ public final class SocketThread implements Runnable, Software {
                             if (!acc.isBlank()) {
                                 getMi().getDb().updateData("lastuserhost", acc, hosts);
                                 getMi().getDb().updateData("lastpasschng", acc, time());
-                            }
-                        } else {
-                            var count = getMi().getDb().getId();
-                            count++;
-                            getMi().getDb().addId("Spambot!");
-                            sendText("%sAAC D %s %d : (You are detected as as Knocker Spambot, ID: %d)", jnumeric, nick, time(), count);
-                        }
-                        if (!acc.isBlank() && getMi().getDb().isRegistered(acc) && moduleh.equalsIgnoreCase("true")) {
-                            var vhost = getMi().getDb().getHost(acc);
-                            if (vhost != null) {
-                                var sethost = vhost.split("@", 2);
-                                sendText("%s SH %s %s %s", jnumeric, nick, sethost[0], sethost[1]);
                             }
                         }
                     } else if (elem[1].equals("N") && elem.length == 4) {
@@ -494,32 +498,57 @@ public final class SocketThread implements Runnable, Software {
                         var modes = elem[4];
                         var names = elem[6].split(",");
                         getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
+                        // Add channel to each user's channel list
+                        for (var userName : names) {
+                            var userNumeric = userName.split(":")[0]; // Strip mode suffixes
+                            if (getUsers().containsKey(userNumeric)) {
+                                getUsers().get(userNumeric).addChannel(channel);
+                            }
+                        }
                     } else if (elem[1].equals("B") && elem.length >= 6) {
                         var channel = elem[2].toLowerCase();
                         var modes = elem[4];
                         var names = elem[5].split(",");
                         getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
+                        // Add channel to each user's channel list
+                        for (var userName : names) {
+                            var userNumeric = userName.split(":")[0]; // Strip mode suffixes
+                            if (getUsers().containsKey(userNumeric)) {
+                                getUsers().get(userNumeric).addChannel(channel);
+                            }
+                        }
                     } else if (elem[1].equals("B") && elem.length == 5) {
                         var channel = elem[2].toLowerCase();
                         var modes = "";
                         var names = elem[4].split(",");
                         getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
+                        // Add channel to each user's channel list
+                        for (var userName : names) {
+                            var userNumeric = userName.split(":")[0]; // Strip mode suffixes
+                            if (getUsers().containsKey(userNumeric)) {
+                                getUsers().get(userNumeric).addChannel(channel);
+                            }
+                        }
                     } else if (elem[1].equals("C")) {
                         var channel = elem[2].toLowerCase();
                         var names = new String[1];
                         names[0] = elem[0] + ":q";
                         getChannel().put(channel.toLowerCase(), new Channel(channel, "", names));
+                        // Add channel to user's channel list
+                        if (getUsers().containsKey(elem[0])) {
+                            getUsers().get(elem[0]).addChannel(channel);
+                        }
                     } else if (elem[1].equals("AC") && getUsers().containsKey(elem[2])) {
                         var acc = elem[3];
                         var nick = elem[2];
                         if (getUsers().get(nick).getAccount().isBlank()) {
                             getUsers().get(nick).setAccount(acc);
                         }
-                        if (!acc.isBlank() && getMi().getDb().isRegistered(acc) && moduleh.equalsIgnoreCase("true")) {
-                            var vhost = getMi().getDb().getHost(acc);
-                            if (vhost != null) {
-                                var sethost = vhost.split("@", 2);
-                                sendText("%s SH %s %s %s", jnumeric, nick, sethost[0], sethost[1]);
+                        
+                        // Let modules handle authentication (e.g., HostServ sets vhost)
+                        for (Module module : getModuleManager().getAllModules().values()) {
+                            if (module.isEnabled()) {
+                                module.handleAuthentication(nick, acc, jnumeric);
                             }
                         }
                     } else if (elem[1].equals("G")) {
@@ -536,12 +565,10 @@ public final class SocketThread implements Runnable, Software {
                             getUsers().get(nick).setOper(true);
                         }
                     } else if (elem[1].equals("M")) {
-                        var nick = elem[0];
                         var channel = elem[2].toLowerCase();
                         if (channel.startsWith("#")) {
                             var flags = elem[3].split("");
                             var set = false;
-                            var cnt = 0;
                             for (var mode : flags) {
                                 if (mode.equals("-")) {
                                     set = false;
@@ -556,22 +583,6 @@ public final class SocketThread implements Runnable, Software {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).addVoice(users[0]);
                                 }
-                                if (set && mode.equals("h")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).addHop(users[0]);
-                                }
-                                if (set && mode.equals("a")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).addAdmin(users[0]);
-                                }
-                                if (set && mode.equals("q")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).addOwner(users[0]);
-                                }
-                                if (set && mode.equals("S")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).addService(users[0]);
-                                }
                                 if (!set && mode.equals("o")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeOp(users[0]);
@@ -579,22 +590,6 @@ public final class SocketThread implements Runnable, Software {
                                 if (!set && mode.equals("v")) {
                                     var users = elem[4].split(" ");
                                     getChannel().get(channel.toLowerCase()).removeVoice(users[0]);
-                                }
-                                if (!set && mode.equals("h")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).removeHop(users[0]);
-                                }
-                                if (!set && mode.equals("a")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).removeAdmin(users[0]);
-                                }
-                                if (!set && mode.equals("q")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).removeOwner(users[0]);
-                                }
-                                if (!set && mode.equals("S")) {
-                                    var users = elem[4].split(" ");
-                                    getChannel().get(channel.toLowerCase()).removeService(users[0]);
                                 }
                             }
                         }
@@ -631,12 +626,9 @@ public final class SocketThread implements Runnable, Software {
                         }
                         getUsers().remove(nick);
                     }
-                    if (modules.equalsIgnoreCase("true")) {
-                        getSs().parseLine(content);
-                    }
-                    if (moduleh.equalsIgnoreCase("true")) {
-                        getHs().parseLine(content);
-                    }
+                    // Route line to all enabled modules
+                    getModuleManager().routeLine(content);
+                    
                     if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
                         System.out.printf("DEBUG get text: %s\n", content);
                     }
@@ -647,6 +639,18 @@ public final class SocketThread implements Runnable, Software {
         } catch (IOException | NumberFormatException ex) {
             LOG.severe("Fehler beim Verbindungsaufbau: " + ex.getMessage());
         } finally {
+            // Send SQUIT before closing connection
+            if (getPw() != null && !getSocket().isClosed()) {
+                try {
+                    System.out.println("Sending SQUIT command...");
+                    sendText("SQUIT %s :Service shutting down", getServername());
+                    getPw().flush();
+                    Thread.sleep(500); // Give time for SQUIT to be sent
+                } catch (Exception e) {
+                    LOG.warning("Failed to send SQUIT: " + e.getMessage());
+                }
+            }
+            
             if (getPw() != null) {
                 getPw().close();
             }
@@ -670,15 +674,6 @@ public final class SocketThread implements Runnable, Software {
         sendText("%s%s L %s", numeric, service, channel);
     }
 
-    // Antikocker
-    protected boolean antiKnocker(String nick, String ident) {
-        if (ident.startsWith("~")) {
-            ident = ident.substring(1);
-        }
-        var regex = "^(st|sn|cr|pl|pr|fr|fl|qu|br|gr|sh|sk|tr|kl|wr|bl|[bcdfgklmnprstvwz])([aeiou][aeiou][bcdfgklmnprstvwz])(ed|est|er|le|ly|y|ies|iest|ian|ion|est|ing|led|inger?|[abcdfgklmnprstvwz])$";
-        return !ident.equalsIgnoreCase(nick) && nick.matches(regex) && ident.matches(regex);
-    }
-
     protected void removeUser(String nick, String channel) {
         if (!getChannel().containsKey(channel.toLowerCase())) {
             return;
@@ -687,10 +682,6 @@ public final class SocketThread implements Runnable, Software {
         ch.removeUser(nick);
         ch.removeOp(nick);
         ch.removeVoice(nick);
-        ch.removeHop(nick);
-        ch.removeAdmin(nick);
-        ch.removeOwner(nick);
-        ch.removeService(nick);
         if (ch.getLastJoin().containsKey(nick)) {
             ch.getLastJoin().remove(nick);
         }
@@ -698,7 +689,7 @@ public final class SocketThread implements Runnable, Software {
             getChannel().remove(channel.toLowerCase());
         }
         if (getUsers().get(nick).getChannels().contains(channel.toLowerCase())) {
-            getUsers().get(nick).getChannels().remove(channel.toLowerCase());
+            getUsers().get(nick).removeChannel(channel.toLowerCase());
         }
     }
 
@@ -984,6 +975,5 @@ public final class SocketThread implements Runnable, Software {
         this.bursts = bursts;
     }
     private static final Logger LOG = Logger.getLogger(SocketThread.class.getName());
-    private static final String CHANNEL_TWILIGHTZONE = "#twilightzone";
     private static final int SERVERNAME_INDEX = 6;
 }

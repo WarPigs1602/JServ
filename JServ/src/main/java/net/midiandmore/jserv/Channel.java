@@ -20,12 +20,8 @@ public final class Channel {
     private String modes;
     private boolean moderated;
     private final List<String> users;
-    private final List<String> hop = new ArrayList<>();
-    private final List<String> admin = new ArrayList<>();
-    private final List<String> service = new ArrayList<>();
     private final List<String> op = new ArrayList<>();
     private final List<String> voice = new ArrayList<>();
-    private final List<String> owner = new ArrayList<>();
     private final Map<String, Long> lastJoin = new HashMap<>();
     private static final Logger LOG = Logger.getLogger(Channel.class.getName());
 
@@ -36,27 +32,19 @@ public final class Channel {
         this.users = new ArrayList<>();
         Collections.addAll(this.users, users);
         for (String nick : users) {
-            boolean voice = false, op = false, hop = false, service = false, owner = false, admin = false;
+            boolean voice = false, op = false;
             if (nick.contains(":")) {
                 String[] elem = nick.split(":", 2);
                 nick = elem[0];
                 for (char status : elem[1].toCharArray()) {
                     switch (status) {
-                        case 'O': service = true; break;
-                        case 'q': owner = true; break;
-                        case 'a': admin = true; break;
                         case 'o': op = true; break;
-                        case 'h': hop = true; break;
                         case 'v': voice = true; break;
                     }
                 }
             }
             if (op) this.op.add(nick);
             if (voice) this.voice.add(nick);
-            if (hop) this.hop.add(nick);
-            if (service) this.service.add(nick);
-            if (admin) this.admin.add(nick);
-            if (owner) this.owner.add(nick);
             this.lastJoin.put(nick, System.currentTimeMillis() / 1000);
         }
     }
@@ -67,10 +55,6 @@ public final class Channel {
     public List<String> getUsers() { return Collections.unmodifiableList(users); }
     public List<String> getOp() { return Collections.unmodifiableList(op); }
     public List<String> getVoice() { return Collections.unmodifiableList(voice); }
-    public List<String> getHop() { return Collections.unmodifiableList(hop); }
-    public List<String> getAdmin() { return Collections.unmodifiableList(admin); }
-    public List<String> getService() { return Collections.unmodifiableList(service); }
-    public List<String> getOwner() { return Collections.unmodifiableList(owner); }
     public Map<String, Long> getLastJoin() { return lastJoin; }
 
     /**
@@ -88,16 +72,4 @@ public final class Channel {
 
     public void addVoice(String user) { voice.add(user); }
     public void removeVoice(String user) { voice.remove(user); }
-
-    public void addHop(String user) { hop.add(user); }
-    public void removeHop(String user) { hop.remove(user); }
-
-    public void addAdmin(String user) { admin.add(user); }
-    public void removeAdmin(String user) { admin.remove(user); }
-
-    public void addService(String user) { service.add(user); }
-    public void removeService(String user) { service.remove(user); }
-
-    public void addOwner(String user) { owner.add(user); }
-    public void removeOwner(String user) { owner.remove(user); }
 }

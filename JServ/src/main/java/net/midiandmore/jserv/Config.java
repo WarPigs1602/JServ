@@ -60,12 +60,27 @@ public final class Config {
         this.hostFile = hostFile;
     }
 
+    /**
+     * @return the nickFile
+     */
+    public Properties getNickFile() {
+        return nickFile;
+    }
+
+    /**
+     * @param nickFile the nickFile to set
+     */
+    public void setNickFile(Properties nickFile) {
+        this.nickFile = nickFile;
+    }
+
     private JServ mi;
     private Properties configFile;
     private Properties badwordFile; 
     private Properties modulesFile;
     private Properties spamFile;     
     private Properties hostFile;  
+    private Properties nickFile;  
          
     /**
      * Initiales the class
@@ -121,6 +136,7 @@ public final class Config {
         setModulesFile(loadDataFromJSONasProperties("config-modules.json", "name", "value")); 
         setHostFile(loadDataFromJSONasProperties("config-hostserv.json", "name", "value"));   
         setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
+        setNickFile(loadDataFromJSONasProperties("config-nickserv.json", "name", "value"));   
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 

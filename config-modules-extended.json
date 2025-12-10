@@ -1,0 +1,25 @@
+{
+  "modules": [
+    {
+      "name": "SpamScan",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.SpamScan",
+      "numericSuffix": "AAC",
+      "configFile": "config-spamscan.json"
+    },
+    {
+      "name": "HostServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.HostServ",
+      "numericSuffix": "AAB",
+      "configFile": "config-hostserv.json"
+    },
+    {
+      "name": "NickServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.NickServ",
+      "numericSuffix": "AAD",
+      "configFile": "config-nickserv.json"
+    }
+  ]
+}

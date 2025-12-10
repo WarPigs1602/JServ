@@ -1,0 +1,11 @@
+[
+{"name":"nick","value":"NickServ"},
+{"name":"servername","value":"nickserv.example.net"},
+{"name":"description","value":"Nickname Protection Service"},
+{"name":"identd","value":"nickserv"},
+{"name":"grace_period","value":"60"},
+{"name":"check_interval","value":"10000"},
+{"name":"gline_enabled","value":"true"},
+{"name":"gline_attempts","value":"3"},
+{"name":"gline_duration","value":"600"}
+]

@@ -2,5 +2,22 @@
 {"name":"nick","value":"S"},
 {"name":"servername","value":"spamscan.midiandmore.net"},
 {"name":"description","value":"MidiAndMore SpamScan"},
-{"name":"identd","value":"spamscan"}
+{"name":"identd","value":"spamscan"},
+{"name":"laxSpamDetection","value":"true"},
+{"name":"newUserTimeWindow","value":"300"},
+{"name":"normalRepeatThresholdNew","value":"3"},
+{"name":"normalRepeatThresholdEstablished","value":"7"},
+{"name":"normalFloodThresholdNew","value":"2"},
+{"name":"normalFloodThresholdEstablished","value":"5"},
+{"name":"laxRepeatThresholdNew","value":"6"},
+{"name":"laxRepeatThresholdEstablished","value":"10"},
+{"name":"laxFloodThresholdNew","value":"5"},
+{"name":"laxFloodThresholdEstablished","value":"8"},
+{"name":"killSuspiciousIdents","value":"true"},
+{"name":"suspiciousIdents","value":"root,admin,administrator,sysadmin,webmaster,hostmaster,postmaster,operator,oper,staff,moderator,mod,superuser,sudo,system,daemon,service,server,mysql,postgres,oracle,apache,nginx,www,ftp,ssh,telnet,mail,smtp,imap,pop3,dns,bind,wheel,adm,sys,bin"},
+{"name":"enableGLine","value":"true"},
+{"name":"glineAfterKills","value":"3"},
+{"name":"glineDuration","value":"86400"},
+{"name":"glineReason","value":"Repeated spam violations"},
+{"name":"violationUrl","value":"https://example.com/spamming.jsp?view=search&q="}
 ]

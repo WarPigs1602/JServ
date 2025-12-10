@@ -88,13 +88,13 @@
 - Recommended: Use an IDE with Maven support for seamless compilation.
 - Clone the repository and build using Maven:
   ```sh
-  git clone https://codeberg.org/WarPigs1602/JServ.git
+  git clone https://github.com/WarPigs1602/JServ.git
   cd JServ
   mvn package
   ```
 
 ### 2. Use Precompiled Release
-- Download the latest release: [JServ.zip](https://codeberg.org/WarPigs1602/JServ/releases/download/JServ/JServ.zip)
+- Download the latest release: [JServ.zip](https://github.com/WarPigs1602/JServ/releases/download/JServ/JServ.zip)
 - Ensure you have JRE 17+ and PostgreSQL installed.
 
 ## Usage

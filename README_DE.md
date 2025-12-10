@@ -87,13 +87,13 @@
 - Empfohlen: Verwenden Sie eine IDE mit Maven-Unterstützung für nahtlose Kompilierung.
 - Repository klonen und mit Maven erstellen:
   ```sh
-  git clone https://codeberg.org/WarPigs1602/JServ.git
+  git clone https://github.com/WarPigs1602/JServ.git
   cd JServ
   mvn package
   ```
 
 ### 2. Vorkompiliertes Release verwenden
-- Laden Sie das neueste Release herunter: [JServ.zip](https://codeberg.org/WarPigs1602/JServ/releases/download/JServ/JServ.zip)
+- Laden Sie das neueste Release herunter: [JServ.zip](https://github.com/WarPigs1602/JServ/releases/download/JServ/JServ.zip)
 - Stellen Sie sicher, dass Sie JRE 17+ und PostgreSQL installiert haben.
 
 ## Verwendung

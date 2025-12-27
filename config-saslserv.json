@@ -1,0 +1,8 @@
+[
+{"name":"nick","value":"SaslServ"},
+{"name":"servername","value":"saslserv.example.net"},
+{"name":"description","value":"SASL Authentication Service"},
+{"name":"identd","value":"saslserv"},
+{"name":"use_db","value":"true"},
+{"name":"allow_config_fallback","value":"false"}
+]

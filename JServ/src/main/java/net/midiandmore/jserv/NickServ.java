@@ -303,14 +303,22 @@ public final class NickServ implements Software, Module {
     
     /**
      * Handles new user connections
+     * 
+     * P10 N command format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
+     * Example: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     * 
+     * elem[0] = server numeric (AB)
+     * elem[2] = nickname (WarPigs)
+     * elem[5] = ident (warpigs)
+     * elem[6] = hostname (localhost)  
+     * elem[7] = user modes (+i, +r for authenticated, +k for service, +x for hidden host, +o for oper)
+     * elem[8] = base64 IP or account info if authenticated (B]AAAB or account:timestamp:flags)
+     * elem[9] = user numeric/token (ABAAA) - this is extracted by extractNumericFromNCommand
+     * elem[10+] = realname (starts with ":")
+     * 
+     * User is authenticated if +r flag is present in elem[7] (modes)
      */
     private void handleNewUser(String[] elem) {
-        // elem[0] = source (server numeric)
-        // elem[2] = nick
-        // elem[6] = modes (+oikr, etc.)
-        // elem[7] = base64 IP or account info (format: account:timestamp:flags or -)
-        // User numeric is extracted before the ":" in realname
-        
         if (elem.length < 10) {
             return; // Not enough elements for a valid N command
         }
@@ -1663,7 +1671,7 @@ public final class NickServ implements Software, Module {
             
             // Now create dummy user on IRC network
             // Format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
-            sendText("%s N %s 1 %d NickProtect services.protected +ik B64AAAAAA %s :This nickname is protected", 
+            sendText("%s N %s 1 %d NickProtect services.protected +d B64AAAAAA %s :This nickname is protected", 
                     numeric, nick, currentTime, dummyNumeric);
             
             LOG.log(Level.INFO, "Created dummy nick {0} (numeric: {1}) to protect nickname (triggered by {2})", 
@@ -1886,8 +1894,18 @@ public final class NickServ implements Software, Module {
     }
     
     /**
-     * Extracts the user numeric from a P10 N command
-     * The numeric is always the element directly before the ":" in the realname part
+     * Extracts the user numeric/token from a P10 N command.
+     * The user token is always the element directly before the ":" (realname field).
+     * 
+     * P10 N command format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
+     * Example: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     *          In this example, ABAAA is the user token/numeric at position [9], right before ":realname"
+     * 
+     * Important: User is authenticated if +r flag is present in modes (elem[7])
+     *           If +r is NOT present, the user is NOT authenticated regardless of the token value.
+     * 
+     * @param elem The split P10 N command
+     * @return The user numeric/token (e.g., "ABAAA")
      */
     private String extractNumericFromNCommand(String[] elem) {
         // Find the element that starts with ":" (realname)

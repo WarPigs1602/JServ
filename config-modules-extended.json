@@ -20,6 +20,13 @@
       "className": "net.midiandmore.jserv.NickServ",
       "numericSuffix": "AAD",
       "configFile": "config-nickserv.json"
+    },
+    {
+      "name": "SaslServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.SaslServ",
+      "numericSuffix": "AAE",
+      "configFile": "config-saslserv.json"
     }
   ]
 }

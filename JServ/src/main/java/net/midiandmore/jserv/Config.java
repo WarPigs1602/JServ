@@ -19,6 +19,20 @@ import java.util.logging.Logger;
 public final class Config {
 
     /**
+     * @return the saslFile
+     */
+    public Properties getSaslFile() {
+        return saslFile;
+    }
+
+    /**
+     * @param saslFile the saslFile to set
+     */
+    public void setSaslFile(Properties saslFile) {
+        this.saslFile = saslFile;
+    }
+
+    /**
      * @return the modulesFile
      */
     public Properties getModulesFile() {
@@ -81,6 +95,7 @@ public final class Config {
     private Properties spamFile;     
     private Properties hostFile;  
     private Properties nickFile;  
+    private Properties saslFile;
          
     /**
      * Initiales the class
@@ -137,6 +152,7 @@ public final class Config {
         setHostFile(loadDataFromJSONasProperties("config-hostserv.json", "name", "value"));   
         setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
         setNickFile(loadDataFromJSONasProperties("config-nickserv.json", "name", "value"));   
+        setSaslFile(loadDataFromJSONasProperties("config-saslserv.json", "name", "value"));
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 

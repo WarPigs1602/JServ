@@ -309,21 +309,148 @@ public final class SocketThread implements Runnable, Software {
     }
     
     /**
-     * Extracts the user numeric from a P10 N command
-     * The numeric is always the element directly before the ":" in the realname part
+     * Extracts the user numeric/token from a P10 N command.
+     * The user token is always the last element before the ":" (realname field).
+     * 
+     * P10 N command format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
+     * Example: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     *          In this example, ABAAA is the user token/numeric, which is the last element before ":"
+     * 
+     * @param rawLine The complete raw line from the server
+     * @return The user numeric/token (e.g., "ABAAA")
      */
-    private String extractNumericFromNCommand(String[] elem) {
-        // Find the element that starts with ":" (realname)
+    private String extractNumericFromNCommand(String rawLine) {
+        // Find the position of " :" (space followed by colon) which marks the start of the realname
+        int colonPos = rawLine.indexOf(" :");
+        if (colonPos > 0) {
+            // Extract the part before " :" and get the last word (which is the numeric)
+            String beforeColon = rawLine.substring(0, colonPos);
+            String[] parts = beforeColon.split(" ");
+            if (parts.length > 0) {
+                return parts[parts.length - 1];
+            }
+        }
+        
+        // Fallback: split the entire line and find the element before one starting with ":"
+        String[] elem = rawLine.split(" ");
         for (int i = elem.length - 1; i >= 0; i--) {
             if (elem[i].startsWith(":")) {
-                // The numeric is the element before this one
                 if (i > 0) {
                     return elem[i - 1];
                 }
             }
         }
-        // Fallback to old method if no ":" found
-        return elem[elem.length - 1];
+        
+        // Last resort fallback
+        return elem.length > 9 ? elem[9] : "";
+    }
+
+    /**
+     * Process P10 N command following the ServerCommand schema:
+     * Critical section (synchronized) for checking and registering user,
+     * then propagation outside the lock for parallel processing.
+     * 
+     * P10 N command format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
+     * Example: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     */
+    private void processNCommand(String[] elem, String rawLine, String jnumeric) {
+        // Critical section: Check for duplicates, parse info, and register user
+        boolean canProceed;
+        synchronized (getMi().getUserRegistrationLock()) {
+            canProceed = checkAndRegisterUser(elem, rawLine, jnumeric);
+        }
+        
+        if (canProceed) {
+            // Send propagation outside the lock to allow other registrations in parallel
+            propagateUserToOthers(elem, rawLine, jnumeric);
+        }
+    }
+    
+    /**
+     * Critical section: Check for duplicates, parse user info, and register user
+     * Returns true if registration succeeded, false if user was killed/handled
+     */
+    private boolean checkAndRegisterUser(String[] elem, String rawLine, String jnumeric) {
+        // Parse user info
+        // elem[2] = nickname (WarPigs)
+        // elem[7] = user modes (+i, +r for authenticated, +k for service, +x for hidden host, +o for oper)
+        // User token/numeric is extracted from rawLine (last element before " :")
+        String nickname = elem[2];
+        var priv = elem[7].contains("r");  // +r means user is authenticated
+        var service = elem[7].contains("k");
+        var x = elem[7].contains("x");
+        var o = elem[7].contains("o");
+        String acc = null;
+        String userToken = extractNumericFromNCommand(rawLine);
+        
+        if (priv) {
+            if (elem[9].contains(":")) {
+                acc = elem[9].split(":", 2)[0];
+            } else if (elem[8].contains(":")) {
+                acc = elem[8].split(":", 2)[0];
+            } else {
+                acc = "";
+            }
+        } else if (elem[9].contains("@")) {
+            acc = "";
+        } else {
+            acc = "";
+        }
+        var hosts = elem[5] + "@" + elem[6];
+        
+        // Check if user token already exists (prevent duplicates)
+        if (getUsers().containsKey(userToken)) {
+            System.out.printf("User token %s already exists - possible duplicate, updating...\n", userToken);
+            // Update existing user instead of creating duplicate
+            getUsers().get(userToken).setNick(nickname);
+            getUsers().get(userToken).setAccount(acc);
+            getUsers().get(userToken).setHost(hosts);
+            getUsers().get(userToken).setX(x);
+            getUsers().get(userToken).setService(service);
+            getUsers().get(userToken).setOper(o);
+            return false; // Don't propagate, just updated existing
+        }
+        
+        // Let modules handle new user (e.g., SpamScan checks for bots, HostServ sets vhost)
+        boolean userHandled = false;
+        for (Module module : getModuleManager().getAllModules().values()) {
+            if (module.isEnabled()) {
+                if (module.handleNewUser(userToken, nickname, elem[5], elem[6], acc, jnumeric)) {
+                    userHandled = true;
+                    break; // User was killed/handled by module
+                }
+            }
+        }
+        
+        if (!userHandled) {
+            // ATOMIC: Register user (within lock)
+            getUsers().put(userToken, new Users(userToken, nickname, acc, hosts));
+            getUsers().get(userToken).setX(x);
+            getUsers().get(userToken).setService(service);
+            getUsers().get(userToken).setOper(o);
+            if (!acc.isBlank()) {
+                getMi().getDb().updateData("lastuserhost", acc, hosts);
+                getMi().getDb().updateData("lastpasschng", acc, time());
+            }
+            return true; // Proceed with propagation
+        }
+        
+        return false; // User was handled/killed by module
+    }
+    
+    /**
+     * Propagate user to all other connected servers (OUTSIDE the lock)
+     * This allows parallel processing while maintaining data integrity
+     */
+    private void propagateUserToOthers(String[] elem, String rawLine, String jnumeric) {
+        // TODO: Implement propagation when SERVER connection support is added
+        // For now, this is a placeholder for future server-to-server propagation
+        // When implemented, this will forward the N command to other connected servers:
+        // Format: <our-numeric> N <nick> <hopcount+1> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
+        
+        if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
+            System.out.printf("DEBUG: Would propagate user %s to other servers (not yet implemented)\n", elem[2]);
+        }
     }
 
     @Override
@@ -447,50 +574,11 @@ public final class SocketThread implements Runnable, Software {
                         if (getUsers().containsKey(names)) {
                             getUsers().get(names).addChannel(channel.toLowerCase());
                         }
-                    } else if (elem[1].equals("N") && elem.length > 4) {
-                        var priv = elem[7].contains("r");
-                        var service = elem[7].contains("k");
-                        var x = elem[7].contains("x");
-                        var o = elem[7].contains("o");
-                        String acc = null;
-                        String nick = extractNumericFromNCommand(elem);
-                        
-                        if (priv) {
-                            if (elem[9].contains(":")) {
-                                acc = elem[9].split(":", 2)[0];
-                            } else if (elem[8].contains(":")) {
-                                acc = elem[8].split(":", 2)[0];
-                            } else {
-                                acc = "";
-                            }
-                        } else if (elem[9].contains("@")) {
-                            acc = "";
-                        } else {
-                            acc = "";
-                        }
-                        var hosts = elem[5] + "@" + elem[6];
-                        
-                        // Let modules handle new user (e.g., SpamScan checks for bots, HostServ sets vhost)
-                        boolean userHandled = false;
-                        for (Module module : getModuleManager().getAllModules().values()) {
-                            if (module.isEnabled()) {
-                                if (module.handleNewUser(nick, elem[2], elem[5], elem[6], acc, jnumeric)) {
-                                    userHandled = true;
-                                    break; // User was killed/handled by module
-                                }
-                            }
-                        }
-                        
-                        if (!userHandled) {
-                            getUsers().put(nick, new Users(nick, elem[2], acc, hosts));
-                            getUsers().get(nick).setX(x);
-                            getUsers().get(nick).setService(service);
-                            getUsers().get(nick).setOper(o);
-                            if (!acc.isBlank()) {
-                                getMi().getDb().updateData("lastuserhost", acc, hosts);
-                                getMi().getDb().updateData("lastpasschng", acc, time());
-                            }
-                        }
+                    } else if (elem[1].equals("N") && elem.length >= 10) {
+                        // P10 N command - new user registration
+                        // Critical section: Check + Parse + Register (must be atomic)
+                        // Propagation is done after lock is released
+                        processNCommand(elem, content, jnumeric);
                     } else if (elem[1].equals("N") && elem.length == 4) {
                         getUsers().get(elem[0]).setNick(elem[2]);
                     } else if (elem[1].equals("B") && elem.length == 7) {
@@ -551,8 +639,14 @@ public final class SocketThread implements Runnable, Software {
                                 module.handleAuthentication(nick, acc, jnumeric);
                             }
                         }
-                    } else if (elem[1].equals("G")) {
-                        sendText("%s Z %s", jnumeric, content.substring(5));
+                    } else if (elem.length >= 2 && elem[1].equals("G")) {
+                        // Reply to server ping; be tolerant of short/malformed lines
+                        String payload = "";
+                        if (elem.length >= 3) {
+                            int idx = content.indexOf(elem[2]);
+                            payload = idx >= 0 ? content.substring(idx) : "";
+                        }
+                        sendText("%s Z %s", jnumeric, payload);
                     } else if (elem[1].equals("M") && elem.length == 4) {
                         var nick = elem[0];
                         if (elem[3].contains("x")) {
@@ -620,13 +714,16 @@ public final class SocketThread implements Runnable, Software {
                         if (getAuthed().containsKey(nick)) {
                             getAuthed().remove(nick);
                         }
-                        var nn = getUsers().get(nick).getNick();
-                        if (getAuthed().containsKey(nn)) {
-                            getAuthed().remove(nn);
+                        // Check if user exists before accessing nick
+                        if (getUsers().containsKey(nick)) {
+                            var nn = getUsers().get(nick).getNick();
+                            if (getAuthed().containsKey(nn)) {
+                                getAuthed().remove(nn);
+                            }
                         }
                         getUsers().remove(nick);
                     }
-                    // Route line to all enabled modules
+                    // Route line to all enabled modules - MUST be called for every line
                     getModuleManager().routeLine(content);
                     
                     if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
@@ -688,7 +785,9 @@ public final class SocketThread implements Runnable, Software {
         if (ch.getUsers().isEmpty()) {
             getChannel().remove(channel.toLowerCase());
         }
-        if (getUsers().get(nick).getChannels().contains(channel.toLowerCase())) {
+        // Check if user exists before accessing channels
+        if (getUsers().containsKey(nick) && getUsers().get(nick) != null && 
+            getUsers().get(nick).getChannels().contains(channel.toLowerCase())) {
             getUsers().get(nick).removeChannel(channel.toLowerCase());
         }
     }

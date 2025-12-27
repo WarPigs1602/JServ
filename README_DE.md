@@ -163,6 +163,13 @@ Module werden in `config-modules-extended.json` konfiguriert:
       "className": "net.midiandmore.jserv.NickServ",
       "numericSuffix": "AAD",
       "configFile": "config-nickserv.json"
+    },
+    {
+      "name": "SaslServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.SaslServ",
+      "numericSuffix": "AAE",
+      "configFile": "config-saslserv.json"
     }
   ]
 }
@@ -182,6 +189,7 @@ Module werden in `config-modules-extended.json` konfiguriert:
 - **SpamScan** (`spamscan`): Automatische Spam-Erkennung und Badword-Filterung
 - **HostServ** (`hostserv`): Verwaltung versteckter Hosts für authentifizierte Benutzer
 - **NickServ** (`nickserv`): Nickname-Schutz und Authentifizierungs-Durchsetzung
+- **SaslServ** (`saslserv`): SASL-Authentifizierungsprüfung (Mechanismus `PLAIN`)
 
 ### Neue Module hinzufügen
 

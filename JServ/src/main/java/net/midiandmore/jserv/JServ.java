@@ -77,6 +77,17 @@ public final class JServ implements Software {
     private Database db;
     private Homoglyphs homoglyphs;
     
+    // Lock for user registration to prevent race conditions
+    private final Object userRegistrationLock = new Object();
+    
+    /**
+     * Get the lock object for user registration synchronization
+     * @return The user registration lock
+     */
+    public Object getUserRegistrationLock() {
+        return userRegistrationLock;
+    }
+    
     /**
      * @param args the command line arguments
      */

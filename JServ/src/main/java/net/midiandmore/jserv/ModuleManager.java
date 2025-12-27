@@ -199,8 +199,13 @@ public class ModuleManager {
                 String servername = getModuleConfig(module.getModuleName(), "servername");
                 String description = getModuleConfig(module.getModuleName(), "description");
                 String identd = getModuleConfig(module.getModuleName(), "identd");
-                
-                if (nick != null && servername != null && description != null) {
+
+                // Most modules require nick/servername/description from config.
+                // SaslServ can resolve/fallback internally, so always attempt its handshake.
+                boolean hasRequired = nick != null && servername != null && description != null;
+                boolean alwaysAttempt = module instanceof SaslServ;
+
+                if (hasRequired || alwaysAttempt) {
                     module.handshake(nick, servername, description, jnumeric, identd);
                     LOG.log(Level.INFO, "Handshake completed for module: {0}", module.getModuleName());
                 } else {
@@ -257,6 +262,8 @@ public class ModuleManager {
             return jserv.getConfig().getHostFile().getProperty(property);
         } else if (moduleName.equalsIgnoreCase("NickServ")) {
             return jserv.getConfig().getNickFile().getProperty(property);
+        } else if (moduleName.equalsIgnoreCase("SaslServ")) {
+            return jserv.getConfig().getSaslFile().getProperty(property);
         }
         return null;
     }

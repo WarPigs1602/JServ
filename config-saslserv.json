@@ -4,5 +4,7 @@
 {"name":"description","value":"SASL Authentication Service"},
 {"name":"identd","value":"saslserv"},
 {"name":"use_db","value":"true"},
-{"name":"allow_config_fallback","value":"false"}
+{"name":"allow_config_fallback","value":"false"},
+{"name":"account_name","value":"A"},
+{"name":"account_id","value":"666"}
 ]

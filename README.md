@@ -1,6 +1,6 @@
 # JServ
 
-**JServ** is a robust Java-based service that integrates three essential IRC modules—**SpamScan**, **HostServ**, and **NickServ**—into a single, efficient package. Designed specifically for use with `midircd` and `snircd`, JServ streamlines spam detection, hidden host management, and nickname protection for IRC networks.
+**JServ** is a robust Java-based service that integrates three essential IRC modules—**SpamScan**, **HostServ**, **SaslServ**, and **NickServ**—into a single, efficient package. Designed specifically for use with `midircd` and `snircd`, JServ streamlines spam detection, hidden host management, and nickname protection for IRC networks.
 
 ## Key Features
 
@@ -14,17 +14,31 @@
 - **Centralized Management:** ModuleManager handles all module registration, enabling/disabling, and message routing
 
 ### SpamScan Module
-- **Automated Spam Detection:** Actively scans IRC messages for spam using a customizable badword list.
-- **Knocker Bot Detection:** Advanced pattern matching to detect and automatically kill Knocker spambots on connection.
-- **Homoglyph Detection:** Identifies and blocks messages containing homoglyphs used for spam.
-- **Flood Protection:** Monitors message frequency and automatically takes action against flooding users.
-- **Repeat Message Detection:** Tracks and punishes users repeatedly sending identical messages.
-- **Time-Based Protection:** Enhanced spam checks for users who joined channels recently (within 5 minutes).
-- **Badword Management:** Allows IRC operators (Opers) to add, list, or remove badwords via user-friendly commands.
-- **Channel Management:** Opers can add/remove channels from SpamScan monitoring.
-- **Operator Commands:** Includes comprehensive help, configuration, and management commands.
-- **JSON Config Storage:** Spam detection rules and badword lists are stored in easily editable JSON files.
-- **Self-Healing Configs:** Missing config files are automatically generated and maintained.
+- **Automated Spam Detection:** Actively scans IRC messages for spam using a customizable badword list
+- **Knocker Bot Detection:** Advanced pattern matching to detect and automatically kill Knocker spambots on connection
+- **Homoglyph Detection:** Identifies and blocks messages containing homoglyphs used for spam
+- **Flood Protection:** Monitors message frequency and automatically takes action against flooding users
+- **Repeat Message Detection:** Tracks and punishes users repeatedly sending identical messages
+- **Time-Based Protection:** Enhanced spam checks for users who joined channels recently (configurable time window, default 5 minutes)
+- **Dual Detection Modes:** Normal and Lax spam detection modes with separate thresholds
+- **User Classification:** Distinguishes between new and established users with different threshold levels
+- **Configurable Thresholds:** Separate repeat and flood thresholds for new vs. established users in both detection modes
+- **Similarity Detection:** Advanced message similarity detection using configurable similarity threshold (default 0.8)
+- **Cross-Channel Spam Detection:** Detects spam patterns across multiple channels with dedicated time window and similarity threshold
+- **Suspicious Ident Detection:** Automatically detects and kills users with suspicious idents (root, admin, etc.)
+- **Suspicious TLD Detection:** Monitors and flags messages containing suspicious top-level domains (tk, ml, ga, etc.)
+- **Score-Based System:** Dynamic spam scoring with configurable decay rate and interval for rehabilitating good behavior
+- **Extreme Spam Threshold:** Configurable threshold for instant action against extreme spam behavior
+- **G-Line Support:** Automatic network-wide bans (G-Lines) after repeated violations
+  - Configurable kill threshold before G-Line activation (default: 3 kills)
+  - Adjustable G-Line duration (default: 24 hours)
+  - Custom G-Line reason with violation URL support
+- **Badword Management:** Allows IRC operators (Opers) to add, list, or remove badwords via user-friendly commands
+- **Channel Management:** Opers can add/remove channels from SpamScan monitoring
+- **Operator Commands:** Comprehensive help, configuration, and management commands including GLINESTATS
+- **JSON Config Storage:** Spam detection rules and badword lists are stored in easily editable JSON files
+- **Self-Healing Configs:** Missing config files are automatically generated and maintained
+- **Kill Tracking:** Maintains statistics of killed users for G-Line enforcement
 - **Runtime Control:** Can be enabled/disabled dynamically through configuration
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
@@ -50,6 +64,19 @@
 - **Database Integration:** Checks registered nicknames against the PostgreSQL database.
 - **User Notifications:** Sends warnings and success messages for authentication status.
 - **INFO Command:** Comprehensive nickname information including all reserved nicks and formatted dates.
+- **Runtime Control:** Can be enabled/disabled dynamically through configuration
+- **Graceful Logout:** Sends proper QUIT command on shutdown
+
+### SaslServ Module
+- **SASL Authentication:** Server-to-server SASL validation protocol for JIRCd
+- **PLAIN Mechanism Support:** Implements SASL PLAIN authentication mechanism
+- **Database Integration:** Authenticates users against PostgreSQL database
+- **Relay Mode Support:** Optional relay authentication to external control services (e.g., mIAuthd)
+- **Account Token Generation:** Generates extended account tokens (username:timestamp:id) for JIRCd
+- **Configurable Account Parameters:** Customizable account name and ID in N-Line registration
+- **Timeout Handling:** Configurable relay timeout with automatic failure handling
+- **Remote Authentication:** MD5-based digest authentication for relay mode
+- **Config Fallback:** Optional fallback to config-based authentication if database fails
 - **Runtime Control:** Can be enabled/disabled dynamically through configuration
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
@@ -188,9 +215,19 @@ Changes require a restart to take effect.
 ### Available Modules
 
 - **SpamScan** (`spamscan`): Automated spam detection and badword filtering
+  - Dual detection modes (Normal/Lax) with configurable thresholds
+  - Advanced similarity detection and cross-channel spam tracking
+  - Suspicious ident and TLD detection
+  - Score-based system with decay for behavior rehabilitation
+  - Automatic G-Line enforcement after repeated violations
+  - Comprehensive operator commands and statistics
 - **HostServ** (`hostserv`): Hidden host management for authenticated users
 - **NickServ** (`nickserv`): Nickname protection and authentication enforcement
 - **SaslServ** (`saslserv`): SASL authentication validation (mechanism `PLAIN`)
+  - Implements server-to-server SASL protocol for JIRCd
+  - Supports database and config-based authentication
+  - Optional relay mode for external authentication services
+  - Configurable account parameters via `config-saslserv.json`
 
 ### Adding New Modules
 
@@ -276,6 +313,7 @@ Refer to the built-in help system or project wiki for a complete list of operato
 - `config-spamscan.json` - SpamScan module configuration
 - `config-hostserv.json` - HostServ module configuration
 - `config-nickserv.json` - NickServ module configuration
+- `config-saslserv.json` - SaslServ module configuration (account name, ID, relay settings)
 - `badwords-spamscan.json` - Badword list for SpamScan
 
 ## License

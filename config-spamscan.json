@@ -19,5 +19,13 @@
 {"name":"glineAfterKills","value":"3"},
 {"name":"glineDuration","value":"86400"},
 {"name":"glineReason","value":"Repeated spam violations"},
-{"name":"violationUrl","value":"https://example.com/spamming.jsp?view=search&q="}
+{"name":"violationUrl","value":"https://example.com/spamming.jsp?view=search&q="},
+{"name":"similarityThreshold","value":"0.8"},
+{"name":"similarityTimeWindow","value":"60"},
+{"name":"crossChannelTimeWindow","value":"30"},
+{"name":"crossChannelSimilarity","value":"0.9"},
+{"name":"suspiciousTLDs","value":"tk,ml,ga,cf,gq,pw,top,xyz,cc,info,biz,work,click,link,online,site,website,space,tech,store,fun,icu"},
+{"name":"scoreDecayRate","value":"0.5"},
+{"name":"scoreDecayInterval","value":"30"},
+{"name":"extremeSpamThreshold","value":"100.0"}
 ]

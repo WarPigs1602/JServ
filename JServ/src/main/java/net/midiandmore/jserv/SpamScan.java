@@ -366,6 +366,28 @@ public final class SpamScan implements Software, Module {
                         } else {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Unknown flag.");
                         }
+                    // SPAMSCORE - check spam score of a user
+                    } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("SPAMSCORE")) {
+                        var targetNick = auth[1];
+                        var targetNumeric = getSt().getUserNumeric(targetNick);
+                        
+                        if (targetNumeric == null) {
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "User '%s' not found.", targetNick);
+                        } else {
+                            var targetUser = getSt().getUsers().get(targetNumeric);
+                            if (targetUser == null) {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "User data not available.");
+                            } else {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- Spam Score for %s ---", targetUser.getNick());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Current Score: %.2f", targetUser.getSpamScore());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Repeat Count: %d", targetUser.getRepeat());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Flood Count: %d", targetUser.getFlood());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Caps Count: %d", targetUser.getCapsCount());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Message History: %d messages", targetUser.getMessageHistory().size());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Channels: %d", targetUser.getChannels().size());
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- End of spam score ---");
+                            }
+                        }
                     // SHOWCOMMANDS - display available commands
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_COMMANDLIST"));
@@ -376,6 +398,7 @@ public final class SpamScan implements Software, Module {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o DELCHAN      Removes a channel from spam monitoring");
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o DELLAXCHAN   Disables lax spam detection for a channel");
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o GLINESTATS   Shows G-Line configuration and statistics");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o SPAMSCORE    Check spam score of a user");
                         }
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   HELP         Show help for a command");
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   SHOWCOMMANDS This message");
@@ -409,6 +432,9 @@ public final class SpamScan implements Software, Module {
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("GLINESTATS")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "GLINESTATS");
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Shows G-Line configuration and statistics.");
+                    } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("SPAMSCORE")) {
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "SPAMSCORE <nickname>");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Shows the spam score and detection statistics for a user.");
                     } else if (getSt().isOper(nick) && auth[0].equalsIgnoreCase("GLINESTATS")) {
                         var config = getMi().getConfig().getSpamFile();
                         boolean glineEnabled = Boolean.parseBoolean(config.getProperty("enableGLine", "true"));
@@ -457,93 +483,124 @@ public final class SpamScan implements Software, Module {
                         // Load configurable thresholds from config file
                         var config = getMi().getConfig().getSpamFile();
                         int newUserTimeWindow = Integer.parseInt(config.getProperty("newUserTimeWindow", "300"));
-                        int normalRepeatNew = Integer.parseInt(config.getProperty("normalRepeatThresholdNew", "3"));
-                        int normalRepeatEstablished = Integer.parseInt(config.getProperty("normalRepeatThresholdEstablished", "7"));
-                        int normalFloodNew = Integer.parseInt(config.getProperty("normalFloodThresholdNew", "2"));
-                        int normalFloodEstablished = Integer.parseInt(config.getProperty("normalFloodThresholdEstablished", "5"));
-                        int laxRepeatNew = Integer.parseInt(config.getProperty("laxRepeatThresholdNew", "6"));
-                        int laxRepeatEstablished = Integer.parseInt(config.getProperty("laxRepeatThresholdEstablished", "10"));
-                        int laxFloodNew = Integer.parseInt(config.getProperty("laxFloodThresholdNew", "5"));
-                        int laxFloodEstablished = Integer.parseInt(config.getProperty("laxFloodThresholdEstablished", "8"));
                         
-                        // Determine thresholds based on lax mode and join time
+                        // Determine if user is "new" based on join time
                         long timeSinceJoin = time() - lastJoin;
                         boolean isNewUser = timeSinceJoin < newUserTimeWindow;
                         
-                        // Calculate thresholds based on mode and user status
-                        int repeatThreshold;
-                        int floodThreshold;
+                        var user = getSt().getUsers().get(userNumeric);
+                        long currentTime = time();
                         
+                        // === NEW INTELLIGENT SPAM DETECTION SYSTEM ===
+                        
+                        // Apply score decay (rehabilitate good behavior over time)
+                        applyScoreDecay(user, currentTime);
+                        
+                        // Add message to history for pattern analysis
+                        user.addMessageToHistory(message, currentTime, channelName);
+                        user.setChannelLastMessage(channelName, message, currentTime);
+                        
+                        // Calculate comprehensive spam score
+                        double spamScore = calculateSpamScore(user, message, channelName, currentTime);
+                        
+                        // Add to user's cumulative spam score
+                        user.increaseSpamScore(spamScore);
+                        
+                        // Update last message time
+                        user.setLastMessageTime(currentTime);
+                        
+                        // === CHECK FOR EXTREME SPAMMING (IMMEDIATE G-LINE) ===
+                        double extremeSpamThreshold = Double.parseDouble(config.getProperty("extremeSpamThreshold", "100.0"));
+                        
+                        if (user.getSpamScore() >= extremeSpamThreshold) {
+                            // Extreme spamming detected - apply immediate G-Line
+                            String reason = String.format("Extreme spam detected (Score: %.1f/%.1f)", 
+                                user.getSpamScore(), extremeSpamThreshold);
+                            kickOrKillUserWithImmediateGLine(userNumeric, channelName, reason);
+                            user.setSpamScore(0.0);
+                            return;
+                        }
+                        
+                        // Determine action threshold based on mode and user status
+                        double actionThreshold;
+                        if (isLaxMode) {
+                            actionThreshold = isNewUser ? 60.0 : 80.0; // More lenient in lax mode
+                        } else {
+                            actionThreshold = isNewUser ? 40.0 : 60.0; // Stricter for new users
+                        }
+                        
+                        // Check if action should be taken
+                        if (user.getSpamScore() >= actionThreshold) {
+                            String reason = String.format("Spam score threshold exceeded (%.1f/%.1f)", 
+                                user.getSpamScore(), actionThreshold);
+                            kickOrKillUser(userNumeric, channelName, reason);
+                            user.setSpamScore(0.0); // Reset after action
+                            return;
+                        }
+                        
+                        // === LEGACY CHECKS (fallback for specific patterns) ===
+                        
+                        // Still check for immediate threats (very high single-message scores)
+                        if (spamScore > 50.0) {
+                            String reason = "High-risk spam pattern detected";
+                            kickOrKillUser(userNumeric, channelName, reason);
+                            user.setSpamScore(0.0);
+                            return;
+                        }
+                        
+                        // Legacy repeat check (for backward compatibility)
+                        int normalRepeatNew = Integer.parseInt(config.getProperty("normalRepeatThresholdNew", "3"));
+                        int normalRepeatEstablished = Integer.parseInt(config.getProperty("normalRepeatThresholdEstablished", "7"));
+                        int laxRepeatNew = Integer.parseInt(config.getProperty("laxRepeatThresholdNew", "6"));
+                        int laxRepeatEstablished = Integer.parseInt(config.getProperty("laxRepeatThresholdEstablished", "10"));
+                        
+                        int repeatThreshold;
                         if (isLaxMode) {
                             repeatThreshold = isNewUser ? laxRepeatNew : laxRepeatEstablished;
-                            floodThreshold = isNewUser ? laxFloodNew : laxFloodEstablished;
                         } else {
                             repeatThreshold = isNewUser ? normalRepeatNew : normalRepeatEstablished;
+                        }
+                        
+                        if (user.getLine().equalsIgnoreCase(message)) {
+                            var repeatCount = user.getRepeat();
+                            repeatCount = repeatCount + 1;
+                            user.setRepeat(repeatCount);
+                            if (repeatCount > repeatThreshold) {
+                                kickOrKillUser(userNumeric, channelName, "Repeating lines!");
+                                user.setSpamScore(0.0);
+                                return;
+                            }
+                        } else {
+                            user.setRepeat(0);
+                            user.setLine(message);
+                        }
+                        
+                        // Legacy flood check with decay
+                        int normalFloodNew = Integer.parseInt(config.getProperty("normalFloodThresholdNew", "2"));
+                        int normalFloodEstablished = Integer.parseInt(config.getProperty("normalFloodThresholdEstablished", "5"));
+                        int laxFloodNew = Integer.parseInt(config.getProperty("laxFloodThresholdNew", "5"));
+                        int laxFloodEstablished = Integer.parseInt(config.getProperty("laxFloodThresholdEstablished", "8"));
+                        
+                        int floodThreshold;
+                        if (isLaxMode) {
+                            floodThreshold = isNewUser ? laxFloodNew : laxFloodEstablished;
+                        } else {
                             floodThreshold = isNewUser ? normalFloodNew : normalFloodEstablished;
                         }
                         
-                        // Check for homoglyph spam (only for new users in normal mode)
-                        if (getMi().getHomoglyphs().scanForHomoglyphs(message) && isNewUser && !isLaxMode) {
-                            kickOrKillUser(userNumeric, channelName, "Attempting to spam with homoglyphs!");
-                            return;
-                        }
-                        
-                        // Check for excessive caps lock (spam indicator)
-                        if (isExcessiveCaps(message)) {
-                            var user = getSt().getUsers().get(userNumeric);
-                            int capsThreshold = isLaxMode ? 3 : 2;
-                            
-                            // Increment caps counter
-                            int currentCapsCount = user.getCapsCount();
-                            currentCapsCount++;
-                            user.setCapsCount(currentCapsCount);
-                            
-                            if (currentCapsCount > capsThreshold) {
-                                kickOrKillUser(userNumeric, channelName, "Excessive use of caps lock!");
-                                return;
-                            }
-                        } else {
-                            // Reset caps counter if message is not in caps
-                            getSt().getUsers().get(userNumeric).setCapsCount(0);
-                        }
-                        
-                        // Check for URL spam patterns
-                        if (containsMultipleUrls(message) && isNewUser) {
-                            kickOrKillUser(userNumeric, channelName, "Multiple URLs detected - possible spam!");
-                            return;
-                        }
-                        
-                        // Check for repeated lines
-                        if (getSt().getUsers().get(userNumeric).getLine().equalsIgnoreCase(message)) {
-                            var repeatCount = getSt().getUsers().get(userNumeric).getRepeat();
-                            repeatCount = repeatCount + 1;
-                            getSt().getUsers().get(userNumeric).setRepeat(repeatCount);
-                            if (repeatCount > repeatThreshold) {
-                                kickOrKillUser(userNumeric, channelName, "Repeating lines!");
-                                return;
-                            }
-                        } else {
-                            getSt().getUsers().get(userNumeric).setRepeat(0);
-                            getSt().getUsers().get(userNumeric).setLine(message);
-                        }
-                        
-                        // Check for flooding
-                        var floodCount = getSt().getUsers().get(userNumeric).getFlood();
+                        var floodCount = user.getFlood();
                         floodCount = floodCount + 1;
-                        getSt().getUsers().get(userNumeric).setFlood(floodCount);
+                        user.setFlood(floodCount);
+                        
+                        // Decay flood counter over time
+                        if (user.getLastMessageTime() > 0 && currentTime - user.getLastMessageTime() > 10) {
+                            user.setFlood(Math.max(0, floodCount - 1));
+                        }
+                        
                         if (floodCount > floodThreshold) {
                             kickOrKillUser(userNumeric, channelName, "Flooding!");
+                            user.setSpamScore(0.0);
                             return;
-                        }
-                        
-                        // Check for badwords
-                        var badwordList = getMi().getConfig().getBadwordFile();
-                        for (var key : badwordList.keySet()) {
-                            var badword = (String) key;
-                            if (message.toLowerCase().contains(badword.toLowerCase())) {
-                                kickOrKillUser(userNumeric, channelName, "Use of badword: " + badword.toLowerCase() + "!");
-                                return;
-                            }
                         }
                     }
                 // Handle user leaving/being kicked from channel
@@ -822,6 +879,36 @@ public final class SpamScan implements Software, Module {
     }
     
     /**
+     * Kicks or kills a user who violated spam rules with IMMEDIATE G-Line (no threshold)
+     * Used for extreme spamming cases like spambots
+     * 
+     * @param userNumeric The numeric ID of the user
+     * @param channelName The name of the channel
+     * @param reason The reason for the action
+     */
+    private void kickOrKillUserWithImmediateGLine(String userNumeric, String channelName, String reason) {
+        var count = getMi().getDb().getSpamScanIdCount();
+        count++;
+        getMi().getDb().addId(reason);
+        
+        var user = getSt().getUsers().get(userNumeric);
+        if (user != null) {
+            String userHost = user.getHost();
+            String userNick = user.getNick();
+            
+            // Check if already G-Lined
+            if (getMi().getDb().isGLined(userHost)) {
+                LOG.log(Level.INFO, "User already G-Lined, skipping: {0} ({1})", new Object[]{userNick, userHost});
+                return;
+            }
+            
+            // Apply immediate G-Line without checking threshold
+            applyImmediateGLine(userHost, userNick, reason, count);
+            LOG.log(Level.WARNING, "IMMEDIATE G-Line applied for extreme spam: {0} ({1})", new Object[]{userNick, userHost});
+        }
+    }
+    
+    /**
      * Helper method to kick or kill a user based on channel moderation status
      * Also tracks violations for G-Line purposes
      * 
@@ -978,6 +1065,69 @@ public final class SpamScan implements Software, Module {
     }
     
     /**
+     * Applies an immediate G-Line without checking kill count threshold
+     * Used for extreme spamming cases like spambots
+     * 
+     * @param userHost The user@host string (ident@host)
+     * @param nick The user's nickname
+     * @param reason The reason for the action
+     * @param idCount The ID count for the reason
+     */
+    private void applyImmediateGLine(String userHost, String nick, String reason, int idCount) {
+        var config = getMi().getConfig().getSpamFile();
+        boolean glineEnabled = Boolean.parseBoolean(config.getProperty("enableGLine", "true"));
+        
+        if (!glineEnabled) {
+            LOG.log(Level.WARNING, "G-Line disabled, cannot apply immediate G-Line for: {0}", userHost);
+            return;
+        }
+        
+        // Check if already G-Lined
+        if (getMi().getDb().isGLined(userHost)) {
+            return;
+        }
+        
+        int glineDuration = Integer.parseInt(config.getProperty("glineDuration", "86400"));
+        
+        // Extract ident and host for G-Line pattern: nick!*ident@host
+        String glinePattern;
+        if (userHost.contains("@")) {
+            String[] parts = userHost.split("@", 2);
+            String ident = parts[0];
+            String host = parts[1];
+            
+            // Strip leading ~ from ident if present
+            if (ident.startsWith("~")) {
+                ident = ident.substring(1);
+            }
+            
+            // Format: nick!*ident@host (exact nick, wildcard partial ident, exact host)
+            glinePattern = nick + "!*" + ident + "@" + host;
+        } else {
+            // Fallback if no @ found (shouldn't happen)
+            glinePattern = nick + "!*@" + userHost;
+        }
+        
+        // Apply Global G-Line via server numeric
+        long currentTime = time();
+        
+        String violationUrl = config.getProperty("violationUrl", "");
+        String glineMessage = violationUrl.isEmpty() 
+            ? String.format("EXTREME SPAM DETECTED - Immediate ban (ID: %d)", idCount)
+            : String.format("EXTREME SPAM DETECTED - Immediate ban (ID: %d) - %s%d", idCount, violationUrl, idCount);
+        
+        getSt().sendText("%s GL * !+%s %d %d %d :%s", 
+                getNumeric(), glinePattern, glineDuration, currentTime, currentTime, glineMessage);
+        
+        // Mark as G-Lined in database (with extreme spam tracking)
+        getMi().getDb().markAsGLined(userHost);
+        getMi().getDb().trackKillForGLine(userHost, currentTime); // Track for statistics
+        
+        LOG.log(Level.SEVERE, "IMMEDIATE GLOBAL G-Line applied to {0} for {1} seconds (EXTREME SPAM: {2})", 
+                new Object[]{glinePattern, glineDuration, reason});
+    }
+    
+    /**
      * Checks if a message contains excessive caps lock (spam indicator)
      * 
      * @param message The message to check
@@ -1033,5 +1183,280 @@ public final class SpamScan implements Software, Module {
         }
         
         return false;
+    }
+    
+    /**
+     * Calculate Levenshtein distance between two strings
+     * Used for similarity detection of spam messages
+     * 
+     * @param s1 First string
+     * @param s2 Second string
+     * @return The Levenshtein distance
+     */
+    private int calculateLevenshteinDistance(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+        
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+        
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = (s1.charAt(i - 1) == s2.charAt(j - 1)) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(
+                    dp[i - 1][j] + 1,      // deletion
+                    dp[i][j - 1] + 1),     // insertion
+                    dp[i - 1][j - 1] + cost); // substitution
+            }
+        }
+        
+        return dp[s1.length()][s2.length()];
+    }
+    
+    /**
+     * Calculate similarity percentage between two strings
+     * 
+     * @param s1 First string
+     * @param s2 Second string
+     * @return Similarity percentage (0.0 to 1.0)
+     */
+    private double calculateSimilarity(String s1, String s2) {
+        if (s1.equals(s2)) {
+            return 1.0;
+        }
+        
+        int maxLen = Math.max(s1.length(), s2.length());
+        if (maxLen == 0) {
+            return 1.0;
+        }
+        
+        int distance = calculateLevenshteinDistance(s1, s2);
+        return 1.0 - ((double) distance / maxLen);
+    }
+    
+    /**
+     * Check if message is similar to previous messages (spam detection)
+     * 
+     * @param user The user object
+     * @param message The current message
+     * @param currentTime Current timestamp
+     * @return true if similar spam detected
+     */
+    private boolean isSimilarSpam(Users user, String message, long currentTime) {
+        var config = getMi().getConfig().getSpamFile();
+        double similarityThreshold = Double.parseDouble(config.getProperty("similarityThreshold", "0.8"));
+        int timeWindow = Integer.parseInt(config.getProperty("similarityTimeWindow", "60"));
+        
+        // Get recent messages
+        var recentMessages = user.getRecentMessages(timeWindow, currentTime);
+        
+        // Check similarity with recent messages
+        int similarCount = 0;
+        for (Users.MessageRecord msgRecord : recentMessages) {
+            double similarity = calculateSimilarity(message.toLowerCase(), msgRecord.getMessage().toLowerCase());
+            if (similarity >= similarityThreshold) {
+                similarCount++;
+                if (similarCount >= 2) {
+                    return true; // Multiple similar messages detected
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check for cross-channel spam (same message in multiple channels)
+     * 
+     * @param user The user object
+     * @param message The current message
+     * @param channel The current channel
+     * @param currentTime Current timestamp
+     * @return true if cross-channel spam detected
+     */
+    private boolean isCrossChannelSpam(Users user, String message, String channel, long currentTime) {
+        var config = getMi().getConfig().getSpamFile();
+        int timeWindow = Integer.parseInt(config.getProperty("crossChannelTimeWindow", "30"));
+        double similarityThreshold = Double.parseDouble(config.getProperty("crossChannelSimilarity", "0.9"));
+        
+        int matchCount = 0;
+        for (Users.MessageRecord lastMsg : user.getChannelLastMessages().values()) {
+            // Skip same channel
+            if (lastMsg.getChannel().equalsIgnoreCase(channel)) {
+                continue;
+            }
+            
+            // Check if message is recent
+            if (currentTime - lastMsg.getTimestamp() <= timeWindow) {
+                // Check similarity
+                double similarity = calculateSimilarity(message.toLowerCase(), lastMsg.getMessage().toLowerCase());
+                if (similarity >= similarityThreshold) {
+                    matchCount++;
+                    if (matchCount >= 2) {
+                        return true; // Same message in 3+ channels
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Analyze URL for suspicious patterns
+     * 
+     * @param message The message to analyze
+     * @return Spam score contribution (0.0 = clean, higher = more suspicious)
+     */
+    private double analyzeUrlSuspicion(String message) {
+        double suspicionScore = 0.0;
+        
+        var config = getMi().getConfig().getSpamFile();
+        String suspiciousTLDs = config.getProperty("suspiciousTLDs", "tk,ml,ga,cf,gq,pw,top,xyz");
+        String[] tldList = suspiciousTLDs.split(",");
+        
+        // Extract URLs
+        String urlPattern = "(?i)(https?://|www\\.)[^\\s]+";
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(urlPattern);
+        java.util.regex.Matcher matcher = pattern.matcher(message);
+        
+        while (matcher.find()) {
+            String url = matcher.group().toLowerCase();
+            
+            // Check for suspicious TLDs
+            for (String tld : tldList) {
+                if (url.contains("." + tld.trim() + "/") || url.endsWith("." + tld.trim())) {
+                    suspicionScore += 15.0; // High suspicion for these TLDs
+                }
+            }
+            
+            // Check for URL shorteners (common in spam)
+            String[] shorteners = {"bit.ly", "tinyurl.com", "goo.gl", "ow.ly", "is.gd", "t.co", "buff.ly"};
+            for (String shortener : shorteners) {
+                if (url.contains(shortener)) {
+                    suspicionScore += 8.0; // Medium suspicion for shorteners
+                }
+            }
+            
+            // Check for IP addresses in URLs (suspicious)
+            if (url.matches(".*\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}.*")) {
+                suspicionScore += 12.0;
+            }
+            
+            // Check for excessive subdomain levels (common in phishing)
+            long dotCount = url.chars().filter(ch -> ch == '.').count();
+            if (dotCount > 4) {
+                suspicionScore += 5.0;
+            }
+        }
+        
+        return suspicionScore;
+    }
+    
+    /**
+     * Calculate comprehensive spam score for a message
+     * Combines multiple factors to determine spam likelihood
+     * 
+     * @param user The user object
+     * @param message The message content
+     * @param channel The channel name
+     * @param currentTime Current timestamp
+     * @return Spam score (0-100+, higher = more likely spam)
+     */
+    private double calculateSpamScore(Users user, String message, String channel, long currentTime) {
+        double score = 0.0;
+        var config = getMi().getConfig().getSpamFile();
+        
+        // Factor 1: Message rate (time between messages)
+        if (user.getLastMessageTime() > 0) {
+            long timeDiff = currentTime - user.getLastMessageTime();
+            if (timeDiff < 2) { // Less than 2 seconds between messages
+                score += 10.0;
+            } else if (timeDiff < 5) { // Less than 5 seconds
+                score += 5.0;
+            }
+        }
+        
+        // Factor 2: Excessive caps
+        if (isExcessiveCaps(message)) {
+            score += 15.0;
+        }
+        
+        // Factor 3: Multiple URLs
+        if (containsMultipleUrls(message)) {
+            score += 20.0;
+        }
+        
+        // Factor 4: URL suspicion analysis
+        score += analyzeUrlSuspicion(message);
+        
+        // Factor 5: Homoglyphs
+        if (getMi().getHomoglyphs().scanForHomoglyphs(message)) {
+            score += 25.0;
+        }
+        
+        // Factor 6: Similar spam (repetitive similar messages)
+        if (isSimilarSpam(user, message, currentTime)) {
+            score += 20.0;
+        }
+        
+        // Factor 7: Cross-channel spam
+        if (isCrossChannelSpam(user, message, channel, currentTime)) {
+            score += 30.0;
+        }
+        
+        // Factor 8: Badword detection
+        var badwordList = getMi().getConfig().getBadwordFile();
+        for (var key : badwordList.keySet()) {
+            var badword = (String) key;
+            if (message.toLowerCase().contains(badword.toLowerCase())) {
+                score += 40.0; // High score for badwords
+                break; // Only count once
+            }
+        }
+        
+        // Factor 9: Message length (very short or very long)
+        if (message.length() < 5) {
+            score += 5.0; // Short messages can be spam
+        } else if (message.length() > 400) {
+            score += 10.0; // Very long messages can be spam
+        }
+        
+        // Factor 10: Number repetition (common in spam)
+        long digitCount = message.chars().filter(Character::isDigit).count();
+        if (digitCount > message.length() * 0.3) { // More than 30% digits
+            score += 8.0;
+        }
+        
+        return score;
+    }
+    
+    /**
+     * Apply spam score decay over time (rehabilitate users)
+     * Called periodically to decrease spam scores
+     * 
+     * @param user The user object
+     * @param currentTime Current timestamp
+     */
+    private void applyScoreDecay(Users user, long currentTime) {
+        double decayRate = Double.parseDouble(getMi().getConfig().getSpamFile().getProperty("scoreDecayRate", "0.5"));
+        int decayInterval = Integer.parseInt(getMi().getConfig().getSpamFile().getProperty("scoreDecayInterval", "30"));
+        
+        // Decay score if enough time has passed
+        if (user.getLastMessageTime() > 0) {
+            long timeSinceLastMessage = currentTime - user.getLastMessageTime();
+            int decayPeriods = (int) (timeSinceLastMessage / decayInterval);
+            
+            if (decayPeriods > 0) {
+                double totalDecay = decayRate * decayPeriods;
+                user.decreaseSpamScore(totalDecay);
+            }
+        }
+        
+        // Clean up old messages from history
+        user.cleanupOldMessages(300, currentTime); // Keep last 5 minutes
     }
 }

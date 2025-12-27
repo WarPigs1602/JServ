@@ -94,13 +94,17 @@ public final class SaslServ extends AbstractModule implements Software {
 
         this.numeric = numeric;
         getLogger().log(Level.INFO, "Registering SaslServ nick: {0}", resolvedNick);
-        sendText("%s N %s 2 %d %s %s +oikrd - A:%d:666 U]AEB %s%s :%s",
+        String accountName = getAccountName();
+        String accountId = getAccountId();
+        sendText("%s N %s 2 %d %s %s +oikrd - %s:%d:%s U]AEB %s%s :%s",
                 this.numeric,
                 resolvedNick,
                 time(),
                 resolvedIdentd,
                 resolvedServername,
+                accountName,
                 time(),
+                accountId,
                 this.numeric,
                 getNumericSuffix(),
                 resolvedDescription);
@@ -234,6 +238,22 @@ public final class SaslServ extends AbstractModule implements Software {
         }
         String v = mi.getConfig().getSaslFile().getProperty("relay_control_nick", DEFAULT_RELAY_CONTROL_NICK);
         return (v == null || v.isBlank()) ? DEFAULT_RELAY_CONTROL_NICK : v;
+    }
+
+    private String getAccountName() {
+        if (mi == null || mi.getConfig() == null || mi.getConfig().getSaslFile() == null) {
+            return "A";
+        }
+        String v = mi.getConfig().getSaslFile().getProperty("account_name", "A");
+        return (v == null || v.isBlank()) ? "A" : v;
+    }
+
+    private String getAccountId() {
+        if (mi == null || mi.getConfig() == null || mi.getConfig().getSaslFile() == null) {
+            return "666";
+        }
+        String v = mi.getConfig().getSaslFile().getProperty("account_id", "666");
+        return (v == null || v.isBlank()) ? "666" : v;
     }
 
     private Users findUserByToken(String userToken) {

@@ -1,6 +1,6 @@
 # JServ
 
-**JServ** ist ein robuster Java-basierter Dienst, der drei essenzielle IRC-Module—**SpamScan**, **HostServ** und **NickServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit `midircd` und `snircd` entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung und Nickname-Schutz für IRC-Netzwerke.
+**JServ** ist ein robuster Java-basierter Dienst, der drei essenzielle IRC-Module—**SpamScan**, **HostServ**, **SaslServ** und **NickServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit `midircd` und `snircd` entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung und Nickname-Schutz für IRC-Netzwerke.
 
 ## Hauptfunktionen
 
@@ -14,17 +14,31 @@
 - **Zentralisierte Verwaltung:** ModuleManager verwaltet alle Modul-Registrierungen, Aktivierung/Deaktivierung und Nachrichten-Routing
 
 ### SpamScan-Modul
-- **Automatische Spam-Erkennung:** Scannt aktiv IRC-Nachrichten auf Spam unter Verwendung einer anpassbaren Badword-Liste.
-- **Knocker-Bot-Erkennung:** Fortgeschrittene Mustererkennung zur Identifizierung und automatischen Blockierung von Knocker-Spambots beim Verbinden.
-- **Homoglyph-Erkennung:** Identifiziert und blockiert Nachrichten mit Homoglyphen, die für Spam verwendet werden.
-- **Flood-Schutz:** Überwacht Nachrichtenhäufigkeit und ergreift automatisch Maßnahmen gegen floodende Benutzer.
-- **Wiederholungserkennung:** Verfolgt und bestraft Benutzer, die wiederholt identische Nachrichten senden.
-- **Zeitbasierter Schutz:** Erweiterte Spam-Prüfungen für Benutzer, die kürzlich Kanälen beigetreten sind (innerhalb von 5 Minuten).
-- **Badword-Verwaltung:** Ermöglicht IRC-Operatoren (Opers), Badwords über benutzerfreundliche Befehle hinzuzufügen, aufzulisten oder zu entfernen.
-- **Kanal-Verwaltung:** Opers können Kanäle zur SpamScan-Überwachung hinzufügen/entfernen.
-- **Operator-Befehle:** Umfasst umfassende Hilfe-, Konfigurations- und Verwaltungsbefehle.
-- **JSON-Konfigurationsspeicher:** Spam-Erkennungsregeln und Badword-Listen werden in einfach editierbaren JSON-Dateien gespeichert.
-- **Selbstheilende Konfigurationen:** Fehlende Konfigurationsdateien werden automatisch generiert und gepflegt.
+- **Automatische Spam-Erkennung:** Scannt aktiv IRC-Nachrichten auf Spam unter Verwendung einer anpassbaren Badword-Liste
+- **Knocker-Bot-Erkennung:** Fortgeschrittene Mustererkennung zur Identifizierung und automatischen Blockierung von Knocker-Spambots beim Verbinden
+- **Homoglyph-Erkennung:** Identifiziert und blockiert Nachrichten mit Homoglyphen, die für Spam verwendet werden
+- **Flood-Schutz:** Überwacht Nachrichtenhäufigkeit und ergreift automatisch Maßnahmen gegen floodende Benutzer
+- **Wiederholungserkennung:** Verfolgt und bestraft Benutzer, die wiederholt identische Nachrichten senden
+- **Zeitbasierter Schutz:** Erweiterte Spam-Prüfungen für Benutzer, die kürzlich Kanälen beigetreten sind (konfigurierbares Zeitfenster, Standard 5 Minuten)
+- **Duale Erkennungsmodi:** Normale und Lax Spam-Erkennungsmodi mit separaten Schwellenwerten
+- **Benutzerklassifizierung:** Unterscheidet zwischen neuen und etablierten Benutzern mit unterschiedlichen Schwellenwerten
+- **Konfigurierbare Schwellenwerte:** Separate Wiederholungs- und Flood-Schwellenwerte für neue vs. etablierte Benutzer in beiden Erkennungsmodi
+- **Ähnlichkeitserkennung:** Erweiterte Nachrichtenähnlichkeitserkennung mit konfigurierbarem Ähnlichkeitsschwellenwert (Standard 0.8)
+- **Kanalübergreifende Spam-Erkennung:** Erkennt Spam-Muster über mehrere Kanäle mit dediziertem Zeitfenster und Ähnlichkeitsschwellenwert
+- **Verdächtige Ident-Erkennung:** Erkennt und blockiert automatisch Benutzer mit verdächtigen Idents (root, admin, etc.)
+- **Verdächtige TLD-Erkennung:** Überwacht und markiert Nachrichten mit verdächtigen Top-Level-Domains (tk, ml, ga, etc.)
+- **Score-basiertes System:** Dynamisches Spam-Scoring mit konfigurierbarer Verfallsrate und Intervall zur Rehabilitation guten Verhaltens
+- **Extremer Spam-Schwellenwert:** Konfigurierbarer Schwellenwert für sofortige Maßnahmen bei extremem Spam-Verhalten
+- **G-Line-Unterstützung:** Automatische netzwerkweite Bans (G-Lines) nach wiederholten Verstößen
+  - Konfigurierbarer Kill-Schwellenwert vor G-Line-Aktivierung (Standard: 3 Kills)
+  - Einstellbare G-Line-Dauer (Standard: 24 Stunden)
+  - Benutzerdefinierter G-Line-Grund mit Unterstützung für Verstoß-URL
+- **Badword-Verwaltung:** Ermöglicht IRC-Operatoren (Opers), Badwords über benutzerfreundliche Befehle hinzuzufügen, aufzulisten oder zu entfernen
+- **Kanal-Verwaltung:** Opers können Kanäle zur SpamScan-Überwachung hinzufügen/entfernen
+- **Operator-Befehle:** Umfassende Hilfe-, Konfigurations- und Verwaltungsbefehle inklusive GLINESTATS
+- **JSON-Konfigurationsspeicher:** Spam-Erkennungsregeln und Badword-Listen werden in einfach editierbaren JSON-Dateien gespeichert
+- **Selbstheilende Konfigurationen:** Fehlende Konfigurationsdateien werden automatisch generiert und gepflegt
+- **Kill-Tracking:** Führt Statistiken über getötete Benutzer für G-Line-Durchsetzung
 - **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
@@ -50,6 +64,19 @@
 - **Datenbank-Integration:** Prüft registrierte Nicknames gegen die PostgreSQL-Datenbank.
 - **Benutzer-Benachrichtigungen:** Sendet Warnungen und Erfolgsmeldungen zum Authentifizierungsstatus.
 - **INFO-Befehl:** Umfassende Nickname-Informationen inklusive aller reservierten Nicks und formatierter Daten.
+- **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
+- **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
+
+### SaslServ-Modul
+- **SASL-Authentifizierung:** Server-zu-Server SASL-Validierungsprotokoll für JIRCd
+- **PLAIN-Mechanismus-Unterstützung:** Implementiert SASL PLAIN Authentifizierungsmechanismus
+- **Datenbank-Integration:** Authentifiziert Benutzer gegen PostgreSQL-Datenbank
+- **Relay-Modus-Unterstützung:** Optionale Weiterleitungsauthentifizierung an externe Kontrolldienste (z.B. mIAuthd)
+- **Account-Token-Generierung:** Generiert erweiterte Account-Token (username:timestamp:id) für JIRCd
+- **Konfigurierbare Account-Parameter:** Anpassbarer Account-Name und ID in der N-Line-Registrierung
+- **Timeout-Behandlung:** Konfigurierbarer Relay-Timeout mit automatischer Fehlerbehandlung
+- **Remote-Authentifizierung:** MD5-basierte Digest-Authentifizierung für Relay-Modus
+- **Config-Fallback:** Optionaler Rückfall auf config-basierte Authentifizierung bei Datenbankausfall
 - **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
@@ -187,9 +214,19 @@ Module werden in `config-modules-extended.json` konfiguriert:
 ### Verfügbare Module
 
 - **SpamScan** (`spamscan`): Automatische Spam-Erkennung und Badword-Filterung
+  - Duale Erkennungsmodi (Normal/Lax) mit konfigurierbaren Schwellenwerten
+  - Erweiterte Ähnlichkeitserkennung und kanalübergreifendes Spam-Tracking
+  - Verdächtige Ident- und TLD-Erkennung
+  - Score-basiertes System mit Verfall zur Verhaltensrehabilitation
+  - Automatische G-Line-Durchsetzung nach wiederholten Verstößen
+  - Umfassende Operator-Befehle und Statistiken
 - **HostServ** (`hostserv`): Verwaltung versteckter Hosts für authentifizierte Benutzer
 - **NickServ** (`nickserv`): Nickname-Schutz und Authentifizierungs-Durchsetzung
 - **SaslServ** (`saslserv`): SASL-Authentifizierungsprüfung (Mechanismus `PLAIN`)
+  - Implementiert Server-zu-Server SASL-Protokoll für JIRCd
+  - Unterstützt Datenbank- und config-basierte Authentifizierung
+  - Optionaler Relay-Modus für externe Authentifizierungsdienste
+  - Konfigurierbare Account-Parameter über `config-saslserv.json`
 
 ### Neue Module hinzufügen
 
@@ -275,6 +312,7 @@ Weitere Informationen finden Sie im integrierten Hilfesystem oder im Projekt-Wik
 - `config-spamscan.json` - SpamScan-Modul-Konfiguration
 - `config-hostserv.json` - HostServ-Modul-Konfiguration
 - `config-nickserv.json` - NickServ-Modul-Konfiguration
+- `config-saslserv.json` - SaslServ-Modul-Konfiguration (Account-Name, ID, Relay-Einstellungen)
 - `badwords-spamscan.json` - Badword-Liste für SpamScan
 
 ## Logdateien

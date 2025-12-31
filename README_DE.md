@@ -1,6 +1,6 @@
 # JServ
 
-**JServ** ist ein robuster Java-basierter Dienst, der essenzielle IRC-Module—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ** und **OperServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit `midircd` und `snircd` entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung, Nickname-Schutz, Authentifizierung, Channel-Verwaltung und Operator-Services für IRC-Netzwerke.
+**JServ** ist ein robuster Java-basierter Dienst, der essenzielle IRC-Module—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ** und **OperServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit **JIRCd** (Java IRC Daemon) entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung, Nickname-Schutz, Authentifizierung, Channel-Verwaltung und Operator-Services für IRC-Netzwerke.
 
 ## Hauptfunktionen
 
@@ -169,7 +169,7 @@
 
 ## Kompatibilität
 
-- **IRC-Daemons:** Erfordert `midircd` und `snircd`
+- **IRC-Daemons:** Entwickelt für **JIRCd** (Java IRC Daemon) unter Verwendung des P10-Protokolls
 - **Java-Laufzeitumgebung:** JRE 17 oder neuer
 - **Datenbank:** PostgreSQL
 

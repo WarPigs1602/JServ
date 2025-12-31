@@ -18,9 +18,12 @@ public final class Users {
 
     private final String id;    
     private String nick;
+    private String ident;
     private String account;
     private String host;
     private String realHost;
+    private String hiddenHost;
+    private String clientIp;
     private String line = "";    
     private int flood = 0;
     private int repeat = 0;
@@ -30,6 +33,7 @@ public final class Users {
     private boolean reg = false;    
     private boolean service = false;    
     private boolean x = false;
+    private boolean registrationAttempted = false;
     
     // Advanced spam detection fields
     private double spamScore = 0.0;
@@ -59,23 +63,31 @@ public final class Users {
 
     private static final Logger LOG = Logger.getLogger(Users.class.getName());    
 
-    public Users(String id, String nick, String account, String host) {
+    public Users(String id, String nick, String ident, String account, String host) {
         this.id = id;
         this.nick = nick;
+        this.ident = ident;
         this.account = account;
         this.host = host;
         this.realHost = host;
+        this.hiddenHost = null;
     }
 
     public String getId() { return id; }
     public String getNick() { return nick; }
     public void setNick(String nick) { this.nick = nick; }
+    public String getIdent() { return ident; }
+    public void setIdent(String ident) { this.ident = ident; }
     public String getAccount() { return account; }
     public void setAccount(String account) { this.account = account; }
     public String getHost() { return host; }
     public void setHost(String host) { this.host = host; }
     public String getRealHost() { return realHost; }
     public void setRealHost(String realHost) { this.realHost = realHost; }
+    public String getHiddenHost() { return hiddenHost; }
+    public void setHiddenHost(String hiddenHost) { this.hiddenHost = hiddenHost; }
+    public String getClientIp() { return clientIp; }
+    public void setClientIp(String clientIp) { this.clientIp = clientIp; }
     public String getLine() { return line; }
     public void setLine(String line) { this.line = line; }
     public int getFlood() { return flood; }
@@ -115,6 +127,8 @@ public final class Users {
     public void setService(boolean service) { this.service = service; }
     public boolean isX() { return x; }
     public void setX(boolean x) { this.x = x; }
+    public boolean hasAttemptedRegistration() { return registrationAttempted; }
+    public void setRegistrationAttempted(boolean attempted) { this.registrationAttempted = attempted; }
     
     // Advanced spam detection getters/setters
     public double getSpamScore() { return spamScore; }

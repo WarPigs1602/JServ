@@ -186,14 +186,15 @@ public final class SaslServ extends AbstractModule implements Software {
             return;
         }
 
-        // If relay mode is enabled, do not block waiting for response.
-        // Instead, send remoteauth request and complete the SASL handshake when the control service answers.
+        // If relay mode is enabled, try relay first. If queuing fails, fall back to local auth.
         if (useRelay()) {
             boolean queued = queueRelayAuth(targetToken, authzid, authcid, password, requestHost, requestIdent);
-            if (!queued) {
-                reply(targetToken, "FAIL", null, "Relay unavailable");
+            if (queued) {
+                // Will complete upon relay response
+                return;
             }
-            return;
+            // Relay unavailable: fall back to local authentication
+            getLogger().log(Level.WARNING, "SASL relay unavailable, falling back to local authentication");
         }
 
         boolean ok;
@@ -206,6 +207,12 @@ public final class SaslServ extends AbstractModule implements Software {
         }
 
         if (ok) {
+            // Update lastauth timestamp
+            if (mi != null && mi.getDb() != null) {
+                long now = System.currentTimeMillis() / 1000;
+                mi.getDb().updateData("lastauth", authcid, now);
+                getLogger().log(Level.FINE, "SASL: Updated lastauth for user {0}", authcid);
+            }
             getLogger().log(Level.INFO, "SASL(SA): OK user={0} requester={1}", new Object[]{authcid, senderToken});
             reply(targetToken, "OK", buildAccountToken(authcid), null);
         } else {
@@ -447,6 +454,12 @@ public final class SaslServ extends AbstractModule implements Software {
         PendingRelayAuth pending = pendingRelay.remove(account);
         if (pending == null) {
             return;
+        }
+        // Update lastauth timestamp for successful relay authentication
+        if (mi != null && mi.getDb() != null) {
+            long now = System.currentTimeMillis() / 1000;
+            mi.getDb().updateData("lastauth", pending.account, now);
+            getLogger().log(Level.FINE, "SASL Relay: Updated lastauth for user {0}", pending.account);
         }
         // Use original case-preserved account name for the token
         String token = buildAccountTokenFromFields(pending.account, timestamp, uid);

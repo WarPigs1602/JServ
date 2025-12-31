@@ -110,9 +110,10 @@ public interface Module {
      * @param host User host
      * @param account User account (empty if not authed)
      * @param serverNumeric Server numeric prefix
+     * @param hiddenHost User's hidden host (null if not set)
      * @return true if user was handled/killed by module, false otherwise
      */
-    default boolean handleNewUser(String numeric, String nick, String ident, String host, String account, String serverNumeric) {
+    default boolean handleNewUser(String numeric, String nick, String ident, String host, String account, String serverNumeric, String hiddenHost) {
         return false; // Default: user not handled
     }
     

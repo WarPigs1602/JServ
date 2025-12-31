@@ -244,10 +244,14 @@ public final class NickServ implements Software, Module {
             return; // Nick is not registered, nothing to do
         }
         
-        // Check if user has PROTECT flag - if yes, skip enforcement completely
+        // Check if user has PROTECT flag and ChanServ is disabled - if yes, skip enforcement
         int userFlags = jserv.getDb().getFlags(userNick);
-        if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT)) {
-            LOG.log(Level.FINE, "User {0} has PROTECT flag during burst, skipping nick protection", userNumeric);
+        boolean chanServEnabled = socketThread.getModuleManager() != null && 
+                socketThread.getModuleManager().getModule("ChanServ") != null &&
+                socketThread.getModuleManager().getModule("ChanServ").isEnabled();
+        
+        if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT) && !chanServEnabled) {
+            LOG.log(Level.FINE, "User {0} has PROTECT flag and ChanServ is disabled, skipping nick protection", userNumeric);
             return;
         }
         
@@ -344,10 +348,14 @@ public final class NickServ implements Software, Module {
             return; // Nick is not registered, nothing to do
         }
         
-        // Check if user has PROTECT flag - if yes, skip enforcement completely
+        // Check if user has PROTECT flag and ChanServ is disabled - if yes, skip enforcement
         int userFlags = jserv.getDb().getFlags(userNick);
-        if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT)) {
-            LOG.log(Level.FINE, "User {0} has PROTECT flag, skipping nick protection", userNumeric);
+        boolean chanServEnabled = socketThread.getModuleManager() != null && 
+                socketThread.getModuleManager().getModule("ChanServ") != null &&
+                socketThread.getModuleManager().getModule("ChanServ").isEnabled();
+        
+        if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT) && !chanServEnabled) {
+            LOG.log(Level.FINE, "User {0} has PROTECT flag and ChanServ is disabled, skipping nick protection", userNumeric);
             return;
         }
         
@@ -400,7 +408,7 @@ public final class NickServ implements Software, Module {
     
     /**
      * Handles user authentication
-     * Format: SP AC userNumeric accountName timestamp flags
+     * Format: SP AC userNumeric accountName timestamp accountId
      */
     private void handleAuthentication(String[] elem) {
         // AC command comes from service (SP), not from user
@@ -506,10 +514,14 @@ public final class NickServ implements Software, Module {
             return;
         }
         
-        // Check if new nick has PROTECT flag - if yes, skip enforcement completely
+        // Check if new nick has PROTECT flag and ChanServ is disabled - if yes, skip enforcement
         int userFlags = jserv.getDb().getFlags(newNick);
-        if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT)) {
-            LOG.log(Level.FINE, "Nick {0} has PROTECT flag, skipping nick protection", newNick);
+        boolean chanServEnabled = socketThread.getModuleManager() != null && 
+                socketThread.getModuleManager().getModule("ChanServ") != null &&
+                socketThread.getModuleManager().getModule("ChanServ").isEnabled();
+        
+        if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT) && !chanServEnabled) {
+            LOG.log(Level.FINE, "Nick {0} has PROTECT flag and ChanServ is disabled, skipping nick protection", newNick);
             // Remove from enforcement list if present
             if (unauthenticatedUsers.remove(userNumeric) != null) {
                 LOG.log(Level.INFO, "User {0} removed from enforcement list (nick has PROTECT flag)", userNumeric);
@@ -1662,7 +1674,7 @@ public final class NickServ implements Software, Module {
             jserv.getDb().setGLineExpiration(userHost, currentTime + glineDuration);
             
             // Register dummy user in local Users map FIRST (before sending to network)
-            Users dummyUser = new Users(dummyNumeric, nick, "", "services.protected");
+            Users dummyUser = new Users(dummyNumeric, nick, "", "", "services.protected");
             dummyUser.setService(true);
             jserv.getSocketThread().getUsers().put(dummyNumeric, dummyUser);
             
@@ -1786,10 +1798,14 @@ public final class NickServ implements Software, Module {
                         return;
                     }
                     
-                    // Check if user has PROTECT flag - if yes, skip enforcement
+                    // Check if user has PROTECT flag and ChanServ is disabled - if yes, skip enforcement
                     int userFlags = jserv.getDb().getFlags(user.getNick());
-                    if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT)) {
-                        LOG.log(Level.FINE, "User {0} has PROTECT flag, skipping nick protection enforcement", 
+                    boolean chanServEnabled = socketThread.getModuleManager() != null && 
+                            socketThread.getModuleManager().getModule("ChanServ") != null &&
+                            socketThread.getModuleManager().getModule("ChanServ").isEnabled();
+                    
+                    if (Userflags.hasFlag(userFlags, Userflags.Flag.PROTECT) && !chanServEnabled) {
+                        LOG.log(Level.FINE, "User {0} has PROTECT flag and ChanServ is disabled, skipping nick protection enforcement", 
                                 userNumeric);
                         unauthenticatedUsers.remove(userNumeric);
                         return;

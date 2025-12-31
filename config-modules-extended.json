@@ -27,6 +27,27 @@
       "className": "net.midiandmore.jserv.SaslServ",
       "numericSuffix": "AAE",
       "configFile": "config-saslserv.json"
+    },
+    {
+      "name": "ChanServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.ChanServ",
+      "numericSuffix": "AAF",
+      "configFile": "config-chanserv.json"
+    },
+    {
+      "name": "AuthServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.AuthServ",
+      "numericSuffix": "AAA",
+      "configFile": "config-authserv.json"
+    },
+    {
+      "name": "OperServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.OperServ",
+      "numericSuffix": "AAG",
+      "configFile": "config-operserv.json"
     }
   ]
 }

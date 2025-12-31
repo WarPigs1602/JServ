@@ -1,11 +1,11 @@
 # JServ
 
-**JServ** ist ein robuster Java-basierter Dienst, der drei essenzielle IRC-Module—**SpamScan**, **HostServ**, **SaslServ** und **NickServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit `midircd` und `snircd` entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung und Nickname-Schutz für IRC-Netzwerke.
+**JServ** ist ein robuster Java-basierter Dienst, der essenzielle IRC-Module—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ** und **OperServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit `midircd` und `snircd` entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung, Nickname-Schutz, Authentifizierung, Channel-Verwaltung und Operator-Services für IRC-Netzwerke.
 
 ## Hauptfunktionen
 
 ### Modulare Architektur
-- **Plugin-System:** SpamScan, HostServ und NickServ sind als unabhängige Module implementiert
+- **Plugin-System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ und OperServ sind als unabhängige Module implementiert
 - **Dynamische Modulverwaltung:** Module können über die Konfiguration aktiviert/deaktiviert werden, ohne Code-Änderungen
 - **Erweiterte Modul-Konfiguration:** Umfassende JSON-basierte Modul-Definition mit Klassenname, Numeric-Suffix und Config-Datei-Zuordnung
 - **Automatisches Modul-Laden:** Module werden automatisch basierend auf der Konfiguration instanziiert und registriert
@@ -14,6 +14,10 @@
 - **Zentralisierte Verwaltung:** ModuleManager verwaltet alle Modul-Registrierungen, Aktivierung/Deaktivierung und Nachrichten-Routing
 
 ### SpamScan-Modul
+
+**Zweck:** Bietet automatisierte Spam-Erkennung und -Prävention für IRC-Channels. SpamScan überwacht aktiv Channel-Nachrichten, Benutzerverhalten und Verbindungsmuster, um Spam, Flood-Angriffe und bösartige Bots in Echtzeit zu identifizieren und zu blockieren.
+
+**Hauptfunktionen:**
 - **Automatische Spam-Erkennung:** Scannt aktiv IRC-Nachrichten auf Spam unter Verwendung einer anpassbaren Badword-Liste
 - **Knocker-Bot-Erkennung:** Fortgeschrittene Mustererkennung zur Identifizierung und automatischen Blockierung von Knocker-Spambots beim Verbinden
 - **Homoglyph-Erkennung:** Identifiziert und blockiert Nachrichten mit Homoglyphen, die für Spam verwendet werden
@@ -43,6 +47,10 @@
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
 ### HostServ-Modul
+
+**Zweck:** Verwaltet virtuelle Hosts (vhosts) für authentifizierte Benutzer und bietet Privatsphäre- und Anpassungsoptionen. HostServ ermöglicht es Benutzern, ihre echten IP-Adressen hinter benutzerdefinierten Hostnamen zu verstecken, was die Sicherheit erhöht und eine personalisierte Netzwerkpräsenz ermöglicht.
+
+**Hauptfunktionen:**
 - **Verwaltung versteckter Hosts:** Ermöglicht authentifizierten Benutzern das Setzen und Verwalten ihrer versteckten Hosts für Privatsphäre.
 - **Automatische VHost-Anwendung:** Wendet automatisch virtuelle Hosts bei Benutzerauthentifizierung an (AC-Befehl).
 - **Automatischer VHost beim Verbinden:** Setzt virtuelle Hosts für Benutzer, die sich mit registrierten Accounts verbinden.
@@ -53,6 +61,10 @@
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
 ### NickServ-Modul
+
+**Zweck:** Schützt registrierte Nicknames vor unbefugter Nutzung durch automatisierte Durchsetzung. NickServ stellt sicher, dass nur die rechtmäßigen Besitzer ihre registrierten Nicknames verwenden können, indem eine Authentifizierung innerhalb einer Gnadenfrist erforderlich ist.
+
+**Hauptfunktionen:**
 - **Nickname-Schutz:** Schützt registrierte Nicknames vor unbefugter Nutzung.
 - **Authentifizierungs-Durchsetzung:** Benutzer müssen sich innerhalb von 60 Sekunden authentifizieren oder werden getrennt.
 - **Account-Abgleich:** Überprüft, dass authentifizierte Benutzer mit dem registrierten Nickname-Besitzer übereinstimmen.
@@ -68,6 +80,10 @@
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
 ### SaslServ-Modul
+
+**Zweck:** Implementiert das Server-zu-Server SASL-Authentifizierungsprotokoll für sichere Pre-Connection-Authentifizierung. SaslServ validiert Benutzeranmeldeinformationen, bevor sie vollständig mit dem Netzwerk verbunden sind, und bietet erhöhte Sicherheit und nahtlose Authentifizierung für IRC-Clients.
+
+**Hauptfunktionen:**
 - **SASL-Authentifizierung:** Server-zu-Server SASL-Validierungsprotokoll für JIRCd
 - **PLAIN-Mechanismus-Unterstützung:** Implementiert SASL PLAIN Authentifizierungsmechanismus
 - **Datenbank-Integration:** Authentifiziert Benutzer gegen PostgreSQL-Datenbank
@@ -77,6 +93,55 @@
 - **Timeout-Behandlung:** Konfigurierbarer Relay-Timeout mit automatischer Fehlerbehandlung
 - **Remote-Authentifizierung:** MD5-basierte Digest-Authentifizierung für Relay-Modus
 - **Config-Fallback:** Optionaler Rückfall auf config-basierte Authentifizierung bei Datenbankausfall
+- **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
+- **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
+
+### ChanServ-Modul
+
+**Zweck:** Verwaltet Channel-Registrierung, Besitz und Zugriffskontrolle. ChanServ ermöglicht es Benutzern, Channels zu registrieren, persistente Channel-Einstellungen zu pflegen und den Benutzerzugriff über ein umfassendes Berechtigungssystem zu steuern.
+
+**Hauptfunktionen:**
+- **Channel-Registrierung:** Registrierung von Channels mit Founder-Privilegien und persistentem Besitz
+- **Zugriffsverwaltung:** Steuerung des Benutzerzugriffs mit OP-, VOICE- und BAN-Flags
+- **Automatische Modus-Anwendung:** Automatisches Anwenden von Channel-Modi basierend auf Zugriffslevel beim Betreten
+- **Channel-Einstellungen:** Konfiguration von AUTOOP, PROTECT, AUTOLIMIT und anderen Channel-Verhaltensweisen
+- **Topic-Verwaltung:** Setzen, Sperren und Verwalten von Channel-Topics mit Schutz
+- **Ban-Listen-Verwaltung:** Pflege und Durchsetzung von Channel-Ban-Listen
+- **Benutzer-Befehle:** REGISTER, ADDUSER, DELUSER, MODUSER, LISTUSERS, SET, INFO, UNREGISTER
+- **Operator-Befehle:** CHANLIST für netzwerkweite Channel-Übersicht
+- **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
+- **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
+
+### AuthServ-Modul
+
+**Zweck:** Bietet zentralisierte Benutzerkontenverwaltung und Authentifizierungsdienste. AuthServ übernimmt die Benutzerregistrierung, Passwortverwaltung und Authentifizierung und dient als Grundlage für andere Services wie ChanServ und HostServ.
+
+**Hauptfunktionen:**
+- **Account-Registrierung:** Registrierung neuer Accounts mit E-Mail-Verifizierung und automatisch generierten Passwörtern
+- **Sichere Authentifizierung:** IDENTIFY-Befehl für Account-Login mit Datenbankvalidierung
+- **Passwortverwaltung:** Passwörter ändern (PASSWD), neue Passwörter anfordern (REQUESTPASSWORD) und ausstehende Änderungen abbrechen (RESETPASSWORD)
+- **E-Mail-Benachrichtigungen:** Automatisches E-Mail-System für Registrierung, Passwortänderungen und Wiederherstellung
+- **Benutzer-Flags-System:** Umfassendes Berechtigungssystem (+n, +i, +c, +h, +q, +o, +a, +d, +p, +T Flags)
+- **Account-Informationen:** Anzeige von Account-Details, Erstellungsdatum und letztem Login (INFO, STATUS Befehle)
+- **Account-Löschung:** Sichere Account-Löschung mit Passwortbestätigung
+- **Eine Registrierung pro Sitzung:** Verhindert Missbrauch durch Begrenzung der Registrierungen pro Verbindung
+- **Integration:** Wendet automatisch Channel-Modi über ChanServ nach Authentifizierung an
+- **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
+- **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
+
+### OperServ-Modul
+
+**Zweck:** Bietet Netzwerkoperator-Tools für Netzwerkverwaltung, Überwachung und Sicherheitsdurchsetzung. OperServ bietet Befehle für G-Line-Verwaltung, Trust-Kontrolle und Netzwerkstatistiken, die nur für IRC-Operatoren zugänglich sind.
+
+**Hauptfunktionen:**
+- **G-Line-Verwaltung:** Hinzufügen, Entfernen, Auflisten und Synchronisieren netzwerkweiter Bans (GLINE, UNGLINE, GLINELIST)
+- **Trust-System:** Verwaltung von Verbindungs-Trust-Regeln für IP-basierte Zugriffskontrolle (TRUSTADD, TRUSTDEL, TRUSTGET, TRUSTSET, TRUSTLIST)
+- **Netzwerkstatistiken:** Anzeige von Netzwerkstatistiken, aktiven G-Lines und Trust-Regeln (STATS)
+- **Channel-Verwaltung:** Auflistung aller Channels mit Benutzerzahlen (CHANLIST)
+- **Benutzerverwaltung:** KILL-Befehl zum Trennen von missbräuchlichen Benutzern
+- **Raw-Befehle:** Senden von Raw-IRC-Protokollbefehlen für erweiterte Operationen (RAW)
+- **Automatische Bereinigung:** Timer-basierte Bereinigung abgelaufener G-Lines
+- **Netzwerk-Synchronisierung:** Synchronisierung von G-Lines mit dem Netzwerk beim Start
 - **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
@@ -227,6 +292,30 @@ Module werden in `config-modules-extended.json` konfiguriert:
   - Unterstützt Datenbank- und config-basierte Authentifizierung
   - Optionaler Relay-Modus für externe Authentifizierungsdienste
   - Konfigurierbare Account-Parameter über `config-saslserv.json`
+- **ChanServ** (`chanserv`): Channel-Registrierungs- und Verwaltungs-Service
+  - Channel-Registrierung mit Founder-Privilegien
+  - Benutzerzugriffsverwaltung (OP, VOICE, BAN)
+  - Automatisches Setzen von Modi basierend auf Benutzer-Flags
+  - Channel-Einstellungen (AUTOOP, PROTECT, AUTOLIMIT)
+  - Topic-Schutz und -Verwaltung
+  - Ban-Listen-Verwaltung
+  - Channel-Informationen und Benutzerlisten-Befehle
+- **AuthServ** (`authserv`): Account-Verwaltungs- und Authentifizierungs-Service
+  - Benutzer-Account-Registrierung mit E-Mail-Verifizierung
+  - Sichere Passwortverwaltung (Ändern, Zurücksetzen, Wiederherstellung)
+  - Account-Identifizierung und Authentifizierung
+  - Benutzer-Flags und Berechtigungsverwaltung
+  - Account-Löschung und Informationsanzeige
+  - E-Mail-Benachrichtigungssystem für Passwortänderungen
+  - Integration mit ChanServ für automatische Channel-Modus-Anwendung
+- **OperServ** (`operserv`): Operator-Service für Netzwerkverwaltung
+  - Netzwerkstatistiken und Überwachung
+  - G-Line-Verwaltung (Hinzufügen, Entfernen, Auflisten, Synchronisieren)
+  - Trust-Verwaltung für Verbindungskontrolle (TRUSTADD, TRUSTDEL, TRUSTLIST)
+  - Channel- und Benutzerauflistung
+  - Raw-Befehle senden für erweiterte Operationen
+  - Kill-Befehl für Benutzerverwaltung
+  - Automatische G-Line-Bereinigung und Synchronisierung
 
 ### Neue Module hinzufügen
 
@@ -307,13 +396,65 @@ Weitere Informationen finden Sie im integrierten Hilfesystem oder im Projekt-Wik
 
 ## Konfigurationsdateien
 
-- `config-jserv.json` - Hauptkonfiguration (Server-Verbindung, Numeric, etc.)
-- `config-modules-extended.json` - Erweiterte Modul-Konfiguration mit Klassennamen und Numeric-Suffixen
-- `config-spamscan.json` - SpamScan-Modul-Konfiguration
-- `config-hostserv.json` - HostServ-Modul-Konfiguration
-- `config-nickserv.json` - NickServ-Modul-Konfiguration
-- `config-saslserv.json` - SaslServ-Modul-Konfiguration (Account-Name, ID, Relay-Einstellungen)
-- `badwords-spamscan.json` - Badword-Liste für SpamScan
+### Kern-Konfiguration
+- `config.json` - Hauptkonfiguration von JServ (Server-Verbindung, Numeric, Datenbank-Einstellungen, SMTP)
+- `config-modules.json` - Basis-Modul-Konfiguration (veraltet, verwenden Sie die erweiterte Version)
+- `config-modules-extended.json` - Erweiterte Modul-Konfiguration mit Klassennamen, Numeric-Suffixen und Config-Datei-Zuordnungen
+
+### Modul-Konfiguration
+- `config-spamscan.json` - SpamScan-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd, Erkennungsschwellenwerte)
+- `config-hostserv.json` - HostServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd)
+- `config-nickserv.json` - NickServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd, Gnadenfrist)
+- `config-saslserv.json` - SaslServ-Modul-Einstellungen (Account-Name, ID, Relay-Einstellungen, Timeout)
+- `config-chanserv.json` - ChanServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd)
+- `config-authserv.json` - AuthServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd)
+- `config-operserv.json` - OperServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd)
+- `config-trustcheck.json` - TrustCheck Allow-Regeln (Legacy-Fallback, falls Datenbank keine Trust-Regeln enthält)
+
+### Datendateien
+- `badwords-spamscan.json` - Badword-Liste für SpamScan Spam-Erkennung
+- `email-templates.json` - E-Mail-Vorlagen für AuthServ-Benachrichtigungen (Registrierung, Passwortänderungen)
+
+## TrustCheck (TC/TR)
+
+JServ kann als **TrustCheck-Server** für JIRCd's TC/TR-Protokoll laufen.
+
+- TrustCheck wird über `trustserver` in `config.json` aktiviert.
+- JServ wertet TC-Anfragen nur aus, wenn `servername` exakt `trustserver` entspricht.
+
+In `config.json` ergänzen:
+
+```json
+{"name":"trustserver","value":"trust.example.net"},
+{"name":"trustcheck_timeout_ms","value":"2000"}
+```
+
+Die Allow-Regeln werden primär aus der Datenbanktabelle `operserv.trusts` ausgewertet (verwaltbar per OperServ-Kommandos). Basierend auf der Auswertung antwortet JServ:
+- `TR ... OK` - Verbindung erlaubt (Regel gefunden)
+- `TR ... IGNORE` - Keine Regel gefunden, aber nicht explizit abgelehnt (Standardverhalten)
+- `TR ... FAIL` - Verbindung explizit abgelehnt (fail-closed Modus, falls konfiguriert)
+
+OperServ-Kommandos:
+
+- `TRUSTADD <maske> [maxconn] [ident]`
+- `TRUSTDEL <maske>`
+- `TRUSTGET <maske>`
+- `TRUSTSET <maske> [maxconn] [ident|noident]`
+- `TRUSTLIST [limit]`
+
+Masken unterstützen `*` und `?` und sind typischerweise `ident@ip` (Beispiel: `*admin*@192.0.2.*`).
+`maxconn` ist die maximale gleichzeitige Verbindungsanzahl für diese IP (0 = unbegrenzt). Mit `ident` wird ein nicht-leeres Ident erzwungen.
+
+Wenn die Datenbank **keine** Trust-Regeln enthält, fällt JServ aus Kompatibilitätsgründen auf `config-trustcheck.json` zurück.
+
+Beispiel für `config-trustcheck.json`:
+
+```json
+[
+  {"name":"rule1","value":"trustedident@203.0.113.*"},
+  {"name":"rule2","value":"vpn*@2001:db8:*"}
+]
+```
 
 ## Logdateien
 

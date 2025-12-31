@@ -1,0 +1,10 @@
+[
+  {"name": "nick", "value": "AuthServ"},
+  {"name": "servername", "value": "auth.services.midiandmore.net"},
+  {"name": "description", "value": "Account Management Service"},
+  {"name": "identd", "value": "authserv"},
+  {"name": "enabled", "value": "true"},
+  {"name": "minPasswordLength", "value": "6"},
+  {"name": "minUsernameLength", "value": "3"},
+  {"name": "maxUsernameLength", "value": "16"}
+]

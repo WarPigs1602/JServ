@@ -19,6 +19,7 @@ public final class Channel {
     private final String name;
     private String modes;
     private boolean moderated;
+    private String topic;
     private final List<String> users;
     private final List<String> op = new ArrayList<>();
     private final List<String> voice = new ArrayList<>();
@@ -52,6 +53,7 @@ public final class Channel {
     public String getName() { return name; }
     public String getModes() { return modes; }
     public boolean isModerated() { return moderated; }
+    public String getTopic() { return topic; }
     public List<String> getUsers() { return Collections.unmodifiableList(users); }
     public List<String> getOp() { return Collections.unmodifiableList(op); }
     public List<String> getVoice() { return Collections.unmodifiableList(voice); }
@@ -62,6 +64,13 @@ public final class Channel {
      */
     public void setModes(String modes) {
         this.modes = modes;
+    }
+
+    /**
+     * @param topic the topic to set
+     */
+    public void setTopic(String topic) {
+        this.topic = topic;
     }
 
     public void addUser(String user) { users.add(user); }

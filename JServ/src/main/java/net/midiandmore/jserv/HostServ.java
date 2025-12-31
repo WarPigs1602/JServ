@@ -184,14 +184,18 @@ public final class HostServ implements Software, Module {
     }
     
     @Override
-    public boolean handleNewUser(String numeric, String nick, String ident, String host, String account, String serverNumeric) {
+    public boolean handleNewUser(String numeric, String nick, String ident, String host, String account, String serverNumeric, String hiddenHost) {
         if (!enabled || account == null || account.isBlank()) {
             return false;
         }
         LOG.log(Level.INFO, "HostServ.handleNewUser: numeric={0}, nick={1}, account={2}", 
                 new Object[]{numeric, nick, account});
+        
+        // Use hiddenHost if set, otherwise fall back to ident@host
+        String currentHost = (hiddenHost != null) ? hiddenHost : (ident + "@" + host);
+        
         // Set virtual host if user has one configured
-        setVirtualHost(numeric, account, serverNumeric);
+        setVirtualHost(numeric, account, serverNumeric, currentHost);
         return false; // User not killed, just vhost set
     }
     
@@ -200,8 +204,12 @@ public final class HostServ implements Software, Module {
         if (!enabled || account == null || account.isBlank()) {
             return;
         }
+        // Get current hiddenhost from user object
+        Users user = getSt().getUsers().get(numeric);
+        String currentHost = (user != null && user.getHiddenHost() != null) ? user.getHiddenHost() : null;
+        
         // Set virtual host if user has one configured
-        setVirtualHost(numeric, account, serverNumeric);
+        setVirtualHost(numeric, account, serverNumeric, currentHost);
     }
     
     /**
@@ -211,7 +219,7 @@ public final class HostServ implements Software, Module {
      * @param account User account
      * @param serverNumeric Server numeric prefix
      */
-    private void setVirtualHost(String numeric, String account, String serverNumeric) {
+    private void setVirtualHost(String numeric, String account, String serverNumeric, String currentHost) {
         LOG.log(Level.INFO, "setVirtualHost: numeric={0}, account={1}, registered={2}", 
                 new Object[]{numeric, account, getMi().getDb().isRegistered(account)});
         
@@ -220,9 +228,15 @@ public final class HostServ implements Software, Module {
         }
         
         String vhost = getMi().getDb().getHost(account);
-        LOG.log(Level.INFO, "setVirtualHost: vhost={0}", vhost);
+        LOG.log(Level.INFO, "setVirtualHost: vhost={0}, currentHost={1}", new Object[]{vhost, currentHost});
         
         if (vhost != null && vhost.contains("@")) {
+            // Compare vhost with current host (format: ident@host)
+            if (currentHost != null && vhost.equals(currentHost)) {
+                LOG.log(Level.INFO, "VHost already set for {0}, skipping: {1}", new Object[]{account, vhost});
+                return;
+            }
+            
             String[] sethost = vhost.split("@", 2);
             sendText("%s SH %s %s %s", serverNumeric, numeric, sethost[0], sethost[1]);
             LOG.log(Level.INFO, "Set vhost for {0}: {1}", new Object[]{account, vhost});

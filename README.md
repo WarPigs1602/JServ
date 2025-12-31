@@ -1,11 +1,11 @@
 # JServ
 
-**JServ** is a robust Java-based service that integrates three essential IRC modules—**SpamScan**, **HostServ**, **SaslServ**, and **NickServ**—into a single, efficient package. Designed specifically for use with `midircd` and `snircd`, JServ streamlines spam detection, hidden host management, and nickname protection for IRC networks.
+**JServ** is a robust Java-based service that integrates essential IRC modules—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ**, and **OperServ**—into a single, efficient package. Designed specifically for use with `midircd` and `snircd`, JServ streamlines spam detection, hidden host management, nickname protection, authentication, channel management, and operator services for IRC networks.
 
 ## Key Features
 
 ### Modular Architecture
-- **Plugin System:** SpamScan, HostServ, and NickServ are implemented as independent modules
+- **Plugin System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ, and OperServ are implemented as independent modules
 - **Dynamic Module Management:** Modules can be enabled/disabled via configuration without code changes
 - **Extended Module Configuration:** Comprehensive JSON-based module definition with className, numeric suffix, and config file mapping
 - **Automatic Module Loading:** Modules are automatically instantiated and registered based on configuration
@@ -14,6 +14,10 @@
 - **Centralized Management:** ModuleManager handles all module registration, enabling/disabling, and message routing
 
 ### SpamScan Module
+
+**Purpose:** Provides automated spam detection and prevention for IRC channels. SpamScan actively monitors channel messages, user behavior, and connection patterns to identify and block spam, flood attacks, and malicious bots in real-time.
+
+**Key Capabilities:**
 - **Automated Spam Detection:** Actively scans IRC messages for spam using a customizable badword list
 - **Knocker Bot Detection:** Advanced pattern matching to detect and automatically kill Knocker spambots on connection
 - **Homoglyph Detection:** Identifies and blocks messages containing homoglyphs used for spam
@@ -43,6 +47,10 @@
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
 ### HostServ Module
+
+**Purpose:** Manages virtual hosts (vhosts) for authenticated users, providing privacy and customization options. HostServ allows users to hide their real IP addresses behind custom hostnames, enhancing security and allowing personalized network presence.
+
+**Key Capabilities:**
 - **Hidden Host Management:** Enables authenticated users to set and manage their hidden hosts for privacy.
 - **Automatic VHost Application:** Automatically applies virtual hosts on user authentication (AC command).
 - **Automatic VHost on Connect:** Sets virtual hosts for users connecting with registered accounts.
@@ -53,6 +61,10 @@
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
 ### NickServ Module
+
+**Purpose:** Protects registered nicknames from unauthorized use through automated enforcement. NickServ ensures that only the rightful owners can use their registered nicknames by requiring authentication within a grace period.
+
+**Key Capabilities:**
 - **Nickname Protection:** Protects registered nicknames from unauthorized use.
 - **Authentication Enforcement:** Users must authenticate within 60 seconds or be disconnected.
 - **Account Matching:** Verifies that authenticated users match the registered nickname owner.
@@ -68,6 +80,10 @@
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
 ### SaslServ Module
+
+**Purpose:** Implements server-to-server SASL authentication protocol for secure pre-connection authentication. SaslServ validates user credentials before they fully connect to the network, providing enhanced security and seamless authentication for IRC clients.
+
+**Key Capabilities:**
 - **SASL Authentication:** Server-to-server SASL validation protocol for JIRCd
 - **PLAIN Mechanism Support:** Implements SASL PLAIN authentication mechanism
 - **Database Integration:** Authenticates users against PostgreSQL database
@@ -77,6 +93,55 @@
 - **Timeout Handling:** Configurable relay timeout with automatic failure handling
 - **Remote Authentication:** MD5-based digest authentication for relay mode
 - **Config Fallback:** Optional fallback to config-based authentication if database fails
+- **Runtime Control:** Can be enabled/disabled dynamically through configuration
+- **Graceful Logout:** Sends proper QUIT command on shutdown
+
+### ChanServ Module
+
+**Purpose:** Manages channel registration, ownership, and access control. ChanServ allows users to register channels, maintain persistent channel settings, and control user access through a comprehensive permission system.
+
+**Key Capabilities:**
+- **Channel Registration:** Register channels with founder privileges and persistent ownership
+- **Access Level Management:** Control user access with OP, VOICE, and BAN flags
+- **Automatic Mode Application:** Automatically apply channel modes based on user access levels upon join
+- **Channel Settings:** Configure AUTOOP, PROTECT, AUTOLIMIT, and other channel behaviors
+- **Topic Management:** Set, lock, and manage channel topics with protection
+- **Ban List Management:** Maintain and enforce channel ban lists
+- **User Commands:** REGISTER, ADDUSER, DELUSER, MODUSER, LISTUSERS, SET, INFO, UNREGISTER
+- **Operator Commands:** CHANLIST for network-wide channel overview
+- **Runtime Control:** Can be enabled/disabled dynamically through configuration
+- **Graceful Logout:** Sends proper QUIT command on shutdown
+
+### AuthServ Module
+
+**Purpose:** Provides centralized user account management and authentication services. AuthServ handles user registration, password management, and authentication, serving as the foundation for other services like ChanServ and HostServ.
+
+**Key Capabilities:**
+- **Account Registration:** Register new accounts with email verification and auto-generated passwords
+- **Secure Authentication:** IDENTIFY command for account login with database validation
+- **Password Management:** Change passwords (PASSWD), request new passwords (REQUESTPASSWORD), and cancel pending changes (RESETPASSWORD)
+- **Email Notifications:** Automated email system for registration, password changes, and recovery
+- **User Flags System:** Comprehensive permission system (+n, +i, +c, +h, +q, +o, +a, +d, +p, +T flags)
+- **Account Information:** View account details, creation date, and last login (INFO, STATUS commands)
+- **Account Deletion:** Secure account deletion with password confirmation
+- **One Registration Per Session:** Prevents abuse by limiting registrations per connection
+- **Integration:** Automatically applies channel modes via ChanServ after authentication
+- **Runtime Control:** Can be enabled/disabled dynamically through configuration
+- **Graceful Logout:** Sends proper QUIT command on shutdown
+
+### OperServ Module
+
+**Purpose:** Provides network operator tools for network management, monitoring, and security enforcement. OperServ offers commands for G-Line management, trust control, and network statistics accessible only to IRC operators.
+
+**Key Capabilities:**
+- **G-Line Management:** Add, remove, list, and synchronize network-wide bans (GLINE, UNGLINE, GLINELIST)
+- **Trust System:** Manage connection trust rules for IP-based access control (TRUSTADD, TRUSTDEL, TRUSTGET, TRUSTSET, TRUSTLIST)
+- **Network Statistics:** View network stats, active G-Lines, and trust rules (STATS)
+- **Channel Management:** List all channels with user counts (CHANLIST)
+- **User Management:** KILL command for disconnecting abusive users
+- **Raw Commands:** Send raw IRC protocol commands for advanced operations (RAW)
+- **Automatic Cleanup:** Timer-based cleanup of expired G-Lines
+- **Network Synchronization:** Sync G-Lines with network on startup
 - **Runtime Control:** Can be enabled/disabled dynamically through configuration
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
@@ -228,6 +293,30 @@ Changes require a restart to take effect.
   - Supports database and config-based authentication
   - Optional relay mode for external authentication services
   - Configurable account parameters via `config-saslserv.json`
+- **ChanServ** (`chanserv`): Channel registration and management service
+  - Channel registration with founder privileges
+  - User access level management (OP, VOICE, BAN)
+  - Automatic mode setting based on user flags
+  - Channel settings (AUTOOP, PROTECT, AUTOLIMIT)
+  - Topic protection and management
+  - Ban list management
+  - Channel information and user list commands
+- **AuthServ** (`authserv`): Account management and authentication service
+  - User account registration with email verification
+  - Secure password management (change, reset, recovery)
+  - Account identification and authentication
+  - User flags and permission management
+  - Account deletion and information display
+  - Email notification system for password changes
+  - Integration with ChanServ for automatic channel mode application
+- **OperServ** (`operserv`): Operator service for network management
+  - Network statistics and monitoring
+  - G-Line management (add, remove, list, sync)
+  - Trust management for connection control (TRUSTADD, TRUSTDEL, TRUSTLIST)
+  - Channel and user listing
+  - Raw command sending for advanced operations
+  - Kill command for user management
+  - Automatic G-Line cleanup and synchronization
 
 ### Adding New Modules
 
@@ -308,13 +397,65 @@ Refer to the built-in help system or project wiki for a complete list of operato
 
 ## Configuration Files
 
-- `config-jserv.json` - Main JServ configuration (server connection, numeric, etc.)
-- `config-modules-extended.json` - Extended module configuration with class names and numeric suffixes
-- `config-spamscan.json` - SpamScan module configuration
-- `config-hostserv.json` - HostServ module configuration
-- `config-nickserv.json` - NickServ module configuration
-- `config-saslserv.json` - SaslServ module configuration (account name, ID, relay settings)
-- `badwords-spamscan.json` - Badword list for SpamScan
+### Core Configuration
+- `config.json` - Main JServ configuration (server connection, numeric, database settings, SMTP)
+- `config-modules.json` - Basic module configuration (deprecated, use extended version)
+- `config-modules-extended.json` - Extended module configuration with class names, numeric suffixes, and config file mappings
+
+### Module Configuration
+- `config-spamscan.json` - SpamScan module settings (nick, servername, description, identd, detection thresholds)
+- `config-hostserv.json` - HostServ module settings (nick, servername, description, identd)
+- `config-nickserv.json` - NickServ module settings (nick, servername, description, identd, grace period)
+- `config-saslserv.json` - SaslServ module settings (account name, ID, relay settings, timeout)
+- `config-chanserv.json` - ChanServ module settings (nick, servername, description, identd)
+- `config-authserv.json` - AuthServ module settings (nick, servername, description, identd)
+- `config-operserv.json` - OperServ module settings (nick, servername, description, identd)
+- `config-trustcheck.json` - TrustCheck allow rules (legacy fallback if database has no trust rules)
+
+### Data Files
+- `badwords-spamscan.json` - Badword list for SpamScan spam detection
+- `email-templates.json` - Email templates for AuthServ notifications (registration, password changes)
+
+## TrustCheck (TC/TR)
+
+JServ can act as a **TrustCheck server** for JIRCd's TC/TR protocol.
+
+- Enable TrustCheck by setting `trustserver` in `config.json`.
+- JServ only evaluates TC requests when `servername` equals `trustserver`.
+
+Add to `config.json`:
+
+```json
+{"name":"trustserver","value":"trust.example.net"},
+{"name":"trustcheck_timeout_ms","value":"2000"}
+```
+
+Allow rules are primarily evaluated from the database table `operserv.trusts` (managed via OperServ commands). Based on the evaluation, JServ replies:
+- `TR ... OK` - Connection allowed (rule matched)
+- `TR ... IGNORE` - No rule matched, but not explicitly denied (default behavior)
+- `TR ... FAIL` - Connection explicitly denied (fail-closed mode, if configured)
+
+OperServ commands:
+
+- `TRUSTADD <mask> [maxconn] [ident]`
+- `TRUSTDEL <mask>`
+- `TRUSTGET <mask>`
+- `TRUSTSET <mask> [maxconn] [ident|noident]`
+- `TRUSTLIST [limit]`
+
+Rule masks support `*` and `?` and typically use `ident@ip` (example: `*admin*@192.0.2.*`).
+`maxconn` is the maximum simultaneous connections for that IP (0 = unlimited). `ident` forces a non-empty ident.
+
+If the database contains **no** trust rules, JServ falls back to `config-trustcheck.json` for backward compatibility.
+
+Example `config-trustcheck.json`:
+
+```json
+[
+  {"name":"rule1","value":"trustedident@203.0.113.*"},
+  {"name":"rule2","value":"vpn*@2001:db8:*"}
+]
+```
 
 ## License
 

@@ -12,6 +12,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.net.InetAddress;
 
 public final class SocketThread implements Runnable, Software {
 
@@ -223,6 +225,515 @@ public final class SocketThread implements Runnable, Software {
     private byte[] ip;
     private boolean reg;
 
+    private boolean isTrustCheckEnabled() {
+        if (getMi() == null || getMi().getConfig() == null || getMi().getConfig().getConfigFile() == null) {
+            return false;
+        }
+        String trustServerName = getMi().getConfig().getConfigFile().getProperty("trustserver", "");
+        return trustServerName != null && !trustServerName.isBlank();
+    }
+
+    private boolean isThisNodeTrustServer() {
+        if (!isTrustCheckEnabled()) {
+            return false;
+        }
+        String trustServerName = getMi().getConfig().getConfigFile().getProperty("trustserver", "");
+        String thisName = getMi().getConfig().getConfigFile().getProperty("servername", "");
+        return trustServerName != null && thisName != null && trustServerName.equalsIgnoreCase(thisName);
+    }
+
+    private static String wildcardToRegex(String pattern) {
+        if (pattern == null) {
+            return "^$";
+        }
+        String p = pattern.trim();
+        StringBuilder sb = new StringBuilder(p.length() * 2);
+        sb.append('^');
+        for (int i = 0; i < p.length(); i++) {
+            char c = p.charAt(i);
+            if (c == '*') {
+                sb.append(".*");
+            } else if (c == '?') {
+                sb.append('.');
+            } else {
+                // Escape regex metacharacters
+                if ("\\.^$|()[]{}+".indexOf(c) >= 0) {
+                    sb.append('\\');
+                }
+                sb.append(c);
+            }
+        }
+        sb.append('$');
+        return sb.toString();
+    }
+
+    private static boolean wildcardMatch(String value, String pattern) {
+        String v = value == null ? "" : value;
+        String p = pattern == null ? "" : pattern;
+        Pattern re = Pattern.compile(wildcardToRegex(p), Pattern.CASE_INSENSITIVE);
+        return re.matcher(v).matches();
+    }
+
+    private boolean trustRuleMatches(String ident, String ip, String rule) {
+        if (rule == null) {
+            return false;
+        }
+        String r = rule.trim();
+        if (r.isEmpty()) {
+            return false;
+        }
+
+        String identValue = (ident == null || ident.isBlank() || "-".equals(ident)) ? "" : ident;
+        String ipValue = ip == null ? "" : ip;
+
+        boolean debugMode = getMi() != null && getMi().getConfig() != null && 
+            "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
+
+        int at = r.indexOf('@');
+        if (at >= 0) {
+            String identPattern = r.substring(0, at);
+            String ipPattern = r.substring(at + 1);
+            if (identPattern.isEmpty()) {
+                identPattern = "*";
+            }
+            if (ipPattern.isEmpty()) {
+                ipPattern = "*";
+            }
+            boolean identMatch = wildcardMatch(identValue, identPattern);
+            boolean ipMatch = wildcardMatch(ipValue, ipPattern);
+            boolean result = identMatch && ipMatch;
+            
+            if (debugMode) {
+                System.out.printf("[DEBUG] trustRuleMatches: rule='%s' ident='%s'->pattern='%s' (match=%b) ip='%s'->pattern='%s' (match=%b) => %b%n",
+                    rule, identValue, identPattern, identMatch, ipValue, ipPattern, ipMatch, result);
+            }
+            
+            return result;
+        }
+
+        // Fallback: treat as a single mask against "ident@ip"
+        String combined = identValue + "@" + ipValue;
+        boolean result = wildcardMatch(combined, r);
+        
+        if (debugMode) {
+            System.out.printf("[DEBUG] trustRuleMatches (fallback): rule='%s' combined='%s' => %b%n",
+                rule, combined, result);
+        }
+        
+        return result;
+    }
+
+    private static final String P10_B64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]";
+
+    private static boolean isProbablyP10Base64Ip(String s) {
+        if (s == null) {
+            return false;
+        }
+        int len = s.length();
+        if (len != 6 && len != 24) {
+            return false;
+        }
+        for (int i = 0; i < len; i++) {
+            if (P10_B64_ALPHABET.indexOf(s.charAt(i)) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String normalizeIpString(String ip) {
+        if (ip == null || ip.isBlank()) {
+            return null;
+        }
+        String s = ip.trim();
+        // TrustCheck can carry P10 base64 IPs; normalize those to textual IP first.
+        if (isProbablyP10Base64Ip(s)) {
+            String decoded = decodeP10Base64Ip(s);
+            if (decoded != null && !decoded.isBlank()) {
+                return decoded;
+            }
+        }
+        // If it's already an IP address (contains dots or colons), return as-is
+        // to avoid expensive DNS lookups on external addresses
+        if (s.contains(".") || s.contains(":")) {
+            return s;
+        }
+        // Only try DNS resolution for hostnames
+        try {
+            return InetAddress.getByName(s).getHostAddress();
+        } catch (Exception ignored) {
+            return s;
+        }
+    }
+
+    private static int p10Base64Value(char c) {
+        return P10_B64_ALPHABET.indexOf(c);
+    }
+
+    private static String decodeP10Base64Ip(String b64) {
+        if (b64 == null) {
+            return null;
+        }
+        String s = b64.trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+
+        // P10 base64 IP encoding uses 6 chars for IPv4 and 24 chars for IPv6.
+        if (s.length() != 6 && s.length() != 24) {
+            return null;
+        }
+
+        if (s.length() == 6) {
+            long acc = 0;
+            for (int i = 0; i < 6; i++) {
+                int v = p10Base64Value(s.charAt(i));
+                if (v < 0) {
+                    return null;
+                }
+                acc = (acc << 6) | v;
+            }
+            // 6 * 6 = 36 bits; in practice the useful IPv4 bits are the lower 32 bits.
+            // (Padding, if present, is on the MSB side.)
+            long v32 = acc & 0xFFFFFFFFL;
+            byte[] bytes = new byte[] {
+                (byte) ((v32 >> 24) & 0xFF),
+                (byte) ((v32 >> 16) & 0xFF),
+                (byte) ((v32 >> 8) & 0xFF),
+                (byte) (v32 & 0xFF)
+            };
+            try {
+                return InetAddress.getByAddress(bytes).getHostAddress();
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+
+        // IPv6: 24 * 6 = 144 bits; IPv6 is 128 bits with 16 padding bits at the start.
+        byte[] out = new byte[16];
+        int bitPos = 0;
+        int totalBits = 24 * 6;
+        int paddingBits = totalBits - 128;
+        int usefulBits = 128;
+
+        int outBitIndex = 0;
+        int outByte = 0;
+        int outBytePos = 0;
+
+        for (int i = 0; i < 24; i++) {
+            int v = p10Base64Value(s.charAt(i));
+            if (v < 0) {
+                return null;
+            }
+            for (int b = 5; b >= 0; b--) {
+                int bit = (v >> b) & 1;
+                // Skip padding bits at the start; then consume exactly 128 bits.
+                if (bitPos >= paddingBits && (outBytePos < 16)) {
+                    outByte = (outByte << 1) | bit;
+                    outBitIndex++;
+                    if (outBitIndex == 8) {
+                        out[outBytePos++] = (byte) (outByte & 0xFF);
+                        outBitIndex = 0;
+                        outByte = 0;
+                        if (outBytePos == 16) {
+                            break;
+                        }
+                    }
+                }
+                bitPos++;
+            }
+            if (outBytePos == 16) {
+                break;
+            }
+        }
+
+        if (outBytePos != 16) {
+            return null;
+        }
+        try {
+            return InetAddress.getByAddress(out).getHostAddress();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static String extractBase64IpFromNCommand(String rawLine) {
+        if (rawLine == null) {
+            return null;
+        }
+        int colonPos = rawLine.indexOf(" :");
+        if (colonPos > 0) {
+            String beforeColon = rawLine.substring(0, colonPos);
+            String[] parts = beforeColon.split(" ");
+            if (parts.length >= 3) {
+                // ... <ip> <numeric>
+                return parts[parts.length - 2];
+            }
+        }
+
+        // Fallback: split the entire line and find the element before the numeric (which is right before ":")
+        String[] elem = rawLine.split(" ");
+        for (int i = elem.length - 1; i >= 0; i--) {
+            if (elem[i].startsWith(":")) {
+                // ... <ip> <numeric> :realname
+                if (i >= 3) {
+                    return elem[i - 2];
+                }
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    private int countActiveConnectionsForIp(String ip) {
+        if (ip == null || ip.isBlank() || getUsers() == null || getUsers().isEmpty()) {
+            return 0;
+        }
+        String needle = normalizeIpString(ip);
+        int count = 0;
+        for (Users u : getUsers().values()) {
+            String uip = normalizeIpString(u.getClientIp());
+            if (uip != null && uip.equalsIgnoreCase(needle)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countIdenticalIdentsForHost(String ident, String ip) {
+        if (ident == null || ident.isBlank() || ip == null || ip.isBlank() || getUsers() == null || getUsers().isEmpty()) {
+            return 0;
+        }
+        String normalizedIp = normalizeIpString(ip);
+        int count = 0;
+        for (Users u : getUsers().values()) {
+            String uip = normalizeIpString(u.getClientIp());
+            String uident = u.getIdent();
+            if (uip != null && uip.equalsIgnoreCase(normalizedIp)) {
+                if (uident != null && uident.equalsIgnoreCase(ident)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private boolean trustCheckAllows(String ident, String ip) {
+        if (getMi() == null) {
+            return false;
+        }
+
+        // Preferred source: DB-backed rules (operserv.trusts)
+        if (getMi().getDb() != null) {
+            getMi().getDb().ensureOperServTables();
+            var rules = getMi().getDb().getAllTrustRules();
+            if (rules != null && !rules.isEmpty()) {
+                for (String[] rule : rules) {
+                    if (rule == null || rule.length < 3) {
+                        continue;
+                    }
+                    String mask = rule[0];
+                    int maxConn = 0;
+                    boolean requireIdent = false;
+                    try {
+                        maxConn = Integer.parseInt(rule[1]);
+                    } catch (Exception ignored) {
+                        maxConn = 0;
+                    }
+                    requireIdent = "true".equalsIgnoreCase(rule[2]) || "1".equals(rule[2]);
+
+                    if (!trustRuleMatches(ident, ip, mask)) {
+                        continue;
+                    }
+
+                    if (requireIdent) {
+                        String identValue = (ident == null || ident.isBlank() || "-".equals(ident)) ? "" : ident;
+                        if (identValue.isEmpty()) {
+                            continue;
+                        }
+                    }
+
+                    if (maxConn > 0) {
+                        int current = countActiveConnectionsForIp(ip);
+                        if (current >= maxConn) {
+                            continue;
+                        }
+                    }
+
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        // Backward-compatible fallback: config-trustcheck.json
+        if (getMi().getConfig() == null) {
+            return false;
+        }
+        var rules = getMi().getConfig().getTrustcheckFile();
+        if (rules == null || rules.isEmpty()) {
+            return false;
+        }
+        for (String key : rules.stringPropertyNames()) {
+            String rule = rules.getProperty(key);
+            if (trustRuleMatches(ident, ip, rule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private record TrustCheckReply(String status, int currentConnections, int maxConnections) {
+    }
+
+    private TrustCheckReply evaluateTrustCheck(String ident, String ip) {
+        if (getMi() == null) {
+            return new TrustCheckReply("FAIL", 0, 0);
+        }
+
+        boolean hasAnyRules = false;
+        boolean debugMode = getMi().getConfig() != null && 
+            "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
+        
+        if (getMi().getDb() != null) {
+            getMi().getDb().ensureOperServTables();
+            var dbRules = getMi().getDb().getAllTrustRules();
+            hasAnyRules = dbRules != null && !dbRules.isEmpty();
+
+            if (debugMode) {
+                System.out.printf("[DEBUG] TrustCheck: evaluating %d rules for ident='%s' ip='%s'%n", 
+                    (dbRules != null ? dbRules.size() : 0), ident, ip);
+            }
+
+            if (hasAnyRules) {
+                for (String[] rule : dbRules) {
+                    if (rule == null || rule.length < 3) {
+                        continue;
+                    }
+                    String mask = rule[0];
+                    int maxConn;
+                    boolean requireIdent;
+                    int maxIdentsPerHost = 0;
+                    try {
+                        maxConn = Integer.parseInt(rule[1]);
+                    } catch (Exception ignored) {
+                        maxConn = 0;
+                    }
+                    requireIdent = "true".equalsIgnoreCase(rule[2]) || "1".equals(rule[2]);
+                    
+                    // Parse max_idents_per_host if available (rule[3])
+                    if (rule.length >= 4) {
+                        try {
+                            maxIdentsPerHost = Integer.parseInt(rule[3]);
+                        } catch (Exception ignored) {
+                            maxIdentsPerHost = 0;
+                        }
+                    }
+
+                    boolean matches = trustRuleMatches(ident, ip, mask);
+                    if (debugMode) {
+                        System.out.printf("[DEBUG] TrustCheck: rule mask='%s' maxConn=%d requireIdent=%b -> matches=%b%n",
+                            mask, maxConn, requireIdent, matches);
+                    }
+                    
+                    if (!matches) {
+                        continue;
+                    }
+
+                    String identValue = (ident == null || ident.isBlank() || "-".equals(ident)) ? "" : ident;
+                    if (requireIdent && identValue.isEmpty()) {
+                        return new TrustCheckReply("IDENT", 0, Math.max(0, maxConn));
+                    }
+
+                    int current = countActiveConnectionsForIp(ip);
+                    if (maxConn > 0 && current >= maxConn) {
+                        return new TrustCheckReply("FAIL", current, maxConn);
+                    }
+
+                    // Check max identical idents per host
+                    if (maxIdentsPerHost > 0 && !identValue.isEmpty()) {
+                        int identCount = countIdenticalIdentsForHost(identValue, ip);
+                        if (identCount >= maxIdentsPerHost) {
+                            return new TrustCheckReply("ERROR :Max ident per host reached", identCount, maxIdentsPerHost);
+                        }
+                    }
+
+                    return new TrustCheckReply("OK", current, Math.max(0, maxConn));
+                }
+
+                // No rule matched - return IGNORED instead of FAIL
+                int current = countActiveConnectionsForIp(ip);
+                return new TrustCheckReply("IGNORED", current, 0);
+            }
+        }
+
+        // Backward-compatible fallback: config-trustcheck.json (no maxconn/requireIdent support)
+        if (getMi().getConfig() != null) {
+            var cfgRules = getMi().getConfig().getTrustcheckFile();
+            hasAnyRules = cfgRules != null && !cfgRules.isEmpty();
+            if (hasAnyRules) {
+                for (String key : cfgRules.stringPropertyNames()) {
+                    String rule = cfgRules.getProperty(key);
+                    if (trustRuleMatches(ident, ip, rule)) {
+                        int current = countActiveConnectionsForIp(ip);
+                        return new TrustCheckReply("OK", current, 0);
+                    }
+                }
+                int current = countActiveConnectionsForIp(ip);
+                return new TrustCheckReply("FAIL", current, 0);
+            }
+        }
+
+        return new TrustCheckReply("IGNORED", 0, 0);
+    }
+
+    private void handleTrustCheckRequest(String[] elem, String rawLine, String jnumeric) {
+        // Format: <senderToken> TC <requestId> <ip> <ident>
+        if (elem.length < 5) {
+            return;
+        }
+        if (!isThisNodeTrustServer()) {
+            // JServ currently has only one uplink; forwarding is not implemented.
+            if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
+                System.out.printf("[DEBUG] TrustCheck: received TC but this node is not trustserver (ignoring). line=%s%n", rawLine);
+            }
+            return;
+        }
+
+        String requestId = elem[2];
+        String clientIp = normalizeIpString(elem[3]);
+        if (clientIp == null) {
+            clientIp = elem[3];
+        }
+        String ident = elem[4];
+
+        TrustCheckReply reply = evaluateTrustCheck(ident, clientIp);
+        String result = reply.status();
+
+        if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
+            if ("OK".equals(result)) {
+                System.out.printf("[DEBUG] TrustCheck: TC requestId=%s ip=%s ident=%s -> %s current=%d max=%d%n", requestId, clientIp, ident, result, reply.currentConnections(), reply.maxConnections());
+            } else {
+                System.out.printf("[DEBUG] TrustCheck: TC requestId=%s ip=%s ident=%s -> %s%n", requestId, clientIp, ident, result);
+            }
+        }
+
+        if ("OK".equals(result)) {
+            // Include current connection count and configured max (0 = unlimited)
+            sendText("%s TR %s OK :Open Connections: %d - Max Connections: %d", jnumeric, requestId, reply.currentConnections(), reply.maxConnections());
+        } else {
+            sendText("%s TR %s %s", jnumeric, requestId, result);
+        }
+    }
+
+    private void handleTrustCheckReply(String rawLine) {
+        // Format: <senderToken> TR <requestId> <OK|FAIL|IGNORED|IDENT> [<currentConn> <maxConn>]
+        if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
+            System.out.printf("[DEBUG] TrustCheck: received TR (no pending requests in JServ): %s%n", rawLine);
+        }
+    }
+
     public SocketThread(JServ mi) {
         setMi(mi);
         setUsers(new HashMap<>());
@@ -312,9 +823,15 @@ public final class SocketThread implements Runnable, Software {
      * Extracts the user numeric/token from a P10 N command.
      * The user token is always the last element before the ":" (realname field).
      * 
-     * P10 N command format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
-     * Example: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
-     *          In this example, ABAAA is the user token/numeric, which is the last element before ":"
+     * P10 N command format (variable fields depending on modes):
+     * <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> [opername] [account:ts:ts] [hiddenhost] <base64ip> <numeric> :<realname>
+     * 
+     * Examples:
+     * Simple: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     * With account: AA N DevPigs 1 1766923017 warpigs localhost +r Source:1766918427:1780715 B]AAAB AAAAG :Source
+     * With oper+account+hidden: AA N DevPigs__ 1 1766923017 warpigs localhost +irohz opername Source:1766918427:1780715 S@urce B]AAAB AAAAG :Source
+     * 
+     * The numeric is always the second-to-last field before " :" (realname)
      * 
      * @param rawLine The complete raw line from the server
      * @return The user numeric/token (e.g., "ABAAA")
@@ -350,8 +867,13 @@ public final class SocketThread implements Runnable, Software {
      * Critical section (synchronized) for checking and registering user,
      * then propagation outside the lock for parallel processing.
      * 
-     * P10 N command format: <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> <base64ip> <numeric> :<realname>
-     * Example: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     * P10 N command format (variable fields depending on modes):
+     * <server> N <nick> <hopcount> <timestamp> <ident> <host> <modes> [opername] [account:ts:ts] [hiddenhost] <base64ip> <numeric> :<realname>
+     * 
+     * Examples:
+     * Simple: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
+     * With account: AA N DevPigs 1 1766923017 warpigs localhost +r Source:1766918427:1780715 B]AAAB AAAAG :Source
+     * With oper+account+hidden: AA N DevPigs__ 1 1766923017 warpigs localhost +irohz opername Source:1766918427:1780715 S@urce B]AAAB AAAAG :Source
      */
     private void processNCommand(String[] elem, String rawLine, String jnumeric) {
         // Critical section: Check for duplicates, parse info, and register user
@@ -369,33 +891,64 @@ public final class SocketThread implements Runnable, Software {
     /**
      * Critical section: Check for duplicates, parse user info, and register user
      * Returns true if registration succeeded, false if user was killed/handled
+     * 
+     * Variable P10 N fields:
+     * - elem[7] contains modes (+i, +r, +o, +h, +z, +k, +x)
+     * - If +o: elem[8] = oper name
+     * - If +r: account info field (format: AccountName:timestamp:timestamp)
+     * - If +h: hidden host field
+     * - Base64 IP and numeric are always the last two fields before ":"
      */
     private boolean checkAndRegisterUser(String[] elem, String rawLine, String jnumeric) {
         // Parse user info
         // elem[2] = nickname (WarPigs)
-        // elem[7] = user modes (+i, +r for authenticated, +k for service, +x for hidden host, +o for oper)
+        // elem[7] = user modes (+i, +r for authenticated, +k for service, +x for hidden host, +h for hiddenhost, +o for oper)
         // User token/numeric is extracted from rawLine (last element before " :")
+        // Account info can be at elem[8] or elem[9], depending on whether there are additional fields
         String nickname = elem[2];
         var priv = elem[7].contains("r");  // +r means user is authenticated
         var service = elem[7].contains("k");
         var x = elem[7].contains("x");
+        var h = elem[7].contains("h");  // +h means user has a hidden host
         var o = elem[7].contains("o");
         String acc = null;
+        String hiddenHost = null;
         String userToken = extractNumericFromNCommand(rawLine);
+        String rawIpField = extractBase64IpFromNCommand(rawLine);
+        // rawIpField can be either P10 base64 IP or a textual IP depending on uplink/format.
+        // normalizeIpString handles both (decodes base64 if needed).
+        String decodedIp = normalizeIpString(rawIpField);
+        
+        // Extract account name from the field that contains ":" (account:timestamp:timestamp format)
+        // hiddenhost comes directly after account field if +h is set
+        int fieldIndex = 8;
+        
+        // If user is oper (+o), skip the oper name field
+        if (o) {
+            fieldIndex++;
+        }
         
         if (priv) {
-            if (elem[9].contains(":")) {
-                acc = elem[9].split(":", 2)[0];
-            } else if (elem[8].contains(":")) {
-                acc = elem[8].split(":", 2)[0];
-            } else {
+            // Search for the field with account info (format: AccountName:timestamp:timestamp)
+            for (int i = fieldIndex; i < elem.length && i < fieldIndex + 4; i++) {
+                if (elem[i].contains(":") && !elem[i].startsWith(":")) {
+                    acc = elem[i].split(":", 2)[0];
+                    fieldIndex = i + 1;
+                    break;
+                }
+            }
+            if (acc == null) {
                 acc = "";
             }
-        } else if (elem[9].contains("@")) {
-            acc = "";
         } else {
             acc = "";
         }
+        
+        // Extract hidden host if +h is set - hiddenhost comes directly after account
+        if (h && fieldIndex < elem.length && !elem[fieldIndex].startsWith(":")) {
+            hiddenHost = elem[fieldIndex];
+        }
+        
         var hosts = elem[5] + "@" + elem[6];
         
         // Check if user token already exists (prevent duplicates)
@@ -403,8 +956,11 @@ public final class SocketThread implements Runnable, Software {
             System.out.printf("User token %s already exists - possible duplicate, updating...\n", userToken);
             // Update existing user instead of creating duplicate
             getUsers().get(userToken).setNick(nickname);
+            getUsers().get(userToken).setIdent(elem[5]);
             getUsers().get(userToken).setAccount(acc);
-            getUsers().get(userToken).setHost(hosts);
+            getUsers().get(userToken).setHost(elem[6]);
+            getUsers().get(userToken).setHiddenHost(hiddenHost);
+            getUsers().get(userToken).setClientIp(decodedIp);
             getUsers().get(userToken).setX(x);
             getUsers().get(userToken).setService(service);
             getUsers().get(userToken).setOper(o);
@@ -415,7 +971,7 @@ public final class SocketThread implements Runnable, Software {
         boolean userHandled = false;
         for (Module module : getModuleManager().getAllModules().values()) {
             if (module.isEnabled()) {
-                if (module.handleNewUser(userToken, nickname, elem[5], elem[6], acc, jnumeric)) {
+                if (module.handleNewUser(userToken, nickname, elem[5], elem[6], acc, jnumeric, hiddenHost)) {
                     userHandled = true;
                     break; // User was killed/handled by module
                 }
@@ -424,7 +980,9 @@ public final class SocketThread implements Runnable, Software {
         
         if (!userHandled) {
             // ATOMIC: Register user (within lock)
-            getUsers().put(userToken, new Users(userToken, nickname, acc, hosts));
+            getUsers().put(userToken, new Users(userToken, nickname, elem[5], acc, elem[6]));
+            getUsers().get(userToken).setHiddenHost(hiddenHost);
+            getUsers().get(userToken).setClientIp(decodedIp);
             getUsers().get(userToken).setX(x);
             getUsers().get(userToken).setService(service);
             getUsers().get(userToken).setOper(o);
@@ -498,54 +1056,101 @@ public final class SocketThread implements Runnable, Software {
                 }
             }
             
-            var list = getMi().getDb().getChannels();
-            var nicks = getMi().getDb().getData();
-            for (var channel : list) {
-                if (channel[1].startsWith("#")) {
-                    if (!getBursts().containsKey(channel[1].toLowerCase())) {
-                        getBursts().put(channel[1].toLowerCase(), new Burst(channel[1]));
-                    }
-                    if (channel[27] != null && !channel[27].isBlank()) {
-                        getBursts().get(channel[1].toLowerCase()).setTime(Long.parseLong(channel[27]));
-                    } else {
-                        getBursts().get(channel[1].toLowerCase()).setTime(time());
-                    }
-                    var cid = channel[0];
-                    var ua = new ArrayList<String>();
-                    for (var nick : nicks) {
-                        var nid = nick[0];
-                        var auth = getMi().getDb().getChanUser(Long.parseLong(nid), Long.parseLong(cid));
-                        if (auth != null) {
-                            var users = getUsers().keySet();
-                            for (var user : users) {
-                                var u = getUsers().get(user);
-                                if (ua.contains(u.getId())) {
-                                    continue;
-                                }
-                                ua.add(u.getId());
-                                if (u.getAccount().equalsIgnoreCase(nick[1]) && getChannel().get(channel[1].toLowerCase()).getUsers().contains(user)) {
-                                    if (isOp(Integer.parseInt(auth[0]))) {
-                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":o");
-                                    } else if (isVoice(Integer.parseInt(auth[0]))) {
-                                        getBursts().get(channel[1].toLowerCase()).getUsers().add(user + ":v");
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
             System.out.println("Successfully connected...");
             sendText("%s EB", jnumeric);
             while (!getSocket().isClosed() && (content = getBr().readLine()) != null && isRuns()) {
                 try {
                     var elem = content.split(" ");
+                    if (elem.length < 2) {
+                        continue;
+                    }
                     if (content.startsWith("SERVER")) {
                         setServerNumeric(content.split(" ")[SERVERNAME_INDEX].substring(0, 1));
                         System.out.println("Getting SERVER response...");
+                    } else if (elem[1].equals("TC")) {
+                        handleTrustCheckRequest(elem, content, jnumeric);
+                    } else if (elem[1].equals("TR")) {
+                        handleTrustCheckReply(content);
                     } else if (elem[1].equals("EB") && !isBurst()) {
                         setBurst(true);
+                        
+                        // Now that all users are loaded, check database for channel permissions
+                        var list = getMi().getDb().getChannels();
+                        var nicks = getMi().getDb().getData();
+                        for (var channel : list) {
+                            if (channel[1].startsWith("#")) {
+                                var chanLower = channel[1].toLowerCase();
+                                if (!getBursts().containsKey(chanLower)) {
+                                    continue; // Skip channels not registered by modules
+                                }
+                                var cid = channel[0];
+                                System.out.println("[DEBUG] Processing channel: " + channel[1] + " (ID: " + cid + ")");
+                                for (var nick : nicks) {
+                                    var nid = nick[0];
+                                    var auth = getMi().getDb().getChanUser(Long.parseLong(nid), Long.parseLong(cid));
+                                    if (auth != null && auth.length > 0 && auth[0] != null) {
+                                        int flags = 0;
+                                        try {
+                                            flags = Integer.parseInt(auth[0]);
+                                        } catch (NumberFormatException e) {
+                                            System.out.println("[DEBUG] Invalid flags for user " + nick[1] + " in channel " + channel[1]);
+                                            continue;
+                                        }
+                                        
+                                        // Check if user has AUTOOP, AUTOVOICE, or BANNED flags
+                                        boolean hasAutoOp = Userflags.hasQCUFlag(flags, Userflags.QCUFlag.AUTOOP);
+                                        boolean hasAutoVoice = Userflags.hasQCUFlag(flags, Userflags.QCUFlag.AUTOVOICE);
+                                        boolean isBanned = Userflags.hasQCUFlag(flags, Userflags.QCUFlag.BANNED);
+                                        
+                                        System.out.println("[DEBUG] User " + nick[1] + " in channel " + channel[1] + 
+                                            " - Flags: " + flags + " - AutoOp: " + hasAutoOp + " - AutoVoice: " + hasAutoVoice + " - Banned: " + isBanned);
+                                        
+                                        if (!hasAutoOp && !hasAutoVoice && !isBanned) {
+                                            continue; // User has no auto-rights or ban
+                                        }
+                                        
+                                        var users = getUsers().keySet();
+                                        for (var user : users) {
+                                            var u = getUsers().get(user);
+                                            if (u.getAccount() != null && u.getAccount().equalsIgnoreCase(nick[1])) {
+                                                System.out.println("[DEBUG] Found online user " + user + " matching account " + nick[1]);
+                                                
+                                                // Handle BANNED flag - mark for ban+kick (to be processed by ChanServ)
+                                                if (isBanned) {
+                                                    getBursts().get(chanLower).getUsers().add(user + ":b");
+                                                    System.out.println("[DEBUG] Added " + user + " with ban flag to " + chanLower);
+                                                    continue; // Don't add op/voice modes for banned users
+                                                }
+                                                
+                                                // Check if user already added to this channel's burst
+                                                boolean alreadyAdded = false;
+                                                for (Object obj : getBursts().get(chanLower).getUsers()) {
+                                                    String entry = String.valueOf(obj);
+                                                    if (entry.startsWith(user + ":") || entry.equals(user)) {
+                                                        alreadyAdded = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (alreadyAdded) {
+                                                    System.out.println("[DEBUG] User " + user + " already added to " + chanLower);
+                                                    continue;
+                                                }
+                                                
+                                                // Add with appropriate mode
+                                                if (hasAutoOp) {
+                                                    getBursts().get(chanLower).getUsers().add(user + ":o");
+                                                    System.out.println("[DEBUG] Added " + user + " with +o to " + chanLower);
+                                                } else if (hasAutoVoice) {
+                                                    getBursts().get(chanLower).getUsers().add(user + ":v");
+                                                    System.out.println("[DEBUG] Added " + user + " with +v to " + chanLower);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
                         sendText("%s EA", jnumeric);
                         System.out.printf("Joining %d channels for the services...\r\n", list.size());
                         var bursts = getBursts().keySet();
@@ -555,18 +1160,178 @@ public final class SocketThread implements Runnable, Software {
                                 var name = String.valueOf(nameObj);
                                 if (name.startsWith(jnumeric)) {
                                     joinChannel(burst, jnumeric, name);
+                                    
+                                    // Set channel modes if defined
+                                    String modes = getBursts().get(burst).getModes();
+                                    if (modes != null && !modes.isEmpty() && modes.startsWith("+")) {
+                                        sendText("%s M %s %s", name, burst, modes);
+                                    }
+                                    
+                                    // Don't set topic here - wait for server's topic message
+                                    // Topic will be set automatically if channel has no topic after burst
+                                    
+                                    // Grant op/voice or ban+kick users, but only if this is ChanServ (AAF)
+                                    if (name.endsWith("AAF")) {
+                                        // Get the Channel object to check if users are actually in the channel
+                                        Channel channelObj = getChannel().get(burst);
+                                        if (channelObj != null) {
+                                            // Get channel ID for flag lookups
+                                            String chanIdStr = getMi().getDb().getChannel("id", burst);
+                                            long chanId = chanIdStr != null ? Long.parseLong(chanIdStr) : -1;
+                                            
+                                            for (var userObj : nicks1) {
+                                                String userEntry = String.valueOf(userObj);
+                                                if (!userEntry.startsWith(jnumeric)) {
+                                                    // Extract user numeric (remove mode suffix if present)
+                                                    String userNumeric;
+                                                    if (userEntry.endsWith(":o") || userEntry.endsWith(":v") || userEntry.endsWith(":b")) {
+                                                        userNumeric = userEntry.substring(0, userEntry.length() - 2);
+                                                    } else if (userEntry.contains(":")) {
+                                                        userNumeric = userEntry.split(":")[0];
+                                                    } else {
+                                                        userNumeric = userEntry;
+                                                    }
+                                                    
+                                                    // Get user object
+                                                    Users user = getUsers().get(userNumeric);
+                                                    
+                                                    // Verify user exists and is in the channel (or will be in it)
+                                                    if (user != null && (channelObj.getUsers().contains(userNumeric) || userEntry.contains(":"))) {
+                                                        
+                                                        // Check for channel bans from database
+                                                        if (chanId > 0) {
+                                                            String userHost = user.getNick() + "!" + user.getIdent() + "@" + user.getHost();
+                                                            String realUserHost = user.getNick() + "!" + user.getIdent() + "@" + user.getRealHost();
+                                                            String hiddenHostMask = user.getHiddenHost() != null ? user.getNick() + "!" + user.getHiddenHost() : null;
+                                                            ArrayList<String[]> bans = getMi().getDb().getChannelBans(chanId);
+                                                            
+                                                            if (bans.size() > 0) {
+                                                                System.out.println("[DEBUG] Burst: Checking bans for " + userHost + " (real: " + realUserHost + ", hidden: " + hiddenHostMask + ") in " + burst + " - bans found: " + bans.size());
+                                                            }
+                                                            
+                                                            boolean isBanned = false;
+                                                            String banMask = null;
+                                                            String banReason = "Banned";
+                                                            
+                                                            for (String[] ban : bans) {
+                                                                banMask = ban[1]; // hostmask
+                                                                banReason = ban[3]; // reason
+                                                                System.out.println("[DEBUG] Burst: Testing ban mask " + banMask + " against " + userHost + ", " + realUserHost + " and " + hiddenHostMask);
+                                                                
+                                                                // Check visible host, real host, and hidden host
+                                                                if (getMi().getDb().checkBanMatch(userHost, banMask) 
+                                                                        || getMi().getDb().checkBanMatch(realUserHost, banMask)
+                                                                        || (hiddenHostMask != null && getMi().getDb().checkBanMatch(hiddenHostMask, banMask))) {
+                                                                    isBanned = true;
+                                                                    break;
+                                                                }
+                                                            }
+                                                            
+                                                            if (isBanned) {
+                                                                // Apply ban and kick user
+                                                                sendText("%s M %s +b %s", name, burst, banMask);
+                                                                String kickReason = (banReason != null && !banReason.isEmpty()) ? "Banned: " + banReason : "Banned";
+                                                                sendText("%s K %s %s :%s", name, burst, userNumeric, kickReason);
+                                                                System.out.println("[DEBUG] Banned and kicked " + userNumeric + " from " + burst + " - Matched ban: " + banMask);
+                                                                continue; // Skip op/voice for banned users
+                                                            }
+                                                        }
+                                                        
+                                                        // Get user flags for autoop/autovoice
+                                                        if (user != null && chanId > 0) {
+                                                            String accountName = user.getAccount();
+                                                            
+                                                            // Check database flags if user has account
+                                                            if (accountName != null && !accountName.isEmpty()) {
+                                                                String userIdStr = getMi().getDb().getData("id", accountName);
+                                                                if (userIdStr != null) {
+                                                                    long userId = Long.parseLong(userIdStr);
+                                                                    String[] userData = getMi().getDb().getChanUser(userId, chanId);
+                                                                    if (userData != null && userData.length > 0 && userData[0] != null) {
+                                                                        int flags = Integer.parseInt(userData[0]);
+                                                                        
+                                                                        // Check BANNED flag FIRST - before granting any modes
+                                                                        if (Userflags.hasQCUFlag(flags, Userflags.QCUFlag.BANNED)) {
+                                                                            String suffix = getMi().getConfig().getConfigFile().getProperty("reg_host", "users.midiandmore.net");
+                                                                            String ban = "*!*@" + accountName + suffix;
+                                                                            sendText("%s M %s +b %s", name, burst, ban);
+                                                                            sendText("%s K %s %s :Banned (user flagged with +b)", name, burst, userNumeric);
+                                                                            System.out.println("[DEBUG] Banned and kicked " + userNumeric + " from " + burst + " - BANNED flag - Account: " + accountName);
+                                                                            continue; // Skip op/voice for banned users
+                                                                        }
+                                                                        
+                                                                        // Only grant modes if user has autoop/autovoice flags AND passed ban check
+                                                                        // Grant op/voice based on string suffix (legacy) or flags
+                                                                        if (userEntry.endsWith(":o") || Userflags.hasQCUFlag(flags, Userflags.QCUFlag.AUTOOP)) {
+                                                                            sendText("%s M %s +o %s", name, burst, userNumeric);
+                                                                        } else if (userEntry.endsWith(":v") || Userflags.hasQCUFlag(flags, Userflags.QCUFlag.AUTOVOICE)) {
+                                                                            sendText("%s M %s +v %s", name, burst, userNumeric);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
+                        
+                        // After all channels joined, check if topics need to be set
+                        System.out.println("Checking stored topics...");
+                        for (String channelName : getBursts().keySet()) {
+                            Burst burst = getBursts().get(channelName);
+                            String storedTopic = burst.getTopic();
+                            
+                            if (storedTopic != null && !storedTopic.isEmpty()) {
+                                Channel channelObj = getChannel().get(channelName);
+                                if (channelObj != null) {
+                                    String currentTopic = channelObj.getTopic();
+                                    // Only set if channel has no topic
+                                    if (currentTopic == null || currentTopic.isEmpty()) {
+                                        sendText("%sAAF T %s :%s", jnumeric, channelName, storedTopic);
+                                        System.out.println("[DEBUG] Setting stored topic for " + channelName + ": " + storedTopic);
+                                    } else {
+                                        System.out.println("[DEBUG] Channel " + channelName + " already has topic, not overwriting");
+                                    }
+                                }
+                            }
+                        }
+                        
                         System.out.println("Channels joined...");
                     } else if (elem[1].equals("J") || elem[1].equals("C")) {
                         var channel = elem[2];
                         var names = elem[0];
                         var user = new String[1];
-                        user[0] = names;
+                        
+                        // If it's a CREATE (C), give the creator OP status
+                        if (elem[1].equals("C")) {
+                            user[0] = names + ":o";
+                            System.out.println("[DEBUG] Channel CREATE: " + channel + " by " + names + " - giving OP status");
+                        } else {
+                            user[0] = names;
+                        }
+                        
+                        // Check if channel is suspended - if so, kick the user
+                        String suspendBy = getMi().getDb().getChannel("suspendby", channel);
+                        if (suspendBy != null && !suspendBy.isEmpty() && !suspendBy.equals("0")) {
+                            String reason = getMi().getDb().getChannel("suspendreason", channel);
+                            String kickReason = "Channel suspended: " + (reason != null ? reason : "No reason given");
+                            sendText("%s K %s %s :%s", "AA", channel, names, kickReason);
+                            continue;
+                        }
+                        
                         if (getChannel().containsKey(channel.toLowerCase())) {
                             getChannel().get(channel.toLowerCase()).addUser(names);
                             getChannel().get(channel.toLowerCase()).getLastJoin().put(names, time());
+                            
+                            // If it's a CREATE and channel already exists, add OP
+                            if (elem[1].equals("C")) {
+                                getChannel().get(channel.toLowerCase()).addOp(names);
+                            }
                         } else {
                             getChannel().put(channel.toLowerCase(), new Channel(channel, "", user));
                         }
@@ -617,15 +1382,6 @@ public final class SocketThread implements Runnable, Software {
                                 getUsers().get(userNumeric).addChannel(channel);
                             }
                         }
-                    } else if (elem[1].equals("C")) {
-                        var channel = elem[2].toLowerCase();
-                        var names = new String[1];
-                        names[0] = elem[0] + ":q";
-                        getChannel().put(channel.toLowerCase(), new Channel(channel, "", names));
-                        // Add channel to user's channel list
-                        if (getUsers().containsKey(elem[0])) {
-                            getUsers().get(elem[0]).addChannel(channel);
-                        }
                     } else if (elem[1].equals("AC") && getUsers().containsKey(elem[2])) {
                         var acc = elem[3];
                         var nick = elem[2];
@@ -647,7 +1403,7 @@ public final class SocketThread implements Runnable, Software {
                             payload = idx >= 0 ? content.substring(idx) : "";
                         }
                         sendText("%s Z %s", jnumeric, payload);
-                    } else if (elem[1].equals("M") && elem.length == 4) {
+                    } else if (elem[1].equals("M") && elem.length >= 4) {
                         var nick = elem[0];
                         if (elem[3].contains("x")) {
                             getUsers().get(nick).setX(true);
@@ -686,6 +1442,16 @@ public final class SocketThread implements Runnable, Software {
                                     getChannel().get(channel.toLowerCase()).removeVoice(users[0]);
                                 }
                             }
+                        }
+                    } else if (elem[1].equals("T") && elem.length >= 4) {
+                        // Topic command: AA T #channel timestamp :topic text
+                        String channel = elem[2].toLowerCase();
+                        String topic = content.substring(content.indexOf(':', 1) + 1);
+                        
+                        Channel channelObj = getChannel().get(channel);
+                        if (channelObj != null) {
+                            channelObj.setTopic(topic);
+                            System.out.println("[DEBUG] Topic set for " + channel + ": " + topic);
                         }
                     } else if (elem[1].equals("Q")) {
                         var nick = elem[0];
@@ -768,7 +1534,8 @@ public final class SocketThread implements Runnable, Software {
     }
 
     protected void partChannel(String channel, String numeric, String service) {
-        sendText("%s%s L %s", numeric, service, channel);
+        // Send PART (L) with timestamp; include a short reason for readability
+        sendText("%s%s L %s :Leaving", numeric, service, channel);
     }
 
     protected void removeUser(String nick, String channel) {

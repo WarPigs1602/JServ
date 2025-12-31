@@ -195,7 +195,7 @@ public final class SpamScan implements Software, Module {
     }
     
     @Override
-    public boolean handleNewUser(String numeric, String nick, String ident, String host, String account, String serverNumeric) {
+    public boolean handleNewUser(String numeric, String nick, String ident, String host, String account, String serverNumeric, String hiddenHost) {
         if (!enabled) {
             return false;
         }
@@ -270,18 +270,67 @@ public final class SpamScan implements Software, Module {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0]));
                         }
                     // ADDCHAN command - add channel to spam monitoring
-                    } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
+                    } else if (auth.length >= 2 && auth[0].equalsIgnoreCase("ADDCHAN")) {
                         var channel = auth[1];
-                        if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
+                        
+                        // Get user flags for privilege check
+                        int userFlags = getMi().getDb().getFlags(nick);
+                        boolean isStaff = Userflags.hasFlag(userFlags, Userflags.Flag.STAFF);
+                        boolean isOper = Userflags.hasFlag(userFlags, Userflags.Flag.OPER);
+                        boolean isAdmin = Userflags.hasFlag(userFlags, Userflags.Flag.ADMIN);
+                        boolean isDev = Userflags.hasFlag(userFlags, Userflags.Flag.DEV);
+                        boolean isPrivileged = isStaff || isOper || isAdmin || isDev;
+                        
+                        // Check if user is authorized (Privileged users, Oper, authenticated, or channel owner)
+                        boolean isAuthorized = isPrivileged || getSt().isOper(nick) || isReg();
+                        
+                        // If not privileged/Oper/AUTH, check if user is channel owner
+                        if (!isAuthorized) {
+                            String chanIdStr = getMi().getDb().getChannel("id", channel);
+                            if (chanIdStr != null) {
+                                long chanId = Long.parseLong(chanIdStr);
+                                long userId = getMi().getDb().getUserId(nick);
+                                if (userId > 0) {
+                                    String[] chanUser = getMi().getDb().getChanUser(userId, chanId);
+                                    if (chanUser != null && chanUser[0] != null) {
+                                        int chanUserFlags = Integer.parseInt(chanUser[0]);
+                                        // Check for MASTER or OWNER flag
+                                        if (Userflags.hasQCUFlag(chanUserFlags, Userflags.QCUFlag.MASTER) ||
+                                            Userflags.hasQCUFlag(chanUserFlags, Userflags.QCUFlag.OWNER)) {
+                                            isAuthorized = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (!isAuthorized) {
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Access denied. You must be an IRC Operator or channel owner (+m/+n).");
+                        } else if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_EMPTYCHAN", channel));
-                        } else if (!getMi().getDb().isSpamScanChannel(channel)) {
-                            getMi().getDb().addChan(channel);
-                            getSt().joinChannel(channel, getNumeric(), getNumeric() + getNumericSuffix());
-                            setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_DONE"));
                         } else {
-                            setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Cannot add channel %s: %s is already on that channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
+                            // Privileged users bypass the 5-user requirement
+                            Channel chan = getSt().getChannel().get(channel.toLowerCase());
+                            int userCount = chan != null ? chan.getUsers().size() : 0;
+                            
+                            if (!isPrivileged && userCount < 5) {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], 
+                                    "Cannot add channel %s: Channel must have at least 5 users (current: %d).", 
+                                    channel, userCount);
+                            } else if (!getMi().getDb().isSpamScanChannel(channel)) {
+                                getMi().getDb().addChan(channel);
+                                getSt().joinChannel(channel, getNumeric(), getNumeric() + getNumericSuffix());
+                                setReg(false);
+                                if (isPrivileged) {
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], 
+                                        "Channel %s added (privilege override - user requirement bypassed).", channel);
+                                } else {
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_DONE"));
+                                }
+                            } else {
+                                setReg(false);
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Cannot add channel %s: %s is already on that channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
+                            }
                         }
                     // DELCHAN command - remove channel from spam monitoring
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELCHAN")) {
@@ -391,8 +440,8 @@ public final class SpamScan implements Software, Module {
                     // SHOWCOMMANDS - display available commands
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_COMMANDLIST"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   ADDCHAN      Adds a channel to spam monitoring (+o or channel owner)");
                         if (getSt().isOper(nick)) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o ADDCHAN      Adds a channel to spam monitoring");
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o ADDLAXCHAN   Enables lax spam detection for a channel");
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o BADWORD      Manage badwords");
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o DELCHAN      Removes a channel from spam monitoring");
@@ -411,9 +460,11 @@ public final class SpamScan implements Software, Module {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Based on JServ v%s", buildInfo.getFullVersion());
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Created by %s", AUTHOR);
                     // HELP commands
-                    } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDCHAN")) {
+                    } else if (auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDCHAN")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "ADDCHAN <#channel>");
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Adds a channel to spam monitoring.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Requirements: IRC Operator, channel owner (+m/+n), or AUTH.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Channel must have at least 5 users.");
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDLAXCHAN")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "ADDLAXCHAN <#channel>");
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Enables lax spam detection for a channel (higher thresholds, more lenient).");
@@ -452,7 +503,8 @@ public final class SpamScan implements Software, Module {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                     }
                 // Handle channel messages for spam detection
-                } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase()) && !getSt().getUsers().get(elem[0]).isOper() && !getSt().getUsers().get(elem[0]).isService()) {
+                // Only process messages from channels where SpamScan is actually monitoring
+                } else if ((elem[1].equals("P") || elem[1].equals("O")) && getSt().getChannel().containsKey(elem[2].toLowerCase()) && getMi().getDb().isSpamScanChannel(elem[2]) && !getSt().getUsers().get(elem[0]).isOper() && !getSt().getUsers().get(elem[0]).isService()) {
                     if (!getSt().isOper(getSt().getUsers().get(elem[0]).getAccount())) {
                         var sb = new StringBuilder();
                         for (var i = 3; i < elem.length; i++) {
@@ -891,6 +943,14 @@ public final class SpamScan implements Software, Module {
         count++;
         getMi().getDb().addId(reason);
         
+        // Check if user is still in the channel before taking action
+        var channel = getSt().getChannel().get(channelName);
+        if (channel == null || !channel.getUsers().contains(userNumeric)) {
+            LOG.log(Level.INFO, "User {0} not in channel {1} anymore, skipping immediate G-Line action", 
+                new Object[]{userNumeric, channelName});
+            return;
+        }
+        
         var user = getSt().getUsers().get(userNumeric);
         if (user != null) {
             String userHost = user.getHost();
@@ -921,12 +981,22 @@ public final class SpamScan implements Software, Module {
         count++;
         getMi().getDb().addId(reason);
         
-        if (getSt().getChannel().get(channelName).isModerated() && 
-            getSt().getChannel().get(channelName).getVoice().contains(userNumeric)) {
+        // Check if user is still in the channel before taking action
+        var channel = getSt().getChannel().get(channelName);
+        if (channel == null || !channel.getUsers().contains(userNumeric)) {
+            LOG.log(Level.INFO, "User {0} not in channel {1} anymore, skipping action", 
+                new Object[]{userNumeric, channelName});
+            return;
+        }
+        
+        if (channel.isModerated() && channel.getVoice().contains(userNumeric)) {
             // Remove voice in moderated channel
             sendText("%s%s M %s -v %s", getNumeric(), getNumericSuffix(), channelName, userNumeric);
-            getSt().getUsers().get(userNumeric).setRepeat(0);
-            getSt().getUsers().get(userNumeric).setFlood(0);
+            var user = getSt().getUsers().get(userNumeric);
+            if (user != null) {
+                user.setRepeat(0);
+                user.setFlood(0);
+            }
         } else {
             // Track violations and check if G-Line should be applied
             var user = getSt().getUsers().get(userNumeric);

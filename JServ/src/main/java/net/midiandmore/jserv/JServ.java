@@ -158,7 +158,6 @@ public final class JServ implements Software {
         logDebug("Homoglyphs initialized");
         
         setDb(new Database(this));
-        getDb().connect();
         logDebug("Database connection established");
         
         setWaitThread(new WaitThread(this));
@@ -314,8 +313,8 @@ public final class JServ implements Software {
         
         // Close database connection
         if (db != null) {
-            logInfo("Closing database connection...");
-            // Add db.close() if Database class has such method
+            logInfo("Closing database connection pool...");
+            db.shutdown();
         }
         
         // Stop threads

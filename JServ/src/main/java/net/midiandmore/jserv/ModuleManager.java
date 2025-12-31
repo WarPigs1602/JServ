@@ -72,6 +72,10 @@ public class ModuleManager {
                     ((HostServ) module).setNumericSuffix(def.getNumericSuffix());
                 } else if (module instanceof NickServ) {
                     ((NickServ) module).setNumericSuffix(def.getNumericSuffix());
+                } else if (module instanceof ChanServ) {
+                    ((ChanServ) module).setNumericSuffix(def.getNumericSuffix());
+                } else if (module instanceof AuthServ) {
+                    ((AuthServ) module).setNumericSuffix(def.getNumericSuffix());
                 }
                 
                 // Register module
@@ -264,6 +268,12 @@ public class ModuleManager {
             return jserv.getConfig().getNickFile().getProperty(property);
         } else if (moduleName.equalsIgnoreCase("SaslServ")) {
             return jserv.getConfig().getSaslFile().getProperty(property);
+        } else if (moduleName.equalsIgnoreCase("ChanServ")) {
+            return jserv.getConfig().getChanServFile().getProperty(property);
+        } else if (moduleName.equalsIgnoreCase("AuthServ")) {
+            return jserv.getConfig().getAuthFile().getProperty(property);
+        } else if (moduleName.equalsIgnoreCase("OperServ")) {
+            return jserv.getConfig().getOperFile().getProperty(property);
         }
         return null;
     }

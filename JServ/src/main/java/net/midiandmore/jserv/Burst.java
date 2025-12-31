@@ -15,7 +15,9 @@ public final class Burst {
 
     private String channel;
     private ArrayList<String> users;
-    private long time;    
+    private long time;
+    private String modes;
+    private String topic;
     
     public Burst(String channel) {
         setChannel(channel);
@@ -60,5 +62,34 @@ public final class Burst {
     public void setTime(long time) {
         this.time = time;
     }
+
+    /**
+     * @return the modes
+     */
+    public String getModes() {
+        return modes;
+    }
+
+    /**
+     * @param modes the modes to set
+     */
+    public void setModes(String modes) {
+        this.modes = modes;
+    }
+
+    /**
+     * @return the topic
+     */
+    public String getTopic() {
+        return topic;
+    }
+
+    /**
+     * @param topic the topic to set
+     */
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+    
     private static final Logger LOG = Logger.getLogger(Burst.class.getName());
 }

@@ -1,0 +1,140 @@
+[
+	{
+		"id": "1",
+		"subject": {
+			"en": "%(config.bot)s account registration",
+			"de": "%(config.bot)s Konto-Registrierung",
+			"es": "Registro de cuenta de %(config.bot)s",
+			"fr": "Enregistrement du compte %(config.bot)s",
+			"sv": "%(config.bot)s kontoregistrering",
+			"it": "Registrazione account %(config.bot)s",
+			"tr": "%(config.bot)s hesap kaydı",
+			"pt": "Registo de conta %(config.bot)s"
+		},
+		"body": {
+		"en": "Dear %(user.username)s.\n\nThank you for registering.\nTo get your password please visit:\n%(url)s\n\nNote that this URL will not work forever, you should make a note of your password\nor change it (as on the site).\n\nIn case you forget your login/password use:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nMake sure you've read the %(config.bot)s FAQ at %(config.siteurl)s for a complete\nreference on %(config.bot)s's commands and usage.\n\n ** PLEASE READ %(config.securityurl)s --\n    it contains important information about keeping your account secure.\n    Note that %(network.name)s Operators will not intervene if you fail to read\n    the above URL and your account is compromised as a result.\n\nPLEASE REMEMBER THAT UNUSED ACCOUNTS ARE AUTOMATICALLY REMOVED\nAFTER %(config.cleanup)d DAYS, AND ALL CHANLEVS ARE LOST!\n\nNB: Save this email for future reference.\n",
+		"de": "Sehr geehrte/r %(user.username)s,\n\nvielen Dank für Ihre Registrierung.\nUm Ihr Passwort zu erhalten, besuchen Sie bitte:\n%(url)s\n\nBitte beachten Sie, dass dieser Link nicht dauerhaft gültig ist. Notieren Sie sich Ihr Passwort oder ändern Sie es (wie auf der Website).\n\nFalls Sie Ihren Login oder Ihr Passwort vergessen, nutzen Sie:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nLesen Sie unbedingt die %(config.bot)s-FAQ unter %(config.siteurl)s für eine vollständige Referenz zu den Befehlen und der Nutzung von %(config.bot)s.\n\n ** BITTE LESEN SIE %(config.securityurl)s --\n    Dort finden Sie wichtige Informationen zur Sicherheit Ihres Accounts.\n    Beachten Sie, dass %(network.name)s-Operatoren nicht eingreifen, wenn Sie die oben genannte URL nicht lesen und Ihr Account dadurch kompromittiert wird.\n\nBITTE BEACHTEN SIE, DASS UNGENUTZTE ACCOUNTS NACH %(config.cleanup)d TAGEN AUTOMATISCH GELÖSCHT WERDEN UND ALLE CHANLEVS VERLOREN GEHEN!\n\nNB: Bitte bewahren Sie diese E-Mail für spätere Nachfragen auf.\n",
+		"es": "Estimado/a %(user.username)s,\n\nGracias por registrarse.\nPara obtener su contraseña, visite:\n%(url)s\n\nTenga en cuenta que este enlace no funcionará para siempre, debe anotar su contraseña o cambiarla (como en el sitio).\n\nSi olvida su usuario/contraseña, use:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nAsegúrese de haber leído las preguntas frecuentes de %(config.bot)s en %(config.siteurl)s para una referencia completa sobre los comandos y el uso de %(config.bot)s.\n\n ** POR FAVOR LEA %(config.securityurl)s --\n    contiene información importante sobre cómo mantener su cuenta segura.\n    Tenga en cuenta que los operadores de %(network.name)s no intervendrán si no lee la URL anterior y su cuenta se ve comprometida como resultado.\n\nRECUERDE QUE LAS CUENTAS INACTIVAS SE ELIMINAN AUTOMÁTICAMENTE\nDESPUÉS DE %(config.cleanup)d DÍAS, ¡Y TODOS LOS CHANLEVS SE PIERDEN!\n\nNB: Guarde este correo electrónico para referencia futura.\n",
+		"fr": "Cher/Chère %(user.username)s,\n\nMerci pour votre inscription.\nPour obtenir votre mot de passe, veuillez visiter :\n%(url)s\n\nNotez que cette URL ne fonctionnera pas indéfiniment, vous devriez noter votre mot de passe ou le changer (comme sur le site).\n\nEn cas d'oubli de votre identifiant/mot de passe, utilisez :\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nAssurez-vous d'avoir lu la FAQ de %(config.bot)s sur %(config.siteurl)s pour une référence complète des commandes et de l'utilisation de %(config.bot)s.\n\n ** VEUILLEZ LIRE %(config.securityurl)s --\n    cela contient des informations importantes sur la sécurité de votre compte.\n    Notez que les opérateurs de %(network.name)s n'interviendront pas si vous ne lisez pas l'URL ci-dessus et que votre compte est compromis en conséquence.\n\nVEUILLEZ NOTER QUE LES COMPTES INUTILISÉS SONT SUPPRIMÉS AUTOMATIQUEMENT\nAPRÈS %(config.cleanup)d JOURS, ET TOUS LES CHANLEVS SONT PERDUS !\n\nNB : Conservez cet e-mail pour référence future.\n",
+		"sv": "Hej %(user.username)s,\n\nTack för din registrering.\nFör att få ditt lösenord, besök:\n%(url)s\n\nObservera att denna länk inte kommer att fungera för alltid, du bör anteckna ditt lösenord eller ändra det (som på webbplatsen).\n\nOm du glömmer ditt användarnamn/lösenord, använd:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nSe till att du har läst %(config.bot)s FAQ på %(config.siteurl)s för en komplett referens om %(config.bot)s kommandon och användning.\n\n ** LÄS %(config.securityurl)s --\n    det innehåller viktig information om hur du håller ditt konto säkert.\n    Observera att %(network.name)s operatörer inte ingriper om du inte läser ovanstående URL och ditt konto blir komprometterat.\n\nKOM IHÅG ATT OANVÄNDA KONTON TAS BORT AUTOMATISKT\nEFTER %(config.cleanup)d DAGAR, OCH ALLA CHANLEVS FÖRLORAS!\n\nNB: Spara detta e-postmeddelande för framtida referens.\n",
+		"it": "Gentile %(user.username)s,\n\nGrazie per esserti registrato.\nPer ottenere la tua password, visita:\n%(url)s\n\nNota che questo URL non funzionerà per sempre, dovresti annotare la tua password o cambiarla (come sul sito).\n\nSe dimentichi il tuo login/password usa:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nAssicurati di aver letto le FAQ di %(config.bot)s su %(config.siteurl)s per una guida completa ai comandi e all'uso di %(config.bot)s.\n\n ** LEGGI %(config.securityurl)s --\n    contiene informazioni importanti sulla sicurezza del tuo account.\n    Nota che gli operatori di %(network.name)s non interverranno se non leggi l'URL sopra e il tuo account viene compromesso di conseguenza.\n\nRICORDA CHE GLI ACCOUNT INUTILIZZATI VENGONO RIMOSSI AUTOMATICAMENTE\nDOPO %(config.cleanup)d GIORNI, E TUTTI I CHANLEVS VENGONO PERSI!\n\nNB: Conserva questa email per riferimento futuro.\n",
+		"tr": "Sayın %(user.username)s,\n\nKayıt olduğunuz için teşekkürler.\nŞifrenizi almak için lütfen şu adresi ziyaret edin:\n%(url)s\n\nBu bağlantının sonsuza kadar çalışmayacağını unutmayın, şifrenizi not edin veya değiştirin (site üzerinden olduğu gibi).\n\nGiriş bilgilerinizi/şifrenizi unutursanız şunu kullanın:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\n%(config.bot)s komutları ve kullanımı hakkında tam bilgi için %(config.siteurl)s adresindeki SSS'yi okuduğunuzdan emin olun.\n\n ** LÜTFEN %(config.securityurl)s ADRESİNİ OKUYUN --\n    hesabınızı güvende tutmak için önemli bilgiler içerir.\n    Yukarıdaki URL'yi okumazsanız ve hesabınız tehlikeye girerse %(network.name)s operatörleri müdahale etmeyecektir.\n\nLÜTFEN KULLANILMAYAN HESAPLARIN %(config.cleanup)d GÜN SONRA OTOMATİK OLARAK SİLİNDİĞİNİ VE TÜM CHANLEV'LERİN KAYBOLACAĞINI UNUTMAYIN!\n\nNot: Bu e-postayı ileride başvurmak üzere saklayın.\n",
+		"pt": "Prezado/a %(user.username)s,\n\nObrigado por se registar.\nPara obter a sua palavra-passe, visite:\n%(url)s\n\nNote que este URL não funcionará para sempre, deve anotar a sua palavra-passe ou alterá-la (como no site).\n\nCaso esqueça o seu login/palavra-passe use:\n/msg %(config.bot)s REQUESTPASSWORD %(user.email)s\n\nCertifique-se de ler as FAQ do %(config.bot)s em %(config.siteurl)s para uma referência completa sobre os comandos e uso do %(config.bot)s.\n\n ** POR FAVOR LEIA %(config.securityurl)s --\n    contém informações importantes sobre como manter a sua conta segura.\n    Note que os Operadores da %(network.name)s não intervirão se não ler o URL acima e a sua conta for comprometida como resultado.\n\nPOR FAVOR LEMBRE-SE QUE CONTAS NÃO UTILIZADAS SÃO AUTOMATICAMENTE REMOVIDAS\nAPÓS %(config.cleanup)d DIAS, E TODOS OS CHANLEVS SÃO PERDIDOS!\n\nNB: Guarde este e-mail para referência futura.\n"
+		}
+	},
+	{
+		"id": "2",
+		"subject": {
+			"en": "%(config.bot)s password request",
+			"de": "%(config.bot)s Passwort-Anfrage",
+			"es": "Solicitud de contraseña de %(config.bot)s",
+			"fr": "Demande de mot de passe %(config.bot)s",
+			"sv": "%(config.bot)s lösenordsbegäran",
+			"it": "Richiesta password %(config.bot)s",
+			"tr": "%(config.bot)s şifre isteği",
+			"pt": "Pedido de palavra-passe %(config.bot)s"
+		},
+		"body": {
+			"en": "Your username/password is:\n\nUsername: %(user.username)s\nPassword: %(user.password)s\n\nTo auth yourself to %(config.bot)s, type the following command\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"de": "Ihr Benutzername/Passwort lautet:\n\nBenutzername: %(user.username)s\nPasswort: %(user.password)s\n\nUm sich bei %(config.bot)s zu authentifizieren, geben Sie folgenden Befehl ein:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"es": "Su usuario/contraseña es:\n\nUsuario: %(user.username)s\nContraseña: %(user.password)s\n\nPara autenticarse en %(config.bot)s, escriba el siguiente comando:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"fr": "Votre identifiant/mot de passe est :\n\nIdentifiant : %(user.username)s\nMot de passe : %(user.password)s\n\nPour vous authentifier auprès de %(config.bot)s, tapez la commande suivante :\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"sv": "Ditt användarnamn/lösenord är:\n\nAnvändarnamn: %(user.username)s\nLösenord: %(user.password)s\n\nFör att autentisera dig mot %(config.bot)s, skriv följande kommando:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"it": "Il tuo nome utente/password è:\n\nNome utente: %(user.username)s\nPassword: %(user.password)s\n\nPer autenticarti su %(config.bot)s, digita il seguente comando:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"tr": "Kullanıcı adınız/şifreniz:\n\nKullanıcı adı: %(user.username)s\nŞifre: %(user.password)s\n\n%(config.bot)s'a giriş yapmak için aşağıdaki komutu yazın:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"pt": "O seu nome de utilizador/palavra-passe é:\n\nNome de utilizador: %(user.username)s\nPalavra-passe: %(user.password)s\n\nPara se autenticar no %(config.bot)s, digite o seguinte comando:\n\n   /AUTH %(user.username)s %(user.password)s\n"
+		}
+	},
+	{
+		"id": "3",
+		"subject": {
+			"en": "%(config.bot)s password change",
+			"de": "%(config.bot)s Passwortänderung",
+			"es": "Cambio de contraseña de %(config.bot)s",
+			"fr": "Changement de mot de passe %(config.bot)s",
+			"sv": "%(config.bot)s lösenordsändring",
+			"it": "Cambio password %(config.bot)s",
+			"tr": "%(config.bot)s şifre değişikliği",
+			"pt": "Alteração de palavra-passe %(config.bot)s"
+		},
+		"body": {
+			"en": "Your password has recently changed. If this was not requested by you,\nplease use:\n%(resetline)s\n\nYou have until %(lockuntil)s to perform this command.\n",
+			"de": "Ihr Passwort wurde kürzlich geändert. Falls Sie dies nicht selbst veranlasst haben, nutzen Sie bitte:\n%(resetline)s\n\nSie haben bis %(lockuntil)s Zeit, diesen Befehl auszuführen.\n",
+			"es": "Su contraseña ha sido cambiada recientemente. Si usted no solicitó este cambio, utilice:\n%(resetline)s\n\nTiene hasta %(lockuntil)s para realizar este comando.\n",
+			"fr": "Votre mot de passe a récemment été changé. Si ce n'était pas vous, veuillez utiliser :\n%(resetline)s\n\nVous avez jusqu'à %(lockuntil)s pour effectuer cette commande.\n",
+			"sv": "Ditt lösenord har nyligen ändrats. Om detta inte var du, använd:\n%(resetline)s\n\nDu har till %(lockuntil)s på dig att utföra detta kommando.\n",
+			"it": "La tua password è stata recentemente cambiata. Se non sei stato tu, usa:\n%(resetline)s\n\nHai tempo fino a %(lockuntil)s per eseguire questo comando.\n",
+			"tr": "Şifreniz yakın zamanda değiştirildi. Eğer bu işlemi siz yapmadıysanız, lütfen şunu kullanın:\n%(resetline)s\n\nBu komutu gerçekleştirmek için %(lockuntil)s tarihine kadar süreniz var.\n",
+			"pt": "A sua palavra-passe foi alterada recentemente. Se não foi você que solicitou,\npor favor use:\n%(resetline)s\n\nTem até %(lockuntil)s para executar este comando.\n"
+		}
+	},
+	{
+		"id": "4",
+		"subject": {
+			"en": "%(config.bot)s account reset",
+			"de": "%(config.bot)s Konto zurückgesetzt",
+			"es": "Restablecimiento de cuenta %(config.bot)s",
+			"fr": "Réinitialisation du compte %(config.bot)s",
+			"sv": "%(config.bot)s kontoåterställning",
+			"it": "Reset account %(config.bot)s",
+			"tr": "%(config.bot)s hesap sıfırlama",
+			"pt": "Redefinição de conta %(config.bot)s"
+		},
+		"body": {
+			"en": "Your %(config.bot)s account settings have been restored:\n  E-mail address: %(user.email)s\n  Password:       %(user.password)s\n\nMake sure you read the %(config.bot)s security FAQ at %(config.securityurl)s.\n",
+			"de": "Ihre %(config.bot)s-Kontoeinstellungen wurden wiederhergestellt:\n  E-Mail-Adresse: %(user.email)s\n  Passwort:       %(user.password)s\n\nLesen Sie unbedingt die %(config.bot)s-Sicherheits-FAQ unter %(config.securityurl)s.\n",
+			"es": "La configuración de su cuenta %(config.bot)s ha sido restaurada:\n  Correo electrónico: %(user.email)s\n  Contraseña:       %(user.password)s\n\nAsegúrese de leer las preguntas frecuentes de seguridad de %(config.bot)s en %(config.securityurl)s.\n",
+			"fr": "Les paramètres de votre compte %(config.bot)s ont été réinitialisés :\n  Adresse e-mail : %(user.email)s\n  Mot de passe :   %(user.password)s\n\nAssurez-vous de lire la FAQ sécurité de %(config.bot)s sur %(config.securityurl)s.\n",
+			"sv": "Dina %(config.bot)s-kontoinställningar har återställts:\n  E-postadress: %(user.email)s\n  Lösenord:    %(user.password)s\n\nSe till att du läser %(config.bot)s säkerhets-FAQ på %(config.securityurl)s.\n",
+			"it": "Le impostazioni del tuo account %(config.bot)s sono state ripristinate:\n  Indirizzo e-mail: %(user.email)s\n  Password:        %(user.password)s\n\nAssicurati di leggere le FAQ sulla sicurezza di %(config.bot)s su %(config.securityurl)s.\n",
+			"tr": "%(config.bot)s hesap ayarlarınız geri yüklendi:\n  E-posta adresi: %(user.email)s\n  Şifre:         %(user.password)s\n\n%(config.bot)s güvenlik SSS'sini %(config.securityurl)s adresinde okuduğunuzdan emin olun.\n",
+			"pt": "As definições da sua conta %(config.bot)s foram restauradas:\n  Endereço de e-mail: %(user.email)s\n  Palavra-passe:      %(user.password)s\n\nCertifique-se de ler as FAQ de segurança do %(config.bot)s em %(config.securityurl)s.\n"
+		}
+	},
+	{
+		"id": "5",
+		"subject": {
+			"en": "%(config.bot)s email change",
+			"de": "%(config.bot)s E-Mail-Änderung",
+			"es": "Cambio de correo electrónico de %(config.bot)s",
+			"fr": "Changement d'e-mail %(config.bot)s",
+			"sv": "%(config.bot)s e-poständring",
+			"it": "Cambio email %(config.bot)s",
+			"tr": "%(config.bot)s e-posta değişikliği",
+			"pt": "Alteração de e-mail %(config.bot)s"
+		},
+		"body": {
+			"en": "Your email address has been changed on %(config.bot)s from %(prevemail)s to %(user.email)s.\n\nIf you did not request this please use:\n%(resetline)s\n\nYou have until %(lockuntil)s to perform this command.\n",
+			"de": "Ihre E-Mail-Adresse wurde bei %(config.bot)s von %(prevemail)s auf %(user.email)s geändert.\n\nFalls Sie dies nicht selbst veranlasst haben, nutzen Sie bitte:\n%(resetline)s\n\nSie haben bis %(lockuntil)s Zeit, diesen Befehl auszuführen.\n",
+			"es": "Su dirección de correo electrónico ha sido cambiada en %(config.bot)s de %(prevemail)s a %(user.email)s.\n\nSi usted no solicitó este cambio, utilice:\n%(resetline)s\n\nTiene hasta %(lockuntil)s para realizar este comando.\n",
+			"fr": "Votre adresse e-mail a été modifiée sur %(config.bot)s de %(prevemail)s à %(user.email)s.\n\nSi vous n'êtes pas à l'origine de cette demande, veuillez utiliser :\n%(resetline)s\n\nVous avez jusqu'à %(lockuntil)s pour effectuer cette commande.\n",
+			"sv": "Din e-postadress har ändrats på %(config.bot)s från %(prevemail)s till %(user.email)s.\n\nOm du inte begärt detta, använd:\n%(resetline)s\n\nDu har till %(lockuntil)s på dig att utföra detta kommando.\n",
+			"it": "Il tuo indirizzo e-mail è stato cambiato su %(config.bot)s da %(prevemail)s a %(user.email)s.\n\nSe non sei stato tu a richiederlo, usa:\n%(resetline)s\n\nHai tempo fino a %(lockuntil)s per eseguire questo comando.\n",
+			"tr": "%(config.bot)s üzerinde e-posta adresiniz %(prevemail)s adresinden %(user.email)s adresine değiştirildi.\n\nEğer bu işlemi siz yapmadıysanız, lütfen şunu kullanın:\n%(resetline)s\n\nBu komutu gerçekleştirmek için %(lockuntil)s tarihine kadar süreniz var.\n",
+			"pt": "O seu endereço de e-mail foi alterado no %(config.bot)s de %(prevemail)s para %(user.email)s.\n\nSe não solicitou isto, por favor use:\n%(resetline)s\n\nTem até %(lockuntil)s para executar este comando.\n"
+		}
+	},
+	{
+		"id": "6",
+		"subject": {
+			"en": "Please complete your %(network.name)s account registration",
+			"de": "Bitte vervollständigen Sie Ihre %(network.name)s Konto-Registrierung",
+			"es": "Por favor complete el registro de su cuenta %(network.name)s",
+			"fr": "Veuillez compléter l'enregistrement de votre compte %(network.name)s",
+			"sv": "Vänligen slutför din %(network.name)s kontoregistrering",
+			"it": "Completa la registrazione del tuo account %(network.name)s",
+			"tr": "Lütfen %(network.name)s hesap kaydınızı tamamlayın",
+			"pt": "Por favor complete o registo da sua conta %(network.name)s"
+		},
+		"body": {
+			"en": "Hi %(user.username)s,\n\nYou're just one click away from completing your registration for a %(network.name)s account!\n\nJust visit the link below to complete the process:\n%(url)s\n\nFor reference, your username/password is:\n\nUsername: %(user.username)s\nPassword: %(user.password)s\n\nAfter activation you can auth yourself to %(network.name)s by typing the following command:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"de": "Hallo %(user.username)s,\n\nSie sind nur noch einen Klick davon entfernt, Ihre Registrierung für ein %(network.name)s-Konto abzuschließen!\n\nBesuchen Sie einfach den folgenden Link, um den Vorgang abzuschließen:\n%(url)s\n\nZur Erinnerung, Ihr Benutzername/Passwort lautet:\n\nBenutzername: %(user.username)s\nPasswort: %(user.password)s\n\nNach der Aktivierung können Sie sich bei %(network.name)s mit folgendem Befehl authentifizieren:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"es": "Hola %(user.username)s,\n\n¡Solo está a un clic de completar su registro para una cuenta de %(network.name)s!\n\nSimplemente visite el siguiente enlace para completar el proceso:\n%(url)s\n\nPara referencia, su usuario/contraseña es:\n\nUsuario: %(user.username)s\nContraseña: %(user.password)s\n\nDespués de la activación puede autenticarse en %(network.name)s escribiendo el siguiente comando:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"fr": "Bonjour %(user.username)s,\n\nVous n'êtes plus qu'à un clic de finaliser votre inscription pour un compte %(network.name)s !\n\nIl vous suffit de visiter le lien ci-dessous pour terminer le processus :\n%(url)s\n\nPour référence, votre identifiant/mot de passe est :\n\nIdentifiant : %(user.username)s\nMot de passe : %(user.password)s\n\nAprès activation, vous pouvez vous authentifier sur %(network.name)s en tapant la commande suivante :\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"sv": "Hej %(user.username)s,\n\nDu är bara ett klick från att slutföra din registrering för ett %(network.name)s-konto!\n\nBesök bara länken nedan för att slutföra processen:\n%(url)s\n\nFör referens, ditt användarnamn/lösenord är:\n\nAnvändarnamn: %(user.username)s\nLösenord: %(user.password)s\n\nEfter aktivering kan du autentisera dig mot %(network.name)s genom att skriva följande kommando:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"it": "Ciao %(user.username)s,\n\nSei a un solo clic dal completare la registrazione per un account %(network.name)s!\n\nVisita semplicemente il link qui sotto per completare il processo:\n%(url)s\n\nPer riferimento, il tuo nome utente/password è:\n\nNome utente: %(user.username)s\nPassword: %(user.password)s\n\nDopo l'attivazione puoi autenticarti su %(network.name)s digitando il seguente comando:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"tr": "Merhaba %(user.username)s,\n\nBir %(network.name)s hesabı kaydınızı tamamlamaya sadece bir tık uzaktasınız!\n\nİşlemi tamamlamak için aşağıdaki bağlantıyı ziyaret edin:\n%(url)s\n\nBilginiz için, kullanıcı adınız/şifreniz:\n\nKullanıcı adı: %(user.username)s\nŞifre: %(user.password)s\n\nAktivasyondan sonra %(network.name)s'a giriş yapmak için aşağıdaki komutu yazabilirsiniz:\n\n   /AUTH %(user.username)s %(user.password)s\n",
+			"pt": "Olá %(user.username)s,\n\nEstá apenas a um clique de completar o seu registo para uma conta %(network.name)s!\n\nBasta visitar o link abaixo para completar o processo:\n%(url)s\n\nPara referência, o seu nome de utilizador/palavra-passe é:\n\nNome de utilizador: %(user.username)s\nPalavra-passe: %(user.password)s\n\nApós a ativação pode autenticar-se no %(network.name)s digitando o seguinte comando:\n\n   /AUTH %(user.username)s %(user.password)s\n"
+		}
+	}
+]

@@ -95,5 +95,11 @@
             <version>42.7.7</version>
             <classifier>all</classifier>
         </dependency>
+        <!-- HikariCP for connection pooling -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+        </dependency>
     </dependencies>       
 </project>

@@ -7,7 +7,6 @@ package net.midiandmore.jserv;
 import jakarta.json.Json;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,11 +24,27 @@ public final class Config {
         return saslFile;
     }
 
+    public Properties getOperFile() {
+        return operFile;
+    }
+
+    public Properties getTrustcheckFile() {
+        return trustcheckFile;
+    }
+
     /**
      * @param saslFile the saslFile to set
      */
     public void setSaslFile(Properties saslFile) {
         this.saslFile = saslFile;
+    }
+
+    public void setOperFile(Properties operFile) {
+        this.operFile = operFile;
+    }
+
+    public void setTrustcheckFile(Properties trustcheckFile) {
+        this.trustcheckFile = trustcheckFile;
     }
 
     /**
@@ -96,6 +111,10 @@ public final class Config {
     private Properties hostFile;  
     private Properties nickFile;  
     private Properties saslFile;
+    private Properties chanServFile;
+    private Properties authFile;
+    private Properties operFile;
+    private Properties trustcheckFile;
          
     /**
      * Initiales the class
@@ -153,6 +172,10 @@ public final class Config {
         setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
         setNickFile(loadDataFromJSONasProperties("config-nickserv.json", "name", "value"));   
         setSaslFile(loadDataFromJSONasProperties("config-saslserv.json", "name", "value"));
+        setChanServFile(loadDataFromJSONasProperties("config-chanserv.json", "name", "value"));
+        setAuthFile(loadDataFromJSONasProperties("config-authserv.json", "name", "value"));
+        setOperFile(loadDataFromJSONasProperties("config-operserv.json", "name", "value"));
+        setTrustcheckFile(loadDataFromJSONasProperties("config-trustcheck.json", "name", "value"));
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 
@@ -221,5 +244,34 @@ public final class Config {
     public void setBadwordFile(Properties badwordFile) {
         this.badwordFile = badwordFile;
     }
+
+    /**
+     * @return the chanServFile
+     */
+    public Properties getChanServFile() {
+        return chanServFile;
+    }
+
+    /**
+     * @param chanServFile the chanServFile to set
+     */
+    public void setChanServFile(Properties chanServFile) {
+        this.chanServFile = chanServFile;
+    }
+
+    /**
+     * @return the authFile
+     */
+    public Properties getAuthFile() {
+        return authFile;
+    }
+
+    /**
+     * @param authFile the authFile to set
+     */
+    public void setAuthFile(Properties authFile) {
+        this.authFile = authFile;
+    }
+
     private static final Logger LOG = Logger.getLogger(Config.class.getName());
 }

@@ -67,6 +67,51 @@ public class Userflags {
         return (flags & flag.value) != 0;
     }
 
+    // Channel flag bitmasks (used by ChanServ channel settings)
+    public enum ChannelFlag {
+        AUTOOP('a', 0x0001),
+        BITCH('b', 0x0002),
+        AUTOLIMIT('c', 0x0004),
+        ENFORCE('e', 0x0008),
+        FORCETOPIC('f', 0x0010),
+        AUTOVOICE('g', 0x0020),
+        INFO('i', 0x0040),
+        JOINED('j', 0x0080),
+        KNOWNONLY('k', 0x0100),
+        PROTECT('p', 0x0200),
+        NOINFO('s', 0x0400),
+        TOPICSAVE('t', 0x0800),
+        VOICEALL('v', 0x1000),
+        WELCOME('w', 0x2000),
+        SUSPENDED('z', 0x4000),
+        ACHIEVEMENTS('h', 0x8000);
+
+        public final char code;
+        public final int value;
+
+        ChannelFlag(char code, int value) {
+            this.code = code;
+            this.value = value;
+        }
+    }
+
+    private static final Map<Character, ChannelFlag> CHANNELFLAG_MAP;
+    static {
+        Map<Character, ChannelFlag> map = new HashMap<>();
+        for (ChannelFlag flag : ChannelFlag.values()) {
+            map.put(flag.code, flag);
+        }
+        CHANNELFLAG_MAP = Collections.unmodifiableMap(map);
+    }
+
+    public static ChannelFlag channelFlagFromChar(char c) {
+        return CHANNELFLAG_MAP.get(c);
+    }
+
+    public static boolean hasChannelFlag(int flags, ChannelFlag flag) {
+        return (flags & flag.value) != 0;
+    }
+
     
     public enum Flag {
         INACTIVE('I', 0x0001),

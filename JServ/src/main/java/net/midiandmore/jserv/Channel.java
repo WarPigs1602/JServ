@@ -24,6 +24,7 @@ public final class Channel {
     private final List<String> op = new ArrayList<>();
     private final List<String> voice = new ArrayList<>();
     private final Map<String, Long> lastJoin = new HashMap<>();
+    private Long createdTimestamp;
     private static final Logger LOG = Logger.getLogger(Channel.class.getName());
 
     public Channel(String name, String modes, String[] users) {
@@ -58,6 +59,8 @@ public final class Channel {
     public List<String> getOp() { return Collections.unmodifiableList(op); }
     public List<String> getVoice() { return Collections.unmodifiableList(voice); }
     public Map<String, Long> getLastJoin() { return lastJoin; }
+    public Long getCreatedTimestamp() { return createdTimestamp; }
+    public void setCreatedTimestamp(Long timestamp) { this.createdTimestamp = timestamp; }
 
     /**
      * @param modes the modes to set

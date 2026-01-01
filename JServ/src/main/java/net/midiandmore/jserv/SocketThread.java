@@ -20,10 +20,19 @@ public final class SocketThread implements Runnable, Software {
     private final long serverStartTime = System.currentTimeMillis() / 1000;
 
     protected void joinChannel(String channel, String numeric, String service) {
+        // Use timestamp from burst if available, otherwise use current time
+        long timestamp = time();
+        if (getBursts().containsKey(channel.toLowerCase())) {
+            Burst burstData = getBursts().get(channel.toLowerCase());
+            if (burstData.getTime() > 0) {
+                timestamp = burstData.getTime();
+            }
+        }
+        
         if (getChannel().containsKey(channel.toLowerCase())) {
-            sendText("%s J %s %d", service, channel, time());
+            sendText("%s J %s %d", service, channel, timestamp);
         } else {
-            sendText("%s C %s %d", service, channel, time());
+            sendText("%s C %s %d", service, channel, timestamp);
         }
         sendText("%s M %s +o %s", numeric, channel, service);
     }
@@ -1152,26 +1161,71 @@ public final class SocketThread implements Runnable, Software {
                         }
                         
                         sendText("%s EA", jnumeric);
-                        System.out.printf("Joining %d channels for the services...\r\n", list.size());
+                        System.out.printf("Sending BURST for %d channels for the services...\r\n", list.size());
                         var bursts = getBursts().keySet();
                         for (var burst : bursts) {
-                            var nicks1 = getBursts().get(burst).getUsers().toArray();
+                            Burst burstData = getBursts().get(burst);
+                            var nicks1 = burstData.getUsers().toArray();
+                            
+                            // Build comma-separated list of users with their modes
+                            StringBuilder userList = new StringBuilder();
+                            for (int i = 0; i < nicks1.length; i++) {
+                                if (i > 0) userList.append(",");
+                                String userEntry = String.valueOf(nicks1[i]);
+                                
+                                // Services get op automatically in their burst
+                                if (userEntry.startsWith(jnumeric) && !userEntry.contains(":")) {
+                                    userList.append(userEntry).append(":o");
+                                } else {
+                                    userList.append(userEntry);
+                                }
+                            }
+                            
+                            // Get timestamp from burst data or use current time
+                            long timestamp = burstData.getTime() > 0 ? burstData.getTime() : time();
+                            
+                            // Get modes from burst data
+                            String modes = burstData.getModes();
+                            
+                            // Send BURST command for the channel
+                            // Format: <numeric> B <channel> <timestamp> [+modes] :<users>
+                            if (modes != null && !modes.isEmpty() && modes.startsWith("+")) {
+                                sendText("%s B %s %d %s :%s", jnumeric, burst, timestamp, modes, userList.toString());
+                            } else {
+                                sendText("%s B %s %d :%s", jnumeric, burst, timestamp, userList.toString());
+                            }
+                            
+                            System.out.printf("BURST: %s with %d users at timestamp %d\r\n", burst, nicks1.length, timestamp);
+                            
+                            // Create local channel object after sending BURST
+                            String[] usersArray = new String[nicks1.length];
+                            for (int i = 0; i < nicks1.length; i++) {
+                                usersArray[i] = String.valueOf(nicks1[i]);
+                            }
+                            Channel newChannel = new Channel(burst, modes != null ? modes : "", usersArray);
+                            newChannel.setCreatedTimestamp(timestamp);
+                            getChannel().put(burst.toLowerCase(), newChannel);
+                            
+                            // Add channel to each user's channel list
+                            for (var userObj : nicks1) {
+                                String userEntry = String.valueOf(userObj);
+                                String userNumeric;
+                                if (userEntry.endsWith(":o") || userEntry.endsWith(":v") || userEntry.endsWith(":b")) {
+                                    userNumeric = userEntry.substring(0, userEntry.length() - 2);
+                                } else if (userEntry.contains(":")) {
+                                    userNumeric = userEntry.split(":")[0];
+                                } else {
+                                    userNumeric = userEntry;
+                                }
+                                if (getUsers().containsKey(userNumeric)) {
+                                    getUsers().get(userNumeric).addChannel(burst.toLowerCase());
+                                }
+                            }
+                            
+                            // Process post-burst actions for ChanServ (AAF)
                             for (var nameObj : nicks1) {
                                 var name = String.valueOf(nameObj);
-                                if (name.startsWith(jnumeric)) {
-                                    joinChannel(burst, jnumeric, name);
-                                    
-                                    // Set channel modes if defined
-                                    String modes = getBursts().get(burst).getModes();
-                                    if (modes != null && !modes.isEmpty() && modes.startsWith("+")) {
-                                        sendText("%s M %s %s", name, burst, modes);
-                                    }
-                                    
-                                    // Don't set topic here - wait for server's topic message
-                                    // Topic will be set automatically if channel has no topic after burst
-                                    
-                                    // Grant op/voice or ban+kick users, but only if this is ChanServ (AAF)
-                                    if (name.endsWith("AAF")) {
+                                if (name.startsWith(jnumeric) && name.endsWith("AAF")) {
                                         // Get the Channel object to check if users are actually in the channel
                                         Channel channelObj = getChannel().get(burst);
                                         if (channelObj != null) {
@@ -1275,10 +1329,10 @@ public final class SocketThread implements Runnable, Software {
                                                 }
                                             }
                                         }
+                                        break; // Only process once per channel for ChanServ
                                     }
                                 }
                             }
-                        }
                         
                         // After all channels joined, check if topics need to be set
                         System.out.println("Checking stored topics...");
@@ -1350,7 +1404,17 @@ public final class SocketThread implements Runnable, Software {
                         var channel = elem[2].toLowerCase();
                         var modes = elem[4];
                         var names = elem[6].split(",");
-                        getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
+                        Channel newChannel = new Channel(channel, modes, names);
+                        // Set creation timestamp from database if channel is registered
+                        String createdTs = getMi().getDb().getChannel("created", channel);
+                        if (createdTs != null && !createdTs.isEmpty()) {
+                            try {
+                                newChannel.setCreatedTimestamp(Long.parseLong(createdTs));
+                            } catch (NumberFormatException e) {
+                                LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
+                            }
+                        }
+                        getChannel().put(channel.toLowerCase(), newChannel);
                         // Add channel to each user's channel list
                         for (var userName : names) {
                             var userNumeric = userName.split(":")[0]; // Strip mode suffixes
@@ -1362,7 +1426,17 @@ public final class SocketThread implements Runnable, Software {
                         var channel = elem[2].toLowerCase();
                         var modes = elem[4];
                         var names = elem[5].split(",");
-                        getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
+                        Channel newChannel = new Channel(channel, modes, names);
+                        // Set creation timestamp from database if channel is registered
+                        String createdTs = getMi().getDb().getChannel("created", channel);
+                        if (createdTs != null && !createdTs.isEmpty()) {
+                            try {
+                                newChannel.setCreatedTimestamp(Long.parseLong(createdTs));
+                            } catch (NumberFormatException e) {
+                                LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
+                            }
+                        }
+                        getChannel().put(channel.toLowerCase(), newChannel);
                         // Add channel to each user's channel list
                         for (var userName : names) {
                             var userNumeric = userName.split(":")[0]; // Strip mode suffixes
@@ -1374,7 +1448,17 @@ public final class SocketThread implements Runnable, Software {
                         var channel = elem[2].toLowerCase();
                         var modes = "";
                         var names = elem[4].split(",");
-                        getChannel().put(channel.toLowerCase(), new Channel(channel, modes, names));
+                        Channel newChannel = new Channel(channel, modes, names);
+                        // Set creation timestamp from database if channel is registered
+                        String createdTs = getMi().getDb().getChannel("created", channel);
+                        if (createdTs != null && !createdTs.isEmpty()) {
+                            try {
+                                newChannel.setCreatedTimestamp(Long.parseLong(createdTs));
+                            } catch (NumberFormatException e) {
+                                LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
+                            }
+                        }
+                        getChannel().put(channel.toLowerCase(), newChannel);
                         // Add channel to each user's channel list
                         for (var userName : names) {
                             var userNumeric = userName.split(":")[0]; // Strip mode suffixes

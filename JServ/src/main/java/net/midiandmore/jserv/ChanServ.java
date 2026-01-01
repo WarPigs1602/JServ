@@ -2347,6 +2347,17 @@ public final class ChanServ extends AbstractModule implements Software {
                                 count++;
                             }
                             
+                            // Set channel creation timestamp from database (index 8 = created)
+                            if (chanData.length > 8 && chanData[8] != null && !chanData[8].isEmpty()) {
+                                try {
+                                    long createdTimestamp = Long.parseLong(chanData[8]);
+                                    burst.setTime(createdTimestamp);
+                                    getLogger().log(Level.INFO, "Set channel creation timestamp for {0}: {1}", new Object[]{chanName, createdTimestamp});
+                                } catch (NumberFormatException e) {
+                                    getLogger().log(Level.WARNING, "Invalid created timestamp for channel {0}: {1}", new Object[]{chanName, chanData[8]});
+                                }
+                            }
+                            
                             // Set channel modes if forcemodes is set
                             if (chanData.length > 2 && chanData[2] != null && !chanData[2].isEmpty()) {
                                 String forcedModes = chanData[2];

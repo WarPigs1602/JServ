@@ -28,7 +28,7 @@ public final class NickServ implements Software, Module {
     private static final int DEFAULT_GLINE_ATTEMPTS = 3;
     private static final int DEFAULT_GLINE_DURATION = 600; // seconds
     private static final String OPS_CHANNEL = "#twilightzone";
-    private static final String DEFAULT_AUTH_SERVICE = "M@services.midiandmore.net";
+    private static final String DEFAULT_AUTH_SERVICE = "AuthServ";
     
     private boolean enabled = false;
     private JServ jserv;
@@ -399,7 +399,7 @@ public final class NickServ implements Software, Module {
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
                 "If this is your nickname, please authenticate now using:");
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "    /msg %s AUTH <username> <password>", authService);
+                "    /msg %s IDENTIFY <username> <password>", authService);
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
                 "If this is not your nickname, please change it now using: /nick newnick");
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
@@ -590,7 +590,7 @@ public final class NickServ implements Software, Module {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
                         "If this is your nickname, please authenticate now using:");
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "    /msg %s AUTH <username> <password>", authService);
+                        "    /msg %s IDENTIFY <username> <password>", authService);
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
                         "If this is not your nickname, please change it now using: /nick newnick");
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
@@ -789,7 +789,7 @@ public final class NickServ implements Software, Module {
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
                 "");
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "To authenticate, use: /msg %s AUTH <username> <password>", authService);
+                "To authenticate, use: /msg %s IDENTIFY <username> <password>", authService);
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
                 "");
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,

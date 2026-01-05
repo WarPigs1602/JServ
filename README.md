@@ -2,6 +2,8 @@
 
 **JServ** is a robust Java-based service that integrates essential IRC modules—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ**, and **OperServ**—into a single, efficient package. Designed specifically for use with **JIRCd** (Java IRC Daemon), JServ streamlines spam detection, hidden host management, nickname protection, authentication, channel management, and operator services for IRC networks.
 
+**Lineage:** Derived from NewServ (GPLv2), Copyright (C) 2002-2013 David Mansell (splidge) and the QuakeNet development team. Source: https://codeberg.org/quakenet/newserv
+
 ## Key Features
 
 ### Modular Architecture

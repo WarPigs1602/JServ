@@ -839,6 +839,7 @@ public final class SocketThread implements Runnable, Software {
      * Simple: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
      * With account: AA N DevPigs 1 1766923017 warpigs localhost +r Source:1766918427:1780715 B]AAAB AAAAG :Source
      * With oper+account+hidden: AA N DevPigs__ 1 1766923017 warpigs localhost +irohz opername Source:1766918427:1780715 S@urce B]AAAB AAAAG :Source
+     * Full flags: AA N WarPigs 1 1771005495 ~WarPigs 127.0.0.1 +oiwsrh WarPigs WarPigs:1771005382:1780713 W@rPigs B]AAAB AAAAC :...
      * 
      * The numeric is always the second-to-last field before " :" (realname)
      * 
@@ -883,6 +884,7 @@ public final class SocketThread implements Runnable, Software {
      * Simple: AB N WarPigs 1 1766478053 warpigs localhost +i B]AAAB ABAAA :realname
      * With account: AA N DevPigs 1 1766923017 warpigs localhost +r Source:1766918427:1780715 B]AAAB AAAAG :Source
      * With oper+account+hidden: AA N DevPigs__ 1 1766923017 warpigs localhost +irohz opername Source:1766918427:1780715 S@urce B]AAAB AAAAG :Source
+     * Full flags: AA N WarPigs 1 1771005495 ~WarPigs 127.0.0.1 +oiwsrh WarPigs WarPigs:1771005382:1780713 W@rPigs B]AAAB AAAAC :...
      */
     private void processNCommand(String[] elem, String rawLine, String jnumeric) {
         // Critical section: Check for duplicates, parse info, and register user
@@ -902,60 +904,91 @@ public final class SocketThread implements Runnable, Software {
      * Returns true if registration succeeded, false if user was killed/handled
      * 
      * Variable P10 N fields:
-     * - elem[7] contains modes (+i, +r, +o, +h, +z, +k, +x)
+     * - elem[7] contains modes (+i, +r, +o, +h, +z, +k, +x, +w, +s)
      * - If +o: elem[8] = oper name
      * - If +r: account info field (format: AccountName:timestamp:timestamp)
      * - If +h: hidden host field
      * - Base64 IP and numeric are always the last two fields before ":"
+     * 
+     * Example: AA N WarPigs 1 1771005495 ~WarPigs 127.0.0.1 +oiwsrh WarPigs WarPigs:1771005382:1780713 W@rPigs B]AAAB AAAAC :...
+     *   elem[8] = "WarPigs" (oper name, because +o)
+     *   elem[9] = "WarPigs:1771005382:1780713" (account, because +r)
+     *   elem[10] = "W@rPigs" (hidden host, because +h)
+     *   elem[11] = "B]AAAB" (base64 IP)
+     *   elem[12] = "AAAAC" (numeric)
      */
     private boolean checkAndRegisterUser(String[] elem, String rawLine, String jnumeric) {
+        boolean debugMode = getMi() != null && getMi().getConfig() != null && 
+            "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
+        
         // Parse user info
-        // elem[2] = nickname (WarPigs)
-        // elem[7] = user modes (+i, +r for authenticated, +k for service, +x for hidden host, +h for hiddenhost, +o for oper)
-        // User token/numeric is extracted from rawLine (last element before " :")
-        // Account info can be at elem[8] or elem[9], depending on whether there are additional fields
         String nickname = elem[2];
         var priv = elem[7].contains("r");  // +r means user is authenticated
         var service = elem[7].contains("k");
         var x = elem[7].contains("x");
         var h = elem[7].contains("h");  // +h means user has a hidden host
-        var o = elem[7].contains("o");
+        var o = elem[7].contains("o");  // +o means user is an IRC operator
         String acc = null;
         String hiddenHost = null;
         String userToken = extractNumericFromNCommand(rawLine);
         String rawIpField = extractBase64IpFromNCommand(rawLine);
-        // rawIpField can be either P10 base64 IP or a textual IP depending on uplink/format.
-        // normalizeIpString handles both (decodes base64 if needed).
         String decodedIp = normalizeIpString(rawIpField);
         
-        // Extract account name from the field that contains ":" (account:timestamp:timestamp format)
-        // hiddenhost comes directly after account field if +h is set
-        int fieldIndex = 8;
-        
-        // If user is oper (+o), skip the oper name field
-        if (o) {
-            fieldIndex++;
+        if (debugMode) {
+            System.out.printf("[DEBUG N-Command] Nick=%s, Modes=%s, UserToken=%s, RawIP=%s%n", 
+                nickname, elem[7], userToken, rawIpField);
         }
         
+        // P10 N field order after modes:
+        // [opername (if +o)] [account:ts:ts (if +r)] [hiddenhost (if +h)] <base64ip> <numeric> :<realname>
+        int fieldIndex = 8;
+        
+        // If +o is set, oper name is at elem[8]
+        if (o) {
+            if (debugMode && fieldIndex < elem.length) {
+                System.out.printf("[DEBUG N-Command] Oper name at elem[%d]: %s%n", fieldIndex, elem[fieldIndex]);
+            }
+            fieldIndex++;  // Skip oper name field
+        }
+        
+        // If +r is set, look for account field (contains ":" but doesn't start with ":")
         if (priv) {
-            // Search for the field with account info (format: AccountName:timestamp:timestamp)
-            for (int i = fieldIndex; i < elem.length && i < fieldIndex + 4; i++) {
+            // Search within reasonable range for the account field
+            for (int i = fieldIndex; i < elem.length && i < fieldIndex + 5; i++) {
                 if (elem[i].contains(":") && !elem[i].startsWith(":")) {
-                    acc = elem[i].split(":", 2)[0];
+                    String[] accountParts = elem[i].split(":", 2);
+                    acc = accountParts[0];
                     fieldIndex = i + 1;
+                    if (debugMode) {
+                        System.out.printf("[DEBUG N-Command] Account found at elem[%d]: %s (extracted: %s)%n", 
+                            i, elem[i], acc);
+                    }
                     break;
                 }
             }
             if (acc == null) {
                 acc = "";
+                if (debugMode) {
+                    System.out.println("[DEBUG N-Command] Warning: +r flag set but no account field found");
+                }
             }
         } else {
             acc = "";
         }
         
-        // Extract hidden host if +h is set - hiddenhost comes directly after account
+        // If +h is set, hidden host is at next field position
         if (h && fieldIndex < elem.length && !elem[fieldIndex].startsWith(":")) {
             hiddenHost = elem[fieldIndex];
+            if (debugMode) {
+                System.out.printf("[DEBUG N-Command] Hidden host at elem[%d]: %s%n", fieldIndex, hiddenHost);
+            }
+            fieldIndex++;  // Move past hidden host
+        }
+        
+        if (debugMode) {
+            System.out.printf("[DEBUG N-Command] Parsed: Nick=%s, Account=%s, HiddenHost=%s, IP=%s, Token=%s%n",
+                nickname, acc != null ? acc : "(none)", hiddenHost != null ? hiddenHost : "(none)", 
+                decodedIp, userToken);
         }
         
         var hosts = elem[5] + "@" + elem[6];
@@ -1154,6 +1187,34 @@ public final class SocketThread implements Runnable, Software {
                                                     System.out.println("[DEBUG] Added " + user + " with +v to " + chanLower);
                                                 }
                                             }
+                                        }
+                                    }
+                                }
+                                
+                                // Add all connected users to channels they are in (even if not registered in DB)
+                                var onlineUsers = getUsers().keySet();
+                                for (var onlineUser : onlineUsers) {
+                                    Users userData = getUsers().get(onlineUser);
+                                    if (userData.getChannels() != null && userData.getChannels().contains(chanLower)) {
+                                        // Check if this user is already added to burst
+                                        boolean alreadyInBurst = false;
+                                        for (Object obj : getBursts().get(chanLower).getUsers()) {
+                                            String entry = String.valueOf(obj);
+                                            String userInBurst;
+                                            if (entry.contains(":")) {
+                                                userInBurst = entry.split(":")[0];
+                                            } else {
+                                                userInBurst = entry;
+                                            }
+                                            if (userInBurst.equals(onlineUser)) {
+                                                alreadyInBurst = true;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (!alreadyInBurst) {
+                                            getBursts().get(chanLower).getUsers().add(onlineUser);
+                                            System.out.println("[DEBUG] Added unregistered user " + onlineUser + " to " + chanLower);
                                         }
                                     }
                                 }
@@ -1400,54 +1461,46 @@ public final class SocketThread implements Runnable, Software {
                         processNCommand(elem, content, jnumeric);
                     } else if (elem[1].equals("N") && elem.length == 4) {
                         getUsers().get(elem[0]).setNick(elem[2]);
-                    } else if (elem[1].equals("B") && elem.length == 7) {
-                        var channel = elem[2].toLowerCase();
-                        var modes = elem[4];
-                        var names = elem[6].split(",");
-                        Channel newChannel = new Channel(channel, modes, names);
-                        // Set creation timestamp from database if channel is registered
-                        String createdTs = getMi().getDb().getChannel("created", channel);
-                        if (createdTs != null && !createdTs.isEmpty()) {
-                            try {
-                                newChannel.setCreatedTimestamp(Long.parseLong(createdTs));
-                            } catch (NumberFormatException e) {
-                                LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
-                            }
-                        }
-                        getChannel().put(channel.toLowerCase(), newChannel);
-                        // Add channel to each user's channel list
-                        for (var userName : names) {
-                            var userNumeric = userName.split(":")[0]; // Strip mode suffixes
-                            if (getUsers().containsKey(userNumeric)) {
-                                getUsers().get(userNumeric).addChannel(channel);
-                            }
-                        }
-                    } else if (elem[1].equals("B") && elem.length >= 6) {
-                        var channel = elem[2].toLowerCase();
-                        var modes = elem[4];
-                        var names = elem[5].split(",");
-                        Channel newChannel = new Channel(channel, modes, names);
-                        // Set creation timestamp from database if channel is registered
-                        String createdTs = getMi().getDb().getChannel("created", channel);
-                        if (createdTs != null && !createdTs.isEmpty()) {
-                            try {
-                                newChannel.setCreatedTimestamp(Long.parseLong(createdTs));
-                            } catch (NumberFormatException e) {
-                                LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
-                            }
-                        }
-                        getChannel().put(channel.toLowerCase(), newChannel);
-                        // Add channel to each user's channel list
-                        for (var userName : names) {
-                            var userNumeric = userName.split(":")[0]; // Strip mode suffixes
-                            if (getUsers().containsKey(userNumeric)) {
-                                getUsers().get(userNumeric).addChannel(channel);
-                            }
-                        }
-                    } else if (elem[1].equals("B") && elem.length == 5) {
+                    } else if (elem[1].equals("B") && elem.length >= 5) {
+                        // P10 Burst format: <numeric> B <channel> <timestamp> [+flags] <users...> [:<bans/exceptions>]
+                        // With modes: elem[4]=+flags, users start at elem[5], stop at first token with ':' prefix
+                        // Without modes: users start at elem[4], stop at first token with ':' prefix
+                        // Users can be: NUMERIC or NUMERIC:modes (comma or space separated)
+                        
                         var channel = elem[2].toLowerCase();
                         var modes = "";
-                        var names = elem[4].split(",");
+                        int userStartIndex;
+                        
+                        if (elem.length > 4 && elem[4].startsWith("+")) {
+                            // Modes present: elem[4]=+flags, users start at elem[5]
+                            modes = elem[4];
+                            userStartIndex = 5;
+                        } else {
+                            // No modes: users start at elem[4]
+                            userStartIndex = 4;
+                        }
+                        
+                        // Collect user tokens until we hit ban/exception list (marked with ':' prefix)
+                        StringBuilder userListBuilder = new StringBuilder();
+                        for (int i = userStartIndex; i < elem.length; i++) {
+                            String token = elem[i];
+                            // Stop at ban/exception list marker (tokens starting with ':')
+                            if (token.startsWith(":")) {
+                                break;
+                            }
+                            if (userListBuilder.length() > 0) {
+                                userListBuilder.append(" ");
+                            }
+                            userListBuilder.append(token);
+                        }
+                        
+                        // Parse user string (comma or space separated)
+                        String[] names = new String[0];
+                        String userListStr = userListBuilder.toString().trim();
+                        if (!userListStr.isEmpty()) {
+                            names = userListStr.contains(",") ? userListStr.split(",") : userListStr.split(" ");
+                        }
+                        
                         Channel newChannel = new Channel(channel, modes, names);
                         // Set creation timestamp from database if channel is registered
                         String createdTs = getMi().getDb().getChannel("created", channel);
@@ -1459,6 +1512,7 @@ public final class SocketThread implements Runnable, Software {
                             }
                         }
                         getChannel().put(channel.toLowerCase(), newChannel);
+                        
                         // Add channel to each user's channel list
                         for (var userName : names) {
                             var userNumeric = userName.split(":")[0]; // Strip mode suffixes

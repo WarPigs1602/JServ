@@ -32,12 +32,12 @@ public final class Channel {
         this.modes = modes;
         this.moderated = modes.contains("m");
         this.users = new ArrayList<>();
-        Collections.addAll(this.users, users);
         for (String nick : users) {
             boolean voice = false, op = false;
+            String cleanNick = nick;
             if (nick.contains(":")) {
                 String[] elem = nick.split(":", 2);
-                nick = elem[0];
+                cleanNick = elem[0];
                 for (char status : elem[1].toCharArray()) {
                     switch (status) {
                         case 'o': op = true; break;
@@ -45,9 +45,11 @@ public final class Channel {
                     }
                 }
             }
-            if (op) this.op.add(nick);
-            if (voice) this.voice.add(nick);
-            this.lastJoin.put(nick, System.currentTimeMillis() / 1000);
+            // Store the clean nickname (without mode suffixes) in the users list
+            this.users.add(cleanNick);
+            if (op) this.op.add(cleanNick);
+            if (voice) this.voice.add(cleanNick);
+            this.lastJoin.put(cleanNick, System.currentTimeMillis() / 1000);
         }
     }
 

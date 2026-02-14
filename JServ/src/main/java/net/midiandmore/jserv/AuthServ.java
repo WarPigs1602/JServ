@@ -28,6 +28,7 @@ public final class AuthServ implements Software, Module {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String PW_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%^&*";
     private static final int PASSWORD_MAX_LENGTH = 11; // DB schema: chanserv.users.password varchar(11)
+    private static final long CLEANUP_INTERVAL = 86400000; // 24 hours in milliseconds
 
     private static final Logger LOG = Logger.getLogger(AuthServ.class.getName());
 
@@ -39,6 +40,7 @@ public final class AuthServ implements Software, Module {
     private String numeric;
     private String numericSuffix;
     private EmailService emailService;
+    private java.util.Timer cleanupTimer;
 
     public AuthServ(JServ jserv, SocketThread socketThread, PrintWriter pw, BufferedReader br) {
         initialize(jserv, socketThread, pw, br);
@@ -82,6 +84,9 @@ public final class AuthServ implements Software, Module {
                 resolvedDescription);
 
         enabled = true;
+        
+        // Start automatic cleanup timer
+        startCleanupTimer();
     }
 
     @Override
@@ -1004,6 +1009,10 @@ public final class AuthServ implements Software, Module {
 
     @Override
     public void shutdown() {
+        if (cleanupTimer != null) {
+            cleanupTimer.cancel();
+            cleanupTimer = null;
+        }
         if (enabled) {
             disable();
         }
@@ -1022,5 +1031,141 @@ public final class AuthServ implements Software, Module {
         }
         bursts.get(key).getUsers().add(serverNumeric + getNumericSuffix());
         LOG.log(Level.INFO, "AuthServ registered burst channel: {0}", channel);
+    }
+    
+    /**
+     * Start automatic cleanup timer (runs every 24 hours)
+     */
+    private void startCleanupTimer() {
+        if (cleanupTimer != null) {
+            cleanupTimer.cancel();
+        }
+        
+        // Perform initial cleanup immediately on startup
+        new Thread(() -> {
+            try {
+                Thread.sleep(5000); // Wait 5 seconds for initialization
+                performCleanup();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "AuthServ-InitialCleanup").start();
+        
+        cleanupTimer = new java.util.Timer("AuthServ-Cleanup", true);
+        cleanupTimer.scheduleAtFixedRate(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                performCleanup();
+            }
+        }, CLEANUP_INTERVAL, CLEANUP_INTERVAL); // Run every 24 hours
+        
+        LOG.log(Level.INFO, "AuthServ cleanup timer started (interval: {0}ms)", CLEANUP_INTERVAL);
+    }
+    
+    /**
+     * Perform automatic account cleanup
+     * - Delete inactive non-privileged accounts that haven't authenticated in X days
+     * - Excludes: OPER, STAFF, ADMIN, DEV, CLEANUPEXEMPT, and currently logged in users
+     */
+    private void performCleanup() {
+        long startTime = System.currentTimeMillis();
+        int deletedCount = 0;
+        
+        LOG.log(Level.INFO, "Starting AuthServ account cleanup (excluding privileged accounts)");
+        
+        try {
+            // Get cleanup days configuration (default: 90)
+            int cleanupDays = 90;
+            try {
+                String cleanupDaysStr = mi.getConfig().getConfigFile().getProperty("account_cleanup_days", "90");
+                cleanupDays = Integer.parseInt(cleanupDaysStr);
+            } catch (NumberFormatException e) {
+                LOG.log(Level.WARNING, "Invalid account_cleanup_days value, using default: 90");
+            }
+            
+            // Get currently logged in users
+            java.util.Set<String> loggedInUsers = new java.util.HashSet<>();
+            for (Users user : st.getUsers().values()) {
+                if (user.getAccount() != null && !user.getAccount().isEmpty()) {
+                    loggedInUsers.add(user.getAccount().toLowerCase());
+                }
+            }
+            
+            // Delete inactive users (excluding privileged accounts, CLEANUPEXEMPT users and currently logged in users)
+            deletedCount = mi.getDb().deleteInactiveChanServUsers(cleanupDays, loggedInUsers);
+            
+            long duration = System.currentTimeMillis() - startTime;
+            
+            // Log and notify opers
+            String message = String.format("AuthServ cleanup completed in %dms: Deleted %d inactive non-privileged account(s) (inactive > %d days)",
+                duration, deletedCount, cleanupDays);
+            LOG.log(Level.INFO, message);
+            
+            if (deletedCount > 0) {
+                sendOperNotice("[AuthServ Cleanup] " + message);
+            }
+            
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "AuthServ cleanup failed", e);
+            sendOperNotice("[AuthServ Cleanup] FAILED: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send notification to logged-in privileged users (opers/staff/admin/dev) with oper mode
+     * @param message Message to send
+     */
+    private void sendOperNotice(String message) {
+        if (numeric == null || numericSuffix == null) {
+            LOG.log(Level.WARNING, "Cannot send oper notice: numeric not set");
+            return;
+        }
+        
+        if (st == null || st.getUsers() == null || st.getUsers().isEmpty()) {
+            LOG.log(Level.WARNING, "Cannot send oper notice: no users available");
+            return;
+        }
+        
+        if (mi == null || mi.getDb() == null) {
+            LOG.log(Level.WARNING, "Cannot send oper notice: database not available");
+            return;
+        }
+        
+        String myNumeric = numeric + numericSuffix;
+        int noticesSent = 0;
+        
+        // Iterate through all connected users
+        for (var entry : st.getUsers().entrySet()) {
+            String userNumeric = entry.getKey();
+            Users user = entry.getValue();
+            
+            // Skip users without account or oper mode
+            if (user == null || user.getAccount() == null || user.getAccount().isEmpty()) {
+                continue;
+            }
+            
+            if (!user.isOper()) {
+                continue;
+            }
+            
+            // Check if user has privileged flags
+            String account = user.getAccount();
+            int flags = mi.getDb().getFlags(account);
+            
+            boolean isPrivileged = Userflags.hasFlag(flags, Userflags.Flag.OPER)
+                    || Userflags.hasFlag(flags, Userflags.Flag.STAFF)
+                    || Userflags.hasFlag(flags, Userflags.Flag.ADMIN)
+                    || Userflags.hasFlag(flags, Userflags.Flag.DEV);
+            
+            if (isPrivileged) {
+                // Send private NOTICE to this user
+                sendText("%s O %s :%s", myNumeric, userNumeric, message);
+                noticesSent++;
+            }
+        }
+        
+        if (noticesSent > 0) {
+            LOG.log(Level.INFO, "Oper notice sent to {0} privileged user(s)", noticesSent);
+        }
     }
 }

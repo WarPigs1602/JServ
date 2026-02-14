@@ -1402,6 +1402,12 @@ public final class ChanServ extends AbstractModule implements Software {
             return null;
         }
 
+        // Check if user is an IRC Operator - they get OWNER level access via override
+        Users user = getSt().getUsers().get(senderNumeric);
+        if (user != null && isOperAccount(user)) {
+            return Userflags.QCUFlag.OWNER;
+        }
+
         String chanIdStr = mi.getDb().getChannel("id", channel);
         if (chanIdStr == null) {
             sendNotice(senderNumeric, "Channel " + channel + " is not registered.");
@@ -1900,6 +1906,12 @@ public final class ChanServ extends AbstractModule implements Software {
         if (senderAccount == null || senderAccount.isEmpty()) {
             sendNotice(senderNumeric, "You must be authenticated to use this command.");
             return false;
+        }
+
+        // Check if user is an IRC Operator - they can override all channel access restrictions
+        Users user = getSt().getUsers().get(senderNumeric);
+        if (user != null && isOperAccount(user)) {
+            return true;
         }
 
         // Check if user is currently OP in the channel - OPs can do everything except MASTER/OWNER commands

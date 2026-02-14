@@ -274,6 +274,8 @@ public class ModuleManager {
             return jserv.getConfig().getAuthFile().getProperty(property);
         } else if (moduleName.equalsIgnoreCase("OperServ")) {
             return jserv.getConfig().getOperFile().getProperty(property);
+        } else if (moduleName.equalsIgnoreCase("StatsServ")) {
+            return jserv.getConfig().getStatsServFile().getProperty(property);
         }
         return null;
     }

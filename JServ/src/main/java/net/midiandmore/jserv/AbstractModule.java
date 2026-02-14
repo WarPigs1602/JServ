@@ -149,4 +149,62 @@ public abstract class AbstractModule implements Module {
     protected Logger getLogger() {
         return Logger.getLogger(getClass().getName());
     }
+    
+    /**
+     * Send notification to logged-in privileged users (opers/staff/admin/dev) with oper mode
+     * @param message Message to send
+     */
+    protected void sendOperNotice(String message) {
+        if (numeric == null || numericSuffix == null) {
+            getLogger().log(Level.WARNING, "Cannot send oper notice: numeric not set");
+            return;
+        }
+        
+        if (st == null || st.getUsers() == null || st.getUsers().isEmpty()) {
+            getLogger().log(Level.WARNING, "Cannot send oper notice: no users available");
+            return;
+        }
+        
+        if (mi == null || mi.getDb() == null) {
+            getLogger().log(Level.WARNING, "Cannot send oper notice: database not available");
+            return;
+        }
+        
+        String myNumeric = numeric + numericSuffix;
+        int noticesSent = 0;
+        
+        // Iterate through all connected users
+        for (var entry : st.getUsers().entrySet()) {
+            String userNumeric = entry.getKey();
+            Users user = entry.getValue();
+            
+            // Skip users without account or oper mode
+            if (user == null || user.getAccount() == null || user.getAccount().isEmpty()) {
+                continue;
+            }
+            
+            if (!user.isOper()) {
+                continue;
+            }
+            
+            // Check if user has privileged flags
+            String account = user.getAccount();
+            int flags = mi.getDb().getFlags(account);
+            
+            boolean isPrivileged = Userflags.hasFlag(flags, Userflags.Flag.OPER)
+                    || Userflags.hasFlag(flags, Userflags.Flag.STAFF)
+                    || Userflags.hasFlag(flags, Userflags.Flag.ADMIN)
+                    || Userflags.hasFlag(flags, Userflags.Flag.DEV);
+            
+            if (isPrivileged) {
+                // Send private NOTICE to this user
+                sendText("%s O %s :%s", myNumeric, userNumeric, message);
+                noticesSent++;
+            }
+        }
+        
+        if (noticesSent > 0) {
+            getLogger().log(Level.INFO, "Oper notice sent to {0} privileged user(s)", noticesSent);
+        }
+    }
 }

@@ -5245,5 +5245,142 @@ public final class Database {
             .replace("?", ".");
         return userHost.matches(regex);
     }
+
+    /**
+     * Deletes inactive ChanServ users who haven't authenticated in the specified number of days
+     * Excludes privileged accounts (OPER, STAFF, ADMIN, DEV) from deletion
+     * @param inactiveDays Number of days of inactivity threshold
+     * @param currentLoggedInUsers Set of currently logged in usernames (lowercase)
+     * @return Number of users deleted
+     */
+    public int deleteInactiveChanServUsers(int inactiveDays, java.util.Set<String> currentLoggedInUsers) {
+        int tries = 0;
+        int deletedCount = 0;
+
+        while (tries < 2) {
+            ensureConnection();
+            try (Connection conn = getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    // Calculate the threshold timestamp (current time - inactiveDays)
+                    long thresholdTime = (System.currentTimeMillis() / 1000) - (inactiveDays * 24L * 60L * 60L);
+
+                    // Find inactive users (exclude privileged accounts: OPER, STAFF, ADMIN, DEV)
+                    java.util.List<String> inactiveUsers = new java.util.ArrayList<>();
+                    try (var selectStmt = conn.prepareStatement(
+                        "SELECT username, flags FROM chanserv.users WHERE lastauth < ? AND lastauth > 0"
+                    )) {
+                        selectStmt.setLong(1, thresholdTime);
+                        try (var rs = selectStmt.executeQuery()) {
+                            while (rs.next()) {
+                                String username = rs.getString("username");
+                                int flags = rs.getInt("flags");
+                                
+                                // Skip if user is currently logged in
+                                if (currentLoggedInUsers.contains(username.toLowerCase())) {
+                                    continue;
+                                }
+                                
+                                // Skip privileged accounts: OPER (0x0020), STAFF (0x0008), ADMIN (0x0200), DEV (0x0040)
+                                boolean isPrivileged = (flags & 0x0020) != 0 || // OPER
+                                                      (flags & 0x0008) != 0 || // STAFF
+                                                      (flags & 0x0200) != 0 || // ADMIN
+                                                      (flags & 0x0040) != 0;   // DEV
+                                
+                                if (!isPrivileged) {
+                                    inactiveUsers.add(username);
+                                }
+                            }
+                        }
+                    }
+
+                    // Delete inactive users and their channel access
+                    if (!inactiveUsers.isEmpty()) {
+                        // First, delete channel access entries
+                        try (var deleteChanUsersStmt = conn.prepareStatement(
+                            "DELETE FROM chanserv.chanusers WHERE userid IN " +
+                            "(SELECT id FROM chanserv.users WHERE username = ?)"
+                        )) {
+                            for (String username : inactiveUsers) {
+                                deleteChanUsersStmt.setString(1, username);
+                                deleteChanUsersStmt.executeUpdate();
+                            }
+                        }
+
+                        // Then, delete the users themselves
+                        try (var deleteUsersStmt = conn.prepareStatement(
+                            "DELETE FROM chanserv.users WHERE username = ?"
+                        )) {
+                            for (String username : inactiveUsers) {
+                                deleteUsersStmt.setString(1, username);
+                                deleteUsersStmt.executeUpdate();
+                                deletedCount++;
+                                LOG.info("Deleted inactive ChanServ user: " + username);
+                            }
+                        }
+                    }
+
+                    conn.commit();
+
+                    if (deletedCount > 0) {
+                        LOG.info("Deleted " + deletedCount + " inactive ChanServ users (inactive > " + inactiveDays + " days)");
+                    }
+
+                    return deletedCount;
+
+                } catch (SQLException ex) {
+                    conn.rollback();
+                    throw ex;
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+
+            } catch (SQLException ex) {
+                if (tries == 0) {
+                    LOG.warning(RECONNECT_MSG + ex.getMessage());
+                    initializeConnectionPool();
+                } else {
+                    LOG.severe("Failed to delete inactive ChanServ users: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+            tries++;
+        }
+        return deletedCount;
+    }
+
+    /**
+     * Gets the creation timestamp for a channel from the database
+     * @param channelName The name of the channel
+     * @return The timestamp when the channel was created, or 0 if not found
+     */
+    public long getChannelTimestamp(String channelName) {
+        int tries = 0;
+        while (tries < 2) {
+            ensureConnection();
+            String sql = "SELECT created FROM chanserv.channels WHERE LOWER(name) = LOWER(?)";
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, channelName);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong("created");
+                    }
+                }
+                return 0;
+            } catch (SQLException ex) {
+                if (tries == 0) {
+                    LOG.warning(RECONNECT_MSG + ex.getMessage());
+                    initializeConnectionPool();
+                } else {
+                    LOG.severe("Failed to get channel timestamp: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+            tries++;
+        }
+        return 0;
+    }
 }
 

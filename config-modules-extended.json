@@ -48,6 +48,13 @@
       "className": "net.midiandmore.jserv.OperServ",
       "numericSuffix": "AAG",
       "configFile": "config-operserv.json"
+    },
+    {
+      "name": "StatsServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.StatsServ",
+      "numericSuffix": "AAH",
+      "configFile": "config-statsserv.json"
     }
   ]
 }

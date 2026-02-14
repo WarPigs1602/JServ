@@ -115,6 +115,7 @@ public final class Config {
     private Properties authFile;
     private Properties operFile;
     private Properties trustcheckFile;
+    private Properties statsServFile;
          
     /**
      * Initiales the class
@@ -176,6 +177,7 @@ public final class Config {
         setAuthFile(loadDataFromJSONasProperties("config-authserv.json", "name", "value"));
         setOperFile(loadDataFromJSONasProperties("config-operserv.json", "name", "value"));
         setTrustcheckFile(loadDataFromJSONasProperties("config-trustcheck.json", "name", "value"));
+        setStatsServFile(loadDataFromJSONasProperties("config-statsserv.json", "name", "value"));
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 
@@ -271,6 +273,20 @@ public final class Config {
      */
     public void setAuthFile(Properties authFile) {
         this.authFile = authFile;
+    }
+
+    /**
+     * @return the statsServFile
+     */
+    public Properties getStatsServFile() {
+        return statsServFile;
+    }
+
+    /**
+     * @param statsServFile the statsServFile to set
+     */
+    public void setStatsServFile(Properties statsServFile) {
+        this.statsServFile = statsServFile;
     }
 
     private static final Logger LOG = Logger.getLogger(Config.class.getName());

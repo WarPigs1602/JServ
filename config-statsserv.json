@@ -1,0 +1,42 @@
+[
+  {
+    "name": "nick",
+    "value": "StatsServ"
+  },
+  {
+    "name": "servername",
+    "value": "services.example.com"
+  },
+  {
+    "name": "description",
+    "value": "Statistics Service"
+  },
+  {
+    "name": "identd",
+    "value": "statsserv"
+  },
+  {
+    "name": "cleanup_keep",
+    "value": "10"
+  },
+  {
+    "name": "cleanup_interval_hours",
+    "value": "24"
+  },
+  {
+    "name": "cleanup_inactive_days",
+    "value": "30"
+  },
+  {
+    "name": "cleanup_delete_days",
+    "value": "5"
+  },
+  {
+    "name": "default_privacy",
+    "value": "1"
+  },
+  {
+    "name": "stats_enabled",
+    "value": "true"
+  }
+]

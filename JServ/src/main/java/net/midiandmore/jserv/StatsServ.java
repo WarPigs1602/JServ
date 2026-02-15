@@ -2113,12 +2113,10 @@ public final class StatsServ extends AbstractModule implements Software {
                 new Object[]{duration, kicksDeleted, topicsDeleted, channelsDisabled, channelsDeleted});
             
             // Notify opers if any changes were made
-            if (kicksDeleted > 0 || topicsDeleted > 0 || channelsDisabled > 0 || channelsDeleted > 0) {
-                String message = String.format("[StatsServ Cleanup] Completed in %dms: Deleted %d kicks, %d topics. Disabled %d inactive channels (>%d days). Deleted %d channels (disabled >%d days).",
-                    duration, kicksDeleted, topicsDeleted, channelsDisabled, CLEANUP_INACTIVE_DAYS, channelsDeleted, CLEANUP_DELETE_DAYS);
-                sendOperNotice(message);
-            }
-            
+            String message = String.format("[StatsServ Cleanup] Completed in %dms: Deleted %d kicks, %d topics. Disabled %d inactive channels (>%d days). Deleted %d channels (disabled >%d days).",
+                duration, kicksDeleted, topicsDeleted, channelsDisabled, CLEANUP_INACTIVE_DAYS, channelsDeleted, CLEANUP_DELETE_DAYS);
+            sendOperNotice(message);
+         
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "StatsServ cleanup failed", e);
             sendOperNotice("[StatsServ Cleanup] FAILED: " + e.getMessage());

@@ -1,13 +1,13 @@
 # JServ
 
-**JServ** ist ein robuster Java-basierter Dienst, der essenzielle IRC-Module—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ** und **OperServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit **JIRCd** (Java IRC Daemon) entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung, Nickname-Schutz, Authentifizierung, Channel-Verwaltung und Operator-Services für IRC-Netzwerke.
+**JServ** ist ein robuster Java-basierter Dienst, der essenzielle IRC-Module—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ**, **StatsServ** und **OperServ**—in einem einzigen, effizienten Paket integriert. JServ wurde speziell für die Verwendung mit **JIRCd** (Java IRC Daemon) entwickelt und optimiert Spam-Erkennung, versteckte Host-Verwaltung, Nickname-Schutz, Authentifizierung, Channel-Verwaltung, Channel-Statistiken und Operator-Services für IRC-Netzwerke.
 
 **Herkunft:** Abgeleitet von NewServ (GPLv2), Copyright (C) 2002-2013 David Mansell (splidge) und das QuakeNet-Entwicklerteam. Quelle: https://codeberg.org/quakenet/newserv
 
 ## Hauptfunktionen
 
 ### Modulare Architektur
-- **Plugin-System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ und OperServ sind als unabhängige Module implementiert
+- **Plugin-System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ, StatsServ und OperServ sind als unabhängige Module implementiert
 - **Dynamische Modulverwaltung:** Module können über die Konfiguration aktiviert/deaktiviert werden, ohne Code-Änderungen
 - **Erweiterte Modul-Konfiguration:** Umfassende JSON-basierte Modul-Definition mit Klassenname, Numeric-Suffix und Config-Datei-Zuordnung
 - **Automatisches Modul-Laden:** Module werden automatisch basierend auf der Konfiguration instanziiert und registriert
@@ -128,6 +128,21 @@
 - **Account-Löschung:** Sichere Account-Löschung mit Passwortbestätigung
 - **Eine Registrierung pro Sitzung:** Verhindert Missbrauch durch Begrenzung der Registrierungen pro Verbindung
 - **Integration:** Wendet automatisch Channel-Modi über ChanServ nach Authentifizierung an
+- **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
+- **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
+
+### StatsServ-Modul
+
+**Zweck:** Bietet Channel-Statistiken, Rankings und Zitate auf Basis des `a4stats`-Schemas. StatsServ erfasst Channel-Aktivitäten (Nachrichten, Joins, Parts, Kicks, Topics und Actions) und stellt Abfrage-Befehle mit Datenschutzkontrolle bereit.
+
+**Hauptfunktionen:**
+- **Channel-Statistik-Erfassung:** Erfasst Channel-/Benutzeraktivität und speichert Daten in `a4stats.*`-Tabellen
+- **Ranking- & Statistik-Befehle:** Bietet `STATS`, `TOP10`, `CHSTATS` und `QUOTE`
+- **Privacy-Level:** Unterstützt kanalweise Privacy-Level (`0=Public`, `1=Members`, `2=ChanServ/privilegiert`)
+- **Channel-Lifecycle-Befehle:** Unterstützt `ADDCHAN`, `DELCHAN` und `PRIVACY`
+- **Burst-konformer Join:** Registriert aktive Channels während des Burst und joint konsistent wie andere Services
+- **Automatische Bereinigung:** Periodische Bereinigung inaktiver/alter Statistikdaten per Timer
+- **Konfigurierbare Defaults:** Unterstützt Cleanup- und Privacy-Tuning über `config-statsserv.json`
 - **Laufzeit-Steuerung:** Kann über die Konfiguration dynamisch aktiviert/deaktiviert werden
 - **Sauberer Logout:** Sendet ordnungsgemäßen QUIT-Befehl beim Herunterfahren
 
@@ -264,6 +279,13 @@ Module werden in `config-modules-extended.json` konfiguriert:
       "className": "net.midiandmore.jserv.SaslServ",
       "numericSuffix": "AAE",
       "configFile": "config-saslserv.json"
+    },
+    {
+      "name": "StatsServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.StatsServ",
+      "numericSuffix": "AAH",
+      "configFile": "config-statsserv.json"
     }
   ]
 }
@@ -310,6 +332,11 @@ Module werden in `config-modules-extended.json` konfiguriert:
   - Account-Löschung und Informationsanzeige
   - E-Mail-Benachrichtigungssystem für Passwortänderungen
   - Integration mit ChanServ für automatische Channel-Modus-Anwendung
+- **StatsServ** (`statsserv`): Channel-Statistik- und Ranking-Service
+  - Erfasst Nachrichten, Joins, Parts, Kicks, Topics und Actions pro Channel
+  - Bietet STATS-, TOP10-, CHSTATS- und QUOTE-Befehle
+  - Unterstützt Channel-Privacy-Level und Channel-Hinzufügen/Entfernen
+  - Nutzt `config-statsserv.json` für Defaults und Cleanup-Tuning
 - **OperServ** (`operserv`): Operator-Service für Netzwerkverwaltung
   - Netzwerkstatistiken und Überwachung
   - G-Line-Verwaltung (Hinzufügen, Entfernen, Auflisten, Synchronisieren)

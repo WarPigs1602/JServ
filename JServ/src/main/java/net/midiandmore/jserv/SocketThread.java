@@ -995,17 +995,45 @@ public final class SocketThread implements Runnable, Software {
         
         // Check if user token already exists (prevent duplicates)
         if (getUsers().containsKey(userToken)) {
-            System.out.printf("User token %s already exists - possible duplicate, updating...\n", userToken);
+            Users existingUser = getUsers().get(userToken);
+            String existingNick = existingUser.getNick();
+            boolean wasService = existingUser.isService();
+            boolean wasOper = existingUser.isOper();
+            
+            // Enhanced logging for different user types
+            if (service || wasService) {
+                System.out.printf("WARNING: Duplicate SERVICE detected!\n");
+                System.out.printf("  Token: %s\n", userToken);
+                System.out.printf("  Existing: %s (Service=%b, Oper=%b)\n", existingNick, wasService, wasOper);
+                System.out.printf("  New:      %s (Service=%b, Oper=%b)\n", nickname, service, o);
+                System.out.printf("  During BURST: %s\n", isBurst());
+                LOG.warning(String.format("Duplicate service user token %s: existing=%s, new=%s", 
+                    userToken, existingNick, nickname));
+            } else if (o || wasOper) {
+                System.out.printf("WARNING: Duplicate OPER detected!\n");
+                System.out.printf("  Token: %s\n", userToken);
+                System.out.printf("  Existing: %s (Service=%b, Oper=%b)\n", existingNick, wasService, wasOper);
+                System.out.printf("  New:      %s (Service=%b, Oper=%b)\n", nickname, service, o);
+                System.out.printf("  During BURST: %s\n", isBurst());
+                LOG.warning(String.format("Duplicate oper user token %s: existing=%s, new=%s", 
+                    userToken, existingNick, nickname));
+            } else if (debugMode || isBurst()) {
+                System.out.printf("NOTICE: Duplicate user token %s detected - updating existing user\n", userToken);
+                System.out.printf("  Existing: %s\n", existingNick);
+                System.out.printf("  New:      %s\n", nickname);
+                System.out.printf("  During BURST: %s\n", isBurst());
+            }
+            
             // Update existing user instead of creating duplicate
-            getUsers().get(userToken).setNick(nickname);
-            getUsers().get(userToken).setIdent(elem[5]);
-            getUsers().get(userToken).setAccount(acc);
-            getUsers().get(userToken).setHost(elem[6]);
-            getUsers().get(userToken).setHiddenHost(hiddenHost);
-            getUsers().get(userToken).setClientIp(decodedIp);
-            getUsers().get(userToken).setX(x);
-            getUsers().get(userToken).setService(service);
-            getUsers().get(userToken).setOper(o);
+            existingUser.setNick(nickname);
+            existingUser.setIdent(elem[5]);
+            existingUser.setAccount(acc);
+            existingUser.setHost(elem[6]);
+            existingUser.setHiddenHost(hiddenHost);
+            existingUser.setClientIp(decodedIp);
+            existingUser.setX(x);
+            existingUser.setService(service);
+            existingUser.setOper(o);
             return false; // Don't propagate, just updated existing
         }
         
@@ -1153,6 +1181,9 @@ public final class SocketThread implements Runnable, Software {
                                         
                                         var users = getUsers().keySet();
                                         for (var user : users) {
+                                            // Include all currently known users here so DB-authorized users
+                                            // (AUTOOP/AUTOVOICE/BANNED) are present in burst processing,
+                                            // even when they are remote users on another server.
                                             var u = getUsers().get(user);
                                             if (u.getAccount() != null && u.getAccount().equalsIgnoreCase(nick[1])) {
                                                 System.out.println("[DEBUG] Found online user " + user + " matching account " + nick[1]);
@@ -1170,6 +1201,17 @@ public final class SocketThread implements Runnable, Software {
                                                     String entry = String.valueOf(obj);
                                                     if (entry.startsWith(user + ":") || entry.equals(user)) {
                                                         alreadyAdded = true;
+                                                        // Enhanced logging for services/opers
+                                                        Users userObj = getUsers().get(user);
+                                                        if (userObj != null) {
+                                                            if (userObj.isService()) {
+                                                                System.out.printf("WARNING: Service %s (%s) already in burst list for %s\n", 
+                                                                    user, userObj.getNick(), chanLower);
+                                                            } else if (userObj.isOper()) {
+                                                                System.out.printf("WARNING: Oper %s (%s) already in burst list for %s\n", 
+                                                                    user, userObj.getNick(), chanLower);
+                                                            }
+                                                        }
                                                         break;
                                                     }
                                                 }
@@ -1191,9 +1233,13 @@ public final class SocketThread implements Runnable, Software {
                                     }
                                 }
                                 
-                                // Add all connected users to channels they are in (even if not registered in DB)
+                                // Add local connected users to channels they are in (even if not registered in DB)
                                 var onlineUsers = getUsers().keySet();
                                 for (var onlineUser : onlineUsers) {
+                                    // Only include local users from this server in outgoing burst.
+                                    if (!onlineUser.startsWith(jnumeric)) {
+                                        continue;
+                                    }
                                     Users userData = getUsers().get(onlineUser);
                                     if (userData.getChannels() != null && userData.getChannels().contains(chanLower)) {
                                         // Check if this user is already added to burst
@@ -1208,6 +1254,14 @@ public final class SocketThread implements Runnable, Software {
                                             }
                                             if (userInBurst.equals(onlineUser)) {
                                                 alreadyInBurst = true;
+                                                // Enhanced logging for services/opers
+                                                if (userData.isService()) {
+                                                    System.out.printf("NOTICE: Service %s (%s) already in burst for %s - skipping duplicate\n",
+                                                        onlineUser, userData.getNick(), chanLower);
+                                                } else if (userData.isOper()) {
+                                                    System.out.printf("NOTICE: Oper %s (%s) already in burst for %s - skipping duplicate\n",
+                                                        onlineUser, userData.getNick(), chanLower);
+                                                }
                                                 break;
                                             }
                                         }
@@ -1251,9 +1305,9 @@ public final class SocketThread implements Runnable, Software {
                             // Send BURST command for the channel
                             // Format: <numeric> B <channel> <timestamp> [+modes] :<users>
                             if (modes != null && !modes.isEmpty() && modes.startsWith("+")) {
-                                sendText("%s B %s %d %s :%s", jnumeric, burst, timestamp, modes, userList.toString());
+                                sendText("%s B %s %d %s %s", jnumeric, burst, timestamp, modes, userList.toString());
                             } else {
-                                sendText("%s B %s %d :%s", jnumeric, burst, timestamp, userList.toString());
+                                sendText("%s B %s %d %s", jnumeric, burst, timestamp, userList.toString());
                             }
                             
                             System.out.printf("BURST: %s with %d users at timestamp %d\r\n", burst, nicks1.length, timestamp);
@@ -1265,6 +1319,20 @@ public final class SocketThread implements Runnable, Software {
                             }
                             Channel newChannel = new Channel(burst, modes != null ? modes : "", usersArray);
                             newChannel.setCreatedTimestamp(timestamp);
+                            Channel existingChannel = getChannel().get(burst.toLowerCase());
+                            if (existingChannel != null) {
+                                for (String existingUser : existingChannel.getUsers()) {
+                                    if (!newChannel.getUsers().contains(existingUser)) {
+                                        newChannel.addUser(existingUser);
+                                    }
+                                    if (existingChannel.getOp().contains(existingUser) && !newChannel.getOp().contains(existingUser)) {
+                                        newChannel.addOp(existingUser);
+                                    }
+                                    if (existingChannel.getVoice().contains(existingUser) && !newChannel.getVoice().contains(existingUser)) {
+                                        newChannel.addVoice(existingUser);
+                                    }
+                                }
+                            }
                             getChannel().put(burst.toLowerCase(), newChannel);
                             
                             // Add channel to each user's channel list
@@ -1296,22 +1364,25 @@ public final class SocketThread implements Runnable, Software {
                                             
                                             for (var userObj : nicks1) {
                                                 String userEntry = String.valueOf(userObj);
-                                                if (!userEntry.startsWith(jnumeric)) {
-                                                    // Extract user numeric (remove mode suffix if present)
-                                                    String userNumeric;
-                                                    if (userEntry.endsWith(":o") || userEntry.endsWith(":v") || userEntry.endsWith(":b")) {
-                                                        userNumeric = userEntry.substring(0, userEntry.length() - 2);
-                                                    } else if (userEntry.contains(":")) {
-                                                        userNumeric = userEntry.split(":")[0];
-                                                    } else {
-                                                        userNumeric = userEntry;
-                                                    }
-                                                    
-                                                    // Get user object
-                                                    Users user = getUsers().get(userNumeric);
-                                                    
-                                                    // Verify user exists and is in the channel (or will be in it)
-                                                    if (user != null && (channelObj.getUsers().contains(userNumeric) || userEntry.contains(":"))) {
+                                                // Extract user numeric (remove mode suffix if present)
+                                                String userNumeric;
+                                                if (userEntry.endsWith(":o") || userEntry.endsWith(":v") || userEntry.endsWith(":b")) {
+                                                    userNumeric = userEntry.substring(0, userEntry.length() - 2);
+                                                } else if (userEntry.contains(":")) {
+                                                    userNumeric = userEntry.split(":")[0];
+                                                } else {
+                                                    userNumeric = userEntry;
+                                                }
+
+                                                // Get user object
+                                                Users user = getUsers().get(userNumeric);
+                                                // Skip unknown users and service bots (ChanServ itself and sibling services)
+                                                if (user == null || user.isService()) {
+                                                    continue;
+                                                }
+
+                                                // Verify user exists and is in the channel (or will be in it)
+                                                if (channelObj.getUsers().contains(userNumeric) || userEntry.contains(":")) {
                                                         
                                                         // Check for channel bans from database
                                                         if (chanId > 0) {
@@ -1353,7 +1424,7 @@ public final class SocketThread implements Runnable, Software {
                                                         }
                                                         
                                                         // Get user flags for autoop/autovoice
-                                                        if (user != null && chanId > 0) {
+                                                        if (chanId > 0) {
                                                             String accountName = user.getAccount();
                                                             
                                                             // Check database flags if user has account
@@ -1387,7 +1458,6 @@ public final class SocketThread implements Runnable, Software {
                                                             }
                                                         }
                                                     }
-                                                }
                                             }
                                         }
                                         break; // Only process once per channel for ChanServ
@@ -1501,17 +1571,86 @@ public final class SocketThread implements Runnable, Software {
                             names = userListStr.contains(",") ? userListStr.split(",") : userListStr.split(" ");
                         }
                         
-                        Channel newChannel = new Channel(channel, modes, names);
+                        // Check for duplicates in the burst user list
+                        java.util.Set<String> seenUsers = new java.util.HashSet<>();
+                        java.util.List<String> duplicates = new java.util.ArrayList<>();
+                        boolean debugMode = getMi() != null && getMi().getConfig() != null && 
+                            "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
+                        
+                        for (String userName : names) {
+                            String userNumeric = userName.split(":")[0]; // Strip mode suffixes
+                            if (!seenUsers.add(userNumeric)) {
+                                duplicates.add(userNumeric);
+                                // Check if this is a service or oper
+                                if (getUsers().containsKey(userNumeric)) {
+                                    Users user = getUsers().get(userNumeric);
+                                    if (user.isService()) {
+                                        System.out.printf("WARNING: Duplicate SERVICE in BURST for channel %s: %s (%s)\n", 
+                                            channel, userNumeric, user.getNick());
+                                        LOG.warning(String.format("Duplicate service in burst for %s: %s (%s)", 
+                                            channel, userNumeric, user.getNick()));
+                                    } else if (user.isOper()) {
+                                        System.out.printf("WARNING: Duplicate OPER in BURST for channel %s: %s (%s)\n", 
+                                            channel, userNumeric, user.getNick());
+                                        LOG.warning(String.format("Duplicate oper in burst for %s: %s (%s)", 
+                                            channel, userNumeric, user.getNick()));
+                                    } else if (debugMode) {
+                                        System.out.printf("NOTICE: Duplicate user in BURST for channel %s: %s (%s)\n", 
+                                            channel, userNumeric, user.getNick());
+                                    }
+                                } else if (debugMode) {
+                                    System.out.printf("NOTICE: Duplicate unknown user in BURST for channel %s: %s\n", 
+                                        channel, userNumeric);
+                                }
+                            }
+                        }
+                        
+                        if (!duplicates.isEmpty() && debugMode) {
+                            System.out.printf("BURST for channel %s contained %d duplicate user entries\n", 
+                                channel, duplicates.size());
+                        }
+                        
                         // Set creation timestamp from database if channel is registered
+                        Long createdTsValue = null;
                         String createdTs = getMi().getDb().getChannel("created", channel);
                         if (createdTs != null && !createdTs.isEmpty()) {
                             try {
-                                newChannel.setCreatedTimestamp(Long.parseLong(createdTs));
+                                createdTsValue = Long.parseLong(createdTs);
                             } catch (NumberFormatException e) {
                                 LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
                             }
                         }
-                        getChannel().put(channel.toLowerCase(), newChannel);
+
+                        Channel existingChannel = getChannel().get(channel.toLowerCase());
+                        if (existingChannel != null) {
+                            if (modes != null && !modes.isEmpty()) {
+                                existingChannel.setModes(modes);
+                            }
+                            if (createdTsValue != null) {
+                                existingChannel.setCreatedTimestamp(createdTsValue);
+                            }
+                            for (String userName : names) {
+                                String userNumeric = userName.split(":")[0];
+                                if (!existingChannel.getUsers().contains(userNumeric)) {
+                                    existingChannel.addUser(userNumeric);
+                                }
+                                if (userName.contains(":")) {
+                                    String status = userName.split(":", 2)[1];
+                                    if (status.contains("o") && !existingChannel.getOp().contains(userNumeric)) {
+                                        existingChannel.addOp(userNumeric);
+                                    }
+                                    if (status.contains("v") && !existingChannel.getVoice().contains(userNumeric)) {
+                                        existingChannel.addVoice(userNumeric);
+                                    }
+                                }
+                            }
+                        } else {
+                            Channel newChannel = new Channel(channel, modes, names);
+                            if (createdTsValue != null) {
+                                newChannel.setCreatedTimestamp(createdTsValue);
+                            }
+                            getChannel().put(channel.toLowerCase(), newChannel);
+                        }
                         
                         // Add channel to each user's channel list
                         for (var userName : names) {
@@ -1721,20 +1860,17 @@ public final class SocketThread implements Runnable, Software {
     }
 
     protected boolean isPrivileged(int flags) {
-        if (!nick.isBlank()) {
-            var oper = isOper(flags);
-            if (oper == false) {
-                oper = isAdmin(flags);
-            }
-            if (oper == false) {
-                oper = isDev(flags);
-            }
-            if (oper == false) {
-                oper = isStaff(flags);
-            }
-            return oper;
+        var oper = isOper(flags);
+        if (oper == false) {
+            oper = isAdmin(flags);
         }
-        return false;
+        if (oper == false) {
+            oper = isDev(flags);
+        }
+        if (oper == false) {
+            oper = isStaff(flags);
+        }
+        return oper;
     }
 
     protected boolean isPrivileged(String nick) {

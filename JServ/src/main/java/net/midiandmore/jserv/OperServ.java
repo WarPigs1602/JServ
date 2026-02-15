@@ -69,17 +69,6 @@ public final class OperServ extends AbstractModule implements Software {
                 this.numeric,
                 getNumericSuffix(),
                 resolvedDescription);
-        
-        // Join #twilightzone channel
-        String channel = "#twilightzone";
-        String myNumeric = this.numeric + getNumericSuffix();
-        if (getSt().getChannel().containsKey(channel.toLowerCase())) {
-            sendText("%s J %s %d", myNumeric, channel, time());
-        } else {
-            sendText("%s C %s %d", myNumeric, channel, time());
-        }
-        sendText("%s M %s +o %s", numeric, channel, myNumeric);
-        getLogger().log(Level.INFO, "OperServ joined channel: {0}", channel);
 
         // Ensure operserv tables exist before using them
         if (mi != null && mi.getDb() != null) {
@@ -91,6 +80,19 @@ public final class OperServ extends AbstractModule implements Software {
         
         // Start GLine cleanup timer (check every 5 minutes)
         startGlineCleanupTimer();
+    }
+
+    @Override
+    public void registerBurstChannels(java.util.HashMap<String, Burst> bursts, String serverNumeric) {
+        if (!enabled) {
+            return;
+        }
+        String channel = "#twilightzone";
+        if (!bursts.containsKey(channel.toLowerCase())) {
+            bursts.put(channel.toLowerCase(), new Burst(channel));
+        }
+        bursts.get(channel.toLowerCase()).getUsers().add(serverNumeric + getNumericSuffix());
+        getLogger().log(Level.INFO, "OperServ registered burst channel: {0}", channel);
     }
     
     private void syncGlinesToNetwork() {

@@ -151,7 +151,7 @@ public abstract class AbstractModule implements Module {
     }
     
     /**
-     * Send notification to logged-in privileged users (opers/staff/admin/dev) with oper mode
+     * Send notification to logged-in privileged users (opers/staff/admin/dev)
      * @param message Message to send
      */
     protected void sendOperNotice(String message) {
@@ -178,29 +178,22 @@ public abstract class AbstractModule implements Module {
             String userNumeric = entry.getKey();
             Users user = entry.getValue();
             
-            // Skip users without account or oper mode
-            if (user == null || user.getAccount() == null || user.getAccount().isEmpty()) {
+            if (user == null) {
                 continue;
             }
             
-            if (!user.isOper()) {
-                continue;
-            }
-            
-            // Check if user has privileged flags
             String account = user.getAccount();
-            int flags = mi.getDb().getFlags(account);
-            
-            boolean isPrivileged = Userflags.hasFlag(flags, Userflags.Flag.OPER)
-                    || Userflags.hasFlag(flags, Userflags.Flag.STAFF)
-                    || Userflags.hasFlag(flags, Userflags.Flag.ADMIN)
-                    || Userflags.hasFlag(flags, Userflags.Flag.DEV);
-            
-            if (isPrivileged) {
-                // Send private NOTICE to this user
-                sendText("%s O %s :%s", myNumeric, userNumeric, message);
-                noticesSent++;
+            if (account == null || account.isEmpty()) {
+                continue;
             }
+
+            int flags = mi.getDb().getFlags(account);
+            if (!st.isPrivileged(flags)) {
+                continue;
+            }
+
+            st.sendNotice(numeric, numericSuffix, "O", userNumeric, "%s", message);
+            noticesSent++;
         }
         
         if (noticesSent > 0) {

@@ -1,0 +1,217 @@
+% G2 version 2.17 database
+% Fri Feb 13 18:42:43 2026
+
+% G internal version
+version
+	17
+
+% global variables
+%  hstat_cycle
+globals
+	0
+% lamercontrol profile structure:
+%  X (string):
+%  Y (string):
+%  Z (int):
+lamercontrol profile
+	nazi
+	25 10
+	1 4
+	3 4 4
+	3 0.010 7
+	0 1 2
+	lamercontrol profile
+lamercontrol profile
+	strict
+	35 15
+	2 6
+	4 5 5
+	4 0.010 10
+	0 2 3
+	lamercontrol profile
+
+% channel structure:
+%  name (string):
+%  flags (integer):
+%  welcome message (string):
+%  lamercontrol profile (string):
+channel
+	#help
+	f202
+	Welcome to #help - Official support channel for MidiAndMore.Net
+	default
+	300
+	(null)
+	0 % censor
+	0 % terms
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+channel
+	#feds
+	f20a
+	Welcome to #feds - Official support channel for MidiAndMore.Net
+	default
+	300
+	(null)
+	0 % censor
+	0 % terms
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+	0 0 0 0 0 0 0 0
+
+% account structure:
+%  name (string):
+%  level (integer) flags (integer) last_activity (integer):
+account
+	WarPigs
+	6	0	698f54cf
+	0 % statistics for this channel
+
+% ban structure:
+%  banmask (string):
+%  reason (string):
+%  expiration (int):
+
+% term structure:
+%  name (string):
+%  description (string):
+term
+	fixtakeover
+	Use /msg ChanServ RECOVER #channel to restore channel control if you have sufficient privileges.
+term
+	bots
+	Official service bots are available for channel management.
+term
+	modes
+	MidiAndMore.Net supports a range of user and channel modes for protection and management. See the documentation for details.
+term
+	netsplit
+	Channel states may temporarily change during a network split. MidiAndMore.Net automatically restores states when possible.
+term
+	requestop
+	Use /msg ChanServ OP #channel to request operator status if eligible. See /msg ChanServ HELP OP for requirements.
+term
+	ChanServ
+	ChanServ manages channel registration and channel access. Use /msg ChanServ SHOWCOMMANDS to view available commands.
+term
+	AuthServ
+	AuthServ manages account registration and authentication. Use /msg AuthServ SHOWCOMMANDS to view available commands.
+term
+	authhack
+	Account breaches are usually due to weak passwords or compromised devices. Do not share your credentials. Use network security features.
+term
+	#auth
+	If the user is offline, you can still modify their account using their auth nickname prefixed with # (e.g., #JohnDoe). Use /msg AuthServ WHOIS #authname for account details.
+term
+	proxy
+	MidiAndMore.Net scans for open proxies upon connection. If you are blocked, check your system and contact support.
+term
+	password
+	To reset your password, use /msg AuthServ RESET or the web interface if enabled. Do not ask operators for passwords.
+term
+	FAQ
+	MidiAndMore.Net documentation and FAQ are available at https://irc.midiandmore.net/Community/help Topics include security, modes, services, and rules.
+term
+	expire
+	Inactive channels and accounts may expire after a set period.
+term
+	authsecure
+	If you suspect your account is compromised, use /msg AuthServ RESET and change your password. Enable additional security features available in AuthServ.
+term
+	SpamScan
+	SpamScan is an automated anti-spam service. Use /msg SpamScan SHOWCOMMANDS for information on spam protection, reporting spam, and managing spam filters. SpamScan helps keep MidiAndMore.Net free of unwanted messages.
+term
+	nicknames
+	Nicknames can be reserved by using NickServ.
+term
+	NickServ
+	NickServ protects registered nicknames. Use /msg NickServ SHOWCOMMANDS to view available commands.
+term
+	StatsServ
+	StatsServ provides channel statistics and rankings. Use /msg StatsServ SHOWCOMMANDS to view available commands.
+term
+	HostServ
+	HostServ provides custom vhosts for registered users. Use /msg HostServ SHOWCOMMANDS to learn how to request or manage your vhost. Vhosts help protect your privacy and personalize your IRC presence.
+term
+	abuse
+	Report abusive users with clear details. Provide channel name and user nicknames. Operators will investigate as appropriate.
+term
+	business
+	MidiAndMore.Net does NOT provide support for commercial use of the server. If you operate a business over IRC, you do so at your own risk.
+term
+	question
+	State your question clearly. Do not ask if you can ask a question. For channel issues, provide the #channel name.
+term
+	eggdrop
+	Support for third-party bots (Eggdrop, etc.) is limited. Please contact the bot administrator for help.
+term
+	freeop
+	Operator help for takeovers on unregistered channels is not available. Use channel modes and permissions to secure your channel.
+term
+	Services
+	MidiAndMore.Net provides integrated user services via AuthServ and ChanServ. Use /msg AuthServ SHOWCOMMANDS or /msg ChanServ SHOWCOMMANDS for commands.
+term
+	#feds
+	This channel is for issues requiring the assistance of an IRC operator. Please check the FAQ or documentation before asking. Read the FAQ at https://irc.midiandmore.net/Community/help
+term
+	removebot
+	To remove a service bot, adjust channel permissions or use the bot's removal command. Check documentation for specifics.
+term
+	gaveowner
+	If you grant another user channel owner rights (+q or equivalent), they may remove your own rights. Be cautious when granting high-level permissions.
+term
+	score
+	Operator permissions are required for certain requests. Ensure you have the correct channel status before requesting service actions.
+term
+	stats
+	Statistics and monitoring tools are available via /STATS and the web interface. See https://irc.midiandmore.net/Community/stats.jsp for more information.
+term
+	IPv6
+	MidiAndMore.Net supports IPv6 connections. Ensure your client and network are configured for IPv6 if needed.
+term
+	ircops
+	IRC Operators on this network are volunteers. Please be respectful and patient when requesting help.
+term
+	Spam
+	MidiAndMore.Net includes anti-spam features. Report persistent spam to #feds or use user/channel modes to block.
+term
+	logs
+	Log files may not always be accepted as evidence due to possible modification. Use network logging features for official records.
+
+% ticket structure:
+%  channel (string)
+%  authname (string)
+%  expiration time (int)
+
+% report structure:
+%  channel reported
+%  channel reported to

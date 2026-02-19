@@ -28,6 +28,10 @@ public final class Config {
         return operFile;
     }
 
+    public Properties getHelpServFile() {
+        return helpServFile;
+    }
+
     public Properties getTrustcheckFile() {
         return trustcheckFile;
     }
@@ -41,6 +45,10 @@ public final class Config {
 
     public void setOperFile(Properties operFile) {
         this.operFile = operFile;
+    }
+
+    public void setHelpServFile(Properties helpServFile) {
+        this.helpServFile = helpServFile;
     }
 
     public void setTrustcheckFile(Properties trustcheckFile) {
@@ -114,6 +122,7 @@ public final class Config {
     private Properties chanServFile;
     private Properties authFile;
     private Properties operFile;
+    private Properties helpServFile;
     private Properties trustcheckFile;
     private Properties statsServFile;
          
@@ -176,6 +185,7 @@ public final class Config {
         setChanServFile(loadDataFromJSONasProperties("config-chanserv.json", "name", "value"));
         setAuthFile(loadDataFromJSONasProperties("config-authserv.json", "name", "value"));
         setOperFile(loadDataFromJSONasProperties("config-operserv.json", "name", "value"));
+        setHelpServFile(loadDataFromJSONasProperties("config-helpserv.json", "name", "value"));
         setTrustcheckFile(loadDataFromJSONasProperties("config-trustcheck.json", "name", "value"));
         setStatsServFile(loadDataFromJSONasProperties("config-statsserv.json", "name", "value"));
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 

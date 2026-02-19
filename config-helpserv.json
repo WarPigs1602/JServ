@@ -1,0 +1,22 @@
+[
+  {
+    "name": "nick",
+    "value": "HelpServ"
+  },
+  {
+    "name": "servername",
+    "value": "services.example.com"
+  },
+  {
+    "name": "description",
+    "value": "Help and Information Service"
+  },
+  {
+    "name": "identd",
+    "value": "helpserv"
+  },
+  {
+    "name": "help_dir",
+    "value": "help"
+  }
+]

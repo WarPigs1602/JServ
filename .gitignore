@@ -1,5 +1,5 @@
 .vs
-
+.vscode
 # Maven / Java build output
 target/
 **/target/

@@ -1,13 +1,13 @@
 # JServ
 
-**JServ** is a robust Java-based service that integrates essential IRC modules—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ**, **StatsServ**, and **OperServ**—into a single, efficient package. Designed specifically for use with **JIRCd** (Java IRC Daemon), JServ streamlines spam detection, hidden host management, nickname protection, authentication, channel management, channel statistics, and operator services for IRC networks.
+**JServ** is a robust Java-based service that integrates essential IRC modules—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ**, **StatsServ**, **HelpServ**, and **OperServ**—into a single, efficient package. Designed specifically for use with **JIRCd** (Java IRC Daemon), JServ streamlines spam detection, hidden host management, nickname protection, authentication, channel management, channel statistics, help/FAQ delivery, and operator services for IRC networks.
 
 **Lineage:** Derived from NewServ (GPLv2), Copyright (C) 2002-2013 David Mansell (splidge) and the QuakeNet development team. Source: https://codeberg.org/quakenet/newserv
 
 ## Key Features
 
 ### Modular Architecture
-- **Plugin System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ, StatsServ, and OperServ are implemented as independent modules
+- **Plugin System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ, StatsServ, HelpServ, and OperServ are implemented as independent modules
 - **Dynamic Module Management:** Modules can be enabled/disabled via configuration without code changes
 - **Extended Module Configuration:** Comprehensive JSON-based module definition with className, numeric suffix, and config file mapping
 - **Automatic Module Loading:** Modules are automatically instantiated and registered based on configuration
@@ -145,6 +145,57 @@
 - **Configurable Defaults:** Supports cleanup and privacy tuning via `config-statsserv.json`
 - **Runtime Control:** Can be enabled/disabled dynamically through configuration
 - **Graceful Logout:** Sends proper QUIT command on shutdown
+
+### HelpServ Module
+
+**Purpose:** Provides a full helpdesk-style service inspired by NewServ `helpmod2`, including hierarchical FAQ delivery, command-level help, support queue handling, ticket workflows, moderation helpers, and staff/statistics tooling.
+
+**How Help Content Works:**
+- **Automatic Language Sources:** Automatically loads all `help_*.txt` files from `help_dir` (default `help`), for example `help_en.txt`, `help_de.txt`.
+- **Hierarchical Parsing:** Builds a tree from indentation-based topic lines.
+- **Topic Body Lines:** Lines prefixed with `*` are rendered as topic text.
+- **Per-User Navigation State:** Users can browse topics/menu paths with stateful numeric navigation (`1..N`, `0` = back).
+- **Fallback Safety:** If no help file is found, HelpServ uses an internal fallback topic tree so basic help remains available.
+
+**Command Model and Access Control:**
+- **ACL-Enforced Commands:** Every command is checked against an internal command catalog and minimum level.
+- **Command Levels:** `LAMER (0)`, `PEON (1)`, `FRIEND (2)`, `TRIAL (3)`, `STAFF (4)`, `OPER (5)`, `ADMIN (6)`.
+- **Unknown Command Handling:** Unknown commands return a clear error and point users to `SHOWCOMMANDS`.
+- **Shortcuts Supported:** `?`, `?+`, `?-` and compatibility forms `QUESTIONMARK`, `QUESTIONMARKPLUS`, `QUESTIONMARKMINUS` are mapped to term and queue actions.
+
+**Core User-Facing Features:**
+- **Topic Help:** `HELP [topic]`, `TOPICS [topic]`, `SEARCH <text>`.
+- **Command Discovery:** `SHOWCOMMANDS [level]`, `COMMAND <name>` with short per-command descriptions.
+- **General Info:** `VERSION`, `WHOAMI`, `INVITE`.
+- **Term Lookup:** `TERM` and `?`-style shortcuts for glossary-like responses.
+
+**Staff / Operator Features:**
+- **Queue Operations:** `QUEUE`, `NEXT`, `DONE`, `ENQUEUE`, `DEQUEUE`, `AUTOQUEUE` for support-flow handling.
+- **Ticket Operations:** `TICKET`, `RESOLVE`, `TICKETS`, `SHOWTICKET`, `TICKETMSG`.
+- **Channel Operations:** `OP`, `DEOP`, `VOICE`, `DEVOICE`, `KICK`, `OUT`, `DNMO`, `EVERYONEOUT`, `CHANCONF`, `TOPIC`, `WELCOME`.
+- **Moderation/Policy Helpers:** `BAN`, `CHANBAN`, `CENSOR`, `LAMERCONTROL`, `LCEDIT`, `IDLEKICK`, `REPORT`.
+- **Diagnostics and Runtime:** `STATUS`, `RELOAD`, `WRITEDB`, plus extended stats commands (`STATS`, `TOP10`, `CHANSTATS`, `TERMSTATS`, etc.).
+
+**Persistent Runtime State (`helpmod.db`):**
+- **Runtime Data Source:** Loads optional legacy-compatible state from `helpmod.db` inside `help_dir`.
+- **Restored Elements:** Managed channels, queue/ticket data, welcome texts, term maps, account config/levels, report routes, and statistics snapshots.
+- **Safe Degradation:** If the file is missing, HelpServ continues with in-memory defaults and configured base channel behavior.
+
+**Configuration (`config-helpserv.json`):**
+- `nick`, `servername`, `description`, `identd`: Service identity for handshake/registration.
+- `help_dir`: Base directory containing `help_*.txt` and `helpmod.db` (default `help`).
+- Default channel behavior: resolved from `helpmod.db` when present, otherwise `#help`.
+
+**Typical Operational Flows:**
+- **User self-help:** User sends `HELP`, navigates with numbers, drills down with `TOPICS`, and searches with `SEARCH`.
+- **Live support:** Staff uses `QUEUE NEXT` / `DONE` to process waiting users in managed channels.
+- **Controlled onboarding:** Teams can use `TICKET`/`RESOLVE` plus `INVITE` flow for moderated help access.
+- **Hot reload:** `RELOAD` allows topic and DB refresh at runtime without restarting JServ.
+
+**Operational Guarantees:**
+- **Burst Integration:** Registers and joins managed help channels during burst like other modules.
+- **Runtime Control:** Can be enabled/disabled dynamically through configuration.
+- **Graceful Logout:** Sends proper QUIT command on shutdown.
 
 ### OperServ Module
 
@@ -286,6 +337,13 @@ Modules are configured in `config-modules-extended.json`:
       "className": "net.midiandmore.jserv.StatsServ",
       "numericSuffix": "AAH",
       "configFile": "config-statsserv.json"
+    },
+    {
+      "name": "HelpServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.HelpServ",
+      "numericSuffix": "AAI",
+      "configFile": "config-helpserv.json"
     }
   ]
 }
@@ -337,6 +395,11 @@ Changes require a restart to take effect.
   - Provides STATS, TOP10, CHSTATS, and QUOTE commands
   - Supports channel privacy levels and channel add/remove management
   - Uses `config-statsserv.json` for defaults and cleanup tuning
+- **HelpServ** (`helpserv`): Help and FAQ service inspired by NewServ helpmod2
+  - Loads hierarchical help topics from `help/help_en.txt`
+  - Supports HELP/TOPICS/SEARCH for user navigation
+  - Supports oper-only RELOAD command for live topic reload
+  - Uses `config-helpserv.json` for service/channel/source-file settings
 - **OperServ** (`operserv`): Operator service for network management
   - Network statistics and monitoring
   - G-Line management (add, remove, list, sync)
@@ -408,6 +471,18 @@ The ModuleManager will automatically instantiate your module using reflection ba
 
 For detailed information about NickServ commands and features, see [README_NICKSERV.md](README_NICKSERV.md).
 
+### HelpServ User & Oper Commands
+- **HELP [topic]** - Show HelpServ help menu or a specific topic
+- **TOPICS [topic]** - List available topics/subtopics
+- **SEARCH <text>** - Search help topics and command descriptions
+- **SHOWCOMMANDS** - List available HelpServ commands
+- **COMMAND <name>** - Show short help text for a HelpServ command
+- **VERSION** - Show HelpServ version information
+- **INVITE** - Request invite to the configured help channel
+- **RELOAD** - Reload help topics (oper-only)
+
+For detailed information about HelpServ commands, workflows, and configuration, see [README_HELPSERV.md](README_HELPSERV.md).
+
 ### SpamScan & HostServ Commands
 Refer to the built-in help system or project wiki for a complete list of operator and user commands for SpamScan and HostServ.
 
@@ -438,11 +513,14 @@ Refer to the built-in help system or project wiki for a complete list of operato
 - `config-chanserv.json` - ChanServ module settings (nick, servername, description, identd)
 - `config-authserv.json` - AuthServ module settings (nick, servername, description, identd)
 - `config-operserv.json` - OperServ module settings (nick, servername, description, identd)
+- `config-helpserv.json` - HelpServ module settings (nick, servername, description, identd, channel, help_dir)
 - `config-trustcheck.json` - TrustCheck allow rules (legacy fallback if database has no trust rules)
 
 ### Data Files
 - `badwords-spamscan.json` - Badword list for SpamScan spam detection
 - `email-templates.json` - Email templates for AuthServ notifications (registration, password changes)
+- `help/help_en.txt` - Imported helpmod2 help tree for HelpServ topic responses
+- `help/help_de.txt` - Optional German help tree that can be loaded as a secondary HelpServ language source
 
 ## TrustCheck (TC/TR)
 

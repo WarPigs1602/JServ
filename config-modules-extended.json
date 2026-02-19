@@ -55,6 +55,13 @@
       "className": "net.midiandmore.jserv.StatsServ",
       "numericSuffix": "AAH",
       "configFile": "config-statsserv.json"
+    },
+    {
+      "name": "HelpServ",
+      "enabled": true,
+      "className": "net.midiandmore.jserv.HelpServ",
+      "numericSuffix": "AAI",
+      "configFile": "config-helpserv.json"
     }
   ]
 }

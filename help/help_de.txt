@@ -1,0 +1,816 @@
+Deutsche Hilfe
+ *Hallo und willkommen beim automatisierten Hilfe- und Informationsdienst von MidiAndMore.Net. Um den Dienst zu nutzen, wähle einfach die Option, die dich interessiert.
+ *Wenn du Unterstützung zur Lösung eines Problems brauchst, z. B. „Ich kann mich nicht bei AuthServ authentifizieren“, wähle „Online-Support“. Wenn du Informationen suchst oder eine Frage
+ *zu MidiAndMore.Net selbst hast, z. B. „Welche Channel-Modi gibt es auf MidiAndMore.Net?“, wähle „Informationen und FAQs“.
+ Online-Support
+  *Wobei brauchst du Hilfe?
+  IRC (einschließlich Channel-Problemen außer Missbrauch)
+   *Allgemeine IRC- und Channel-bezogene Probleme.
+   Ich bin neu bei IRC. Was ist das / Wie benutze ich es?
+    *IRC steht für Internet Relay Chat. Eine vollständige Beschreibung und einen Einstieg findest du auf der MidiAndMore.Net-Website - http://www.midiandmore.net .
+   Mein Freund ist der einzige User mit Ops in einem Channel, er ist im Urlaub/weg, könnt ihr mir Op geben?
+    *Nein. Wenn es Ops im Channel gibt, geben die IRCops dir keine Ops. Wenn niemand Op hat, kannst du
+    */msg ChanServ requestop #channel verwenden und versuchen, Ops zu bekommen (du wirst nur ge-opped, wenn ChanServ dich in diesem Channel als Op kennt).
+   Wie bekomme ich Ops in einem Channel ohne andere Operatoren?
+    *Wenn es in einem Channel keine Channel-Operatoren gibt (ChanServ und SpamScan zählen als Channel-Ops), kannst du mit folgendem Befehl Ops anfordern: /msg ChanServ REQUESTOP #channel [<nickname>].
+    *Wenn aktuell ein Netsplit besteht, kannst du keine Ops anfordern.
+   Ich kann in einem Channel nicht sprechen („Cannot send to channel“)!
+    *Dafür kann es mehrere Gründe geben:
+    ** Der Channel kann moderiert sein (Channel-Modus +m) und du hast ggf. kein Voice/Op.
+    ** Du versuchst möglicherweise, farbigen Text in einen Channel mit Channel-Modus +c zu senden.
+    ** Du versuchst möglicherweise, einen CTCP in einen Channel mit Channel-Modus +C zu senden.
+    ** Du versuchst möglicherweise, eine Notice in einen Channel mit Channel-Modus +N zu senden.
+    ** Du bist möglicherweise im Channel gebannt und hast keinen Voice/Op-Status.
+   Ich sehe keine Leute, die meinem Channel beitreten!
+    *Prüfe, ob du Channel-Modus +D gesetzt hast. Das ist ein verzögerter Join-Modus, bei dem beitretende User erst angezeigt werden, wenn sie
+    *Voice/Op erhalten, sprechen oder das Topic ändern.
+   Warum kann ich Channel-Modus +D/+d nicht entfernen?
+    *Wenn sich Channel-Modus +d automatisch setzt, sobald du Channel-Modus +D entfernst, bedeutet das, dass noch unsichtbare
+    *User im Channel sind. Channel-Modus +d wird vom Server entfernt, sobald alle User im Channel sichtbar sind. Um unsichtbare
+    *User zu sehen, nutze /NAMES -d #channel.
+   Ich bekomme beim Joinen eines Channels „Access is denied on this server“. Was ist falsch?
+    *Diese Fehlermeldung bedeutet, dass der Channel gebannt wurde. Siehe den Abschnitt G/K-Lines für weitere Informationen.
+   Wie kann ich meinen Hostnamen auf MidiAndMore.Net verstecken?
+    *Um deinen Hostnamen auf MidiAndMore.Net zu verstecken, musst du dich bei AuthServ authentifizieren und User-Modus +x setzen (/MODE dein_nickname +x). Dadurch wird
+    *dein Hostname zu qauth.users.midiandmore.net geändert. Wenn du kein AuthServ-Konto hast, nutze: /msg AuthServ REGISTER email@address email@address.
+   Ich habe User-Modus +x gesetzt (Host versteckt), wie bekomme ich meinen alten Hostnamen zurück?
+    *Der einzige Weg, deinen ursprünglichen Hostnamen zurückzubekommen, ist eine Neuverbindung zu MidiAndMore.Net.
+  AuthServ
+   *AuthServ ist der Account-Service-Bot von MidiAndMore.Net und steuert den Zugriff auf die übrigen Dienste von MidiAndMore.Net.
+   *Was ist dein Problem mit AuthServ?
+   Wie erstelle ich ein Konto bei AuthServ?
+    *Um ein Konto bei AuthServ zu erstellen, nutze: /msg AuthServ REGISTER email@address email@address. Deine E-Mail wird zur Verifizierung zweimal gesendet. AuthServ
+    *sendet dir anschließend eine Notice/Nachricht, entweder dass ein Konto erstellt wurde oder dass bereits ein Konto unter diesem Namen
+    *existiert. Wenn das Konto erstellt wurde, prüfe die angegebene E-Mail-Adresse auf eine E-Mail von AuthServ mit Hinweisen zum weiteren
+    *Vorgehen (zu Stoßzeiten kann es bis zu 20 Minuten dauern, bis die E-Mail ankommt).
+    *Wenn du die Meldung bekommst, dass ein Konto bereits existiert, musst du deinen Nick auf IRC ändern, da der Vorgang deinen aktuellen Nick als
+    *Benutzernamen verwendet.
+    *Sobald du das Konto erstellt hast, kannst du wieder zu deinem normalen Nick wechseln. Es wird dringend empfohlen, dein
+    *Passwort beim ersten Auth zu ändern. Nutze nichts, das deinem Namen ähnelt, leicht erraten werden kann, wie
+    *dein Wohnort, oder etwas aus einem Wörterbuch. Eine Mischung aus Zeichen und Zahlen ist ratsam.
+    *Jedes Mal, wenn du dich mit MidiAndMore.Net verbindest, musst du dich mit folgendem Befehl bei AuthServ authentifizieren: /msg AuthServ@services.midiandmore.net IDENTIFY authname password.
+    *Wenn du bereits authentifiziert bist, kannst du dich nicht erneut authentifizieren. Du kannst dich auch nicht de-authen, dafür musst du dich neu mit MidiAndMore.Net verbinden.
+    *
+    *Hat das dein Problem gelöst?
+    Nein
+     *Wenn du weiterhin Probleme beim Erstellen eines AuthServ-Kontos hast, hole dir Hilfe beim MidiAndMore.Net-Support in #help.
+   Ich kann mich nicht authentifizieren!
+    *Wenn du dich nicht authentifizieren kannst, prüfe zuerst, ob du dein Passwort korrekt eingibst. Passwörter sind case-sensitive.
+    *Prüfe außerdem, ob du den richtigen Auth-Befehl verwendest. Nutze dafür: /msg AuthServ@services.midiandmore.net IDENTIFY username password.
+    *Prüfe anschließend, ob du bereits authentifiziert bist. In diesem Fall kannst du dich ohne Neuverbindung zu MidiAndMore.Net nicht erneut authentifizieren. Wenn du
+    *einen Bouncer verwendest, lasse ihn neu verbinden.
+    *Wenn dein Client irgendeine Form von Scripting unterstützt, prüfe, ob keine Skripte den Auth-Prozess stören.
+    *Wenn du mIRC nutzt, versuche: /raw PRIVMSG AuthServ@services.midiandmore.net :IDENTIFY username password. Wenn das fehlschlägt, neu verbinden und erneut versuchen.
+    *Zuletzt kannst du dein Passwort bei AuthServ anfordern: /msg AuthServ REQUESTPASSWORD email@address.
+    *
+    *Hat das dein Problem gelöst?
+    Nein
+     *Wenn du weiterhin Probleme beim Auth mit AuthServ hast, hole dir Hilfe beim MidiAndMore.Net-Support in #help.
+   Ich kann mich nicht an mein Passwort erinnern!
+    *Wenn du dein AuthServ-Passwort vergessen hast, fordere es einfach erneut an mit: /msg AuthServ REQUESTPASSWORD email@address.
+    *Wenn du keinen Zugriff mehr auf die E-Mail-Adresse hast, mit der du dein AuthServ-Konto erstellt hast, oder dein AuthServ-Konto wegen Inaktivität abgelaufen ist,
+    *musst du ein neues Konto erstellen.
+   ChanServ oppt mich nicht mehr.
+    *ChanServ oppt User nur, wenn sie authentifiziert und ChanServ in diesem Channel bekannt sind. Wenn du nicht authentifiziert bist, nutze: /msg AuthServ@services.midiandmore.net IDENTIFY username password.
+    *Wenn du bei AuthServ authentifiziert bist, prüfe mit /msg AuthServ WHOAMI, ob du im Channel noch bekannt bist. Wenn der Channel nicht gelistet ist,
+    *musst du mit dem Owner dieses Channels sprechen.
+    *Hat das dein Problem gelöst?
+    Nein
+     *Wenn du weiterhin Probleme beim Auth mit AuthServ hast, hole dir Hilfe beim MidiAndMore.Net-Support in #help.
+   ChanServ hat meinen Channel verlassen, warum?
+    *Wenn ChanServ deinen Channel verlassen hat und User nicht mehr automatisch Voice/Op erhalten, gibt es
+    *mehrere mögliche Gründe:
+    ** Der Channel ist wegen Inaktivität oder zu geringer Userzahl abgelaufen.
+    ** Ein Owner hat ChanServ aus dem Channel entfernt.
+    ** ChanServ wurde für deinen Channel suspendiert.
+    *Kontaktiere #help, um herauszufinden, ob ChanServ für deinen Channel suspendiert wurde.
+   Ich möchte einen Channel, aber dort ist bereits ChanServ.
+    *Wenn mindestens 40 Tage lang niemand mit CHANLEV in diesem Channel den Channel betritt, wird ChanServ automatisch entfernt und du kannst den Channel nutzen. Andernfalls
+    *musst du einen anderen Channel wählen.
+   ChanServ hat in meinem Channel kein Op!
+    *Wenn ChanServ in deinem Channel nicht ge-opped ist, verlasse den Channel kurz und tritt erneut bei, um sicherzustellen, dass dein Client nicht durcheinander geraten ist. Falls ChanServ
+    *weiterhin de-opped ist, kannst du ihn wieder op'en mit: /msg ChanServ requestop #channel.
+   In meinem Channel gibt es keinen Owner!
+    *Wenn niemand das Owner-Flag im Channel hat, kannst du verwenden: /msg ChanServ requestowner #channel
+    *Dieser Befehl funktioniert für alle, die als Master (+m) oder Op (+o) eingetragen sind, falls keine Master eingetragen sind
+   Mehr Hilfe
+    *Wenn du weiterhin Probleme mit ChanServ hast, die hier nicht beantwortet werden, hole dir Hilfe beim MidiAndMore.Net-Support in #help.
+  SpamScan
+   *SpamScan ist der Anti-Spam-Dienst von MidiAndMore.Net und kann User trennen, die in Channels spammen.
+   *Welche Probleme hast du mit SpamScan?
+   SpamScan killt mich ständig!
+    *Die Art und Weise, wie SpamScan Spam erkennt, ist nicht öffentlich bekannt. Versuche aber, den Befehl /amsg nicht zu häufig zu nutzen,
+    *schreibe lieber zusammenhängende Sätze statt jede Zeile als einzelnes Wort und
+    *bewirb keine Channels (siehe MidiAndMore.Net-Regeln zur Klarstellung). Das hilft in den meisten Fällen.
+   Wie bekomme ich SpamScan?
+    *SpamScan kann per /msg SpamScan ADDCHAN #channel angefordert werden.
+    *Wenn dir mitgeteilt wird, dass du die Voraussetzungen nicht erfüllst, kannst du SpamScan nicht erhalten.
+    *Beschwerden in den Support-Channels helfen nicht.
+   Wie kann ich SpamScan aus meinem Channel entfernen?
+    *Um SpamScan aus deinem Channel zu entfernen, musst du mit den IRC-Operatoren in #feds sprechen.
+   Mehr Hilfe
+    *Wenn du weiterhin Probleme mit SpamScan hast, die hier nicht gelöst werden, hole dir Hilfe beim MidiAndMore.Net-Support in #feds (dem
+    *IRC-Operator-Channel von MidiAndMore.Net).
+  Trusts
+   *Trusts erlauben Usern, mehr als 5 Verbindungen pro IP-Adresse zu öffnen.
+   *Bei welchen Trust-Problemen brauchst du Hilfe?
+   Wie bekomme ich einen Trust?
+    *Um einen Trust zu bekommen, musst du #help besuchen und folgende Informationen posten:
+    *
+    *1. Die zu vertrauenden IP-Adressen. Diese müssen statische (d. h. unveränderliche) Adressen sein. Wir vergeben keine Trusts für nicht-statische Adressen.
+    *Wenn du keine garantierte statische IP hast (und die meisten ADSL-Anbieter geben KEINE statischen IP-Adressen aus), bekommst du keinen Trust.
+    *Es spielt keine Rolle, ob du monatelang dieselbe IP hattest - wenn es irgendeine Möglichkeit gibt, dass sie sich ändert, bekommst du keinen Trust.
+    *Die einzige Ausnahme ist kurzfristige Nutzung, z. B. eine LAN-Party. In diesem Fall vergeben wir einen einmaligen temporären Trust
+    *für eine nicht-statische IP. Dieser gilt nie länger als 4 Tage.
+    *
+    *2. Eine Abuse-E-Mail-Adresse / ein Konto. Wir benötigen die E-Mail-Adresse des IP- oder Service-Administrators, damit wir ihn bei Missbrauch
+    *des Trusts kontaktieren können. Das ist verpflichtend und wird nicht aufgehoben.
+    *
+    *3. Einen Grund für den Trust. Du musst erklären, warum du mehr als 5 Verbindungen zu MidiAndMore.Net benötigst.
+    *
+    *4. Die benötigte Anzahl an Verbindungen (kann vom Oper reduziert werden, wenn es zu viele sind).
+    *
+    *5. Und den Home-Channel auf MidiAndMore.Net (falls vorhanden).
+    *
+    *Bitte beachte: Für einen Bouncer benötigen wir einen funktionierenden identd.
+    *
+    *Wir befinden uns derzeit in einem Entwicklungsprozess für unsere Trust-Systeme. Bitte beachte die neuesten Nachrichten auf http://www.midiandmore.net
+    *für Informationen, wie man einen Trust erhält und welche Trust-Arten aktuell angeboten werden.
+   Ich habe einen Trust bekommen und werde jetzt G-Lined.
+    *Wenn du kürzlich einen Trust erhalten hast und G-Lined wirst, betreibst du wahrscheinlich keinen IDENT-Server. Das ist für bestimmte Trust-
+    *Typen erforderlich. Richte entweder einen IDENT-Server ein oder kontaktiere #feds, um den Trust entfernen zu lassen.
+    Ich werde immer noch G-Lined!
+     *Wenn du weiterhin Probleme mit Trust-G-Lines hast und einen IDENT-Server betreibst, kontaktiere #feds für Hilfe.
+   Mein Trust-Antrag wurde abgelehnt. Warum?
+    *Es kann verschiedene Gründe geben, warum dein Trust-Antrag abgelehnt wurde. Die meisten lassen sich vermeiden, wenn du diese Dokumentation
+    *vor dem Antrag sorgfältig liest. Häufige Gründe für eine Ablehnung sind:
+    Du brauchst identd auf dem Server für einen langfristigen Trust. Wir akzeptieren keine Clients ohne ident auf Trusted Hosts.
+     *Wenn du einen Trust bei MidiAndMore.Net beantragst, muss die Quellmaschine, auf der der Trust liegt (also dein Server), einen Ident-Server ausführen.
+     *Wenn du keinen Ident-Server betreibst, wirst du beim Verbindungsversuch automatisch K-Lined (gebannt).
+     *
+     *Trusts erfordern eine eindeutige Userident pro User, da wir maximal 5 Verbindungen pro Userident erlauben.
+     *
+     *Bitte beachte: Wir bieten keinen Installations- oder Konfigurationssupport für IDENT-Dienste, entsprechende Anfragen werden ignoriert.
+    Keine Trusts für generische Hostnamen.
+     *Viele ISPs verwenden sogenannte „generische“ Hostnamen für ihre User. Diese bestehen meist aus einer Reihe von Buchstaben
+     *und Zahlen, gefolgt vom Namen des ISPs. Gute Beispiele sind T-Dialin (Beispiel: pD9551B44.dip.t-dialin.net) oder
+     *nextgentel (Beispiel: 55.80-202-24.nextgentel.com).
+     *
+     *Du kannst keinen Trust beantragen, wenn du einen solchen generischen Hostnamen hast, außer bei ISP-basiertem NAT (dann muss der ISP
+     *uns kontaktieren, nicht du) oder bei einer LAN-Party (dann gibt es einen temporären Trust, typischerweise nicht länger als 4 Tage,
+     *für eine geringe Anzahl an Usern, und er kann nicht verlängert werden).
+    Du musst als NAT-Gateway beantragen. LAN-Trusts sind nur temporär (4 Tage).
+     *Wenn ihr in einem LAN seid und alle dieselbe externe IP teilen und ihr einen temporären Trust wollt, müsst ihr einen NAT-Gateway-Trust beantragen.
+     *LAN-Trusts sind nur für LAN-Partys und daher nur temporär.
+    Dieser Host ist bereits trusted.
+     *Du hast einen Trust für eine IP-Adresse beantragt, die bei MidiAndMore.Net bereits trusted ist. Eine IP-Adresse kann nicht mehrfach trusted werden.
+    Zu viele Verbindungen angefordert.
+     *MidiAndMore.Net fügt normalerweise keinen neuen Trust hinzu, wenn eine sehr hohe Anzahl Verbindungen angefordert wurde. In diesem Fall werden
+     *mehr als 100-150 Verbindungen abgelehnt.
+    Falscher Trust-Typ.
+     *Je nach angefordertem Trust-Typ ist das Setup etwas unterschiedlich. Daher ist es sehr wichtig, den korrekten Typ anzufordern,
+     *sonst wird dein Antrag abgelehnt. Aktuelle Typen sind:
+     **Bouncer - Für einen kleinen Clan- oder Heim-Bouncer.
+     **Non-commercial bouncer - Für nicht-kommerzielle Organisationen, die Bouncer kostenlos oder für Mitarbeitende bereitstellen.
+     **Commercial bouncer - Für Personen, die Bouncer verkaufen oder andere Clans/Organisationen damit sponsern möchten.
+     **Non-commercial shell - Für nicht-kommerzielle Organisationen, die Shell-Accounts kostenlos anbieten, z. B. öffentliche Zugangssysteme.
+     **Commercial shell - Für kommerzielle Shell-Anbieter, die Shells verkaufen oder sponsern.
+     **LAN - Für kurze LAN-Veranstaltungen (4 Tage). Dieser Trust-Typ ist temporär.
+     **NAT gateway - Ein NAT-Gateway zwingt alle dahinter zur gleichen IP. Nutze diesen Typ, wenn du hinter einem NAT-Gateway bist.
+     **Other/special - Alles, was nicht in die obigen Kategorien passt, sollte als Other/special beantragt werden.
+    NAT-Gateway-Ablehnungen.
+     *Der häufigste Grund für die Ablehnung eines NAT-Gateway-Trusts ist, dass der Netzwerk-Admin (die Person, die das
+     *NAT-Gateway besitzt oder verwaltet) den Trust nicht selbst beantragt hat. Diese Person muss Antragsteller sein, sonst wird der Antrag abgelehnt.
+    Mehr Hilfe
+     *Wenn dein Trust mit einem für dich unklaren Grund abgelehnt wurde, kontaktiere #help.
+   Mehr Hilfe
+    *Wenn du weiterhin Probleme mit Trusts hast, die hier nicht beantwortet werden, hole dir Hilfe beim MidiAndMore.Net-Support in #feds (dem
+    *IRC-Operator-Channel von MidiAndMore.Net).
+  G/K-Lines (einschließlich gebannter Channels)
+   *Eine G-Line ist ein netzwerkweiter Bann vom MidiAndMore.Net-IRC-Netzwerk, entweder für einen User oder einen Channel (auch badchannel genannt). Eine K-Line ist ein
+   *Bann von einem bestimmten MidiAndMore.Net-IRC-Server. Alle diese Banns werden gegen User gesetzt, die gegen die Regeln von MidiAndMore.Net verstoßen.
+   *Mit welchem davon hast du Probleme?
+   G-Lines
+    *Glines werden NICHT entfernt, außer sie wurden irrtümlich gesetzt. Glines sind normalerweise zeitlich begrenzt.
+    *Du musst warten, bis die G-Line abläuft.
+    *Was ist der Grund deiner G-Line?
+    Zu viele Klone von deinem Host.
+     *Glines wegen Klonen bedeuten, dass du mehr als 5 Verbindungen zu quakenet von deinem Host hattest. Für mehr als 5
+     *Verbindungen ist ein Trust erforderlich.
+    Flood-Klone / Trojaner.
+     *Glines für Flood-Klone oder Trojaner bedeuten, dass dein PC möglicherweise mit einem Virus oder Trojaner infiziert ist. Prüfe, ob Firewall/Antivirus
+     *aktuell und sicher sind.
+    Nicht als root IRC nutzen.
+     *Wenn du auf einer Unix/Linux/*BSD-Maschine als root eingeloggt bist und dich mit MidiAndMore.Net verbindest, wirst du G-Lined. IRC als
+     *root zu verwenden ist unsicher. Starte deinen IRC-Client einfach als anderer Benutzer, dann kannst du dich verbinden.
+    Alle anderen Gründe.
+     *Für Hilfe zu allen anderen G-Lines kontaktiere die IRC-Operatoren in #feds.
+   K-Lines
+    *K-Lines werden auf MidiAndMore.Net inzwischen sehr selten verwendet, stattdessen werden G-Lines verwendet. Was ist dein K-Line-Grund?
+    Bitte benutze einen europäischen Server.
+     *Du bist K-Lined, weil du dich mit whole.ny.us.midiandmore.net (us.midiandmore.net) verbindest und ein europäischer IRC-User bist. Die US-MidiAndMore.Net-
+     *Server sind stark ausgelastet, daher wurden alle europäischen User K-Lined. Bitte verbinde dich mit einem europäischen Server. Eine Liste der MidiAndMore.Net-
+     *Server findest du unter https://irc.midiandmore.net/Community/servers.jsp .
+    Keine <dein Land hier>-Hosts auf diesem Server.
+     *Einige Server erlauben nur Verbindungen von Clients, die im selben Land wie der Server befinden.
+     *Wenn kein Server für dich funktioniert, musst du einen Bouncer nutzen (ein Rechner, der deine Verbindung weiterleitet, sodass du wie aus einem anderen „Land“/Host wirkst).
+    Alle anderen Gründe.
+     *Für Hilfe zu allen anderen K-Lines kontaktiere die IRC-Operatoren in #feds.
+   Badchannels (Channel G-Lines)
+    *Wenn du oder andere Operatoren deines Channels gegen die Regeln von MidiAndMore.Net verstoßen haben, kann es sein, dass dein Channel gebannt wurde. User, die
+    *beitreten wollen, erhalten dann „Access is denied on this server“. Bei allen Channel-Banns kontaktiere die IRC-Operatoren in #feds für Hilfe.
+  Verbindungsprobleme (außer G/K-Lines)
+   *Dieser Abschnitt behandelt Verbindungsprobleme, die du mit MidiAndMore.Net haben kannst. Dieser Abschnitt behandelt keine Banns von MidiAndMore.Net (d. h.
+   *G/K-Lines). Welche Probleme hast du?
+   10053-Verbindungsfehler.
+    *Die technische Bedeutung eines 10053-Fehlers lautet: „An established connection was aborted by the software in your host machine.“ Das bedeutet im Grunde,
+    *dass dein Computer die Verbindung wegen eines Ping-Timeouts geschlossen hat. Oft liegt das an einer schlechten Verbindung zwischen dir und dem IRC-
+    *Server. Versuche, dich mit einem anderen MidiAndMore.Net-Server zu verbinden, und prüfe, ob das Problem gelöst ist. Eine vollständige Serverliste gibt es unter
+    *https://irc.midiandmore.net/Community/servers.jsp .
+   Langsame Verbindung / Keine Ident-Antwort.
+    *Eine lange Verbindungszeit liegt oft daran, dass der IRC-Server keinen IDENT-Server auf deinem Rechner erreichen kann. Einer dieser
+    *Dienste löst das Problem meist. Wenn du mIRC nutzt, versuche: /IDENTD ON. Das Problem kann weiterhin auftreten, wenn du hinter einem Router,
+    *Firewall oder NAT-Gateway bist.
+    *
+    *Für technische User hinter einem NAT-Gateway: Das Ablehnen von Verbindungen auf TCP-Port 113 mit einem TCP-Reset-Paket kann die Verbindungszeit ebenfalls verkürzen.
+   Dein Hostname konnte nicht aufgelöst werden.
+    *Das ist eigentlich kein Problem, es bedeutet nur, dass es keinen Reverse-DNS-Eintrag für deine IP-Adresse gab.
+   Alle anderen Verbindungsprobleme.
+    *Bei allen anderen Verbindungsproblemen kontaktiere bitte den MidiAndMore.Net-Support in #help.
+  Missbrauchsprobleme
+   Dieser User spammt mich privat oder in einem Channel.
+    *Am einfachsten bannst du ihn aus allen Channels, in denen du Op bist, und fügst ihn zu deiner Ignore-Liste hinzu mit
+    *dem Befehl /ignore nickname!ident@host, wobei nickname der Nick, ident das Ident-Feld (der Teil vor
+    *dem @ bei /whois) und host der Host ist. Ein „*“ kann als Wildcard verwendet werden, zum Beispiel
+    */ignore fred!*@* ignoriert jeden User namens fred; wenn er sich aber in fred2 umbenennt, wird er nicht mehr
+    *ignoriert. Du kannst /ignore *fred*!*@* nutzen; das ignoriert alle User mit fred im Namen, z. B. fred,
+    *fred2, imfredaswell. Du kannst auch alle User eines bestimmten Hosts ignorieren mit /ignore *!*@1234567890.isp.com. Das
+    *ignoriert alle User mit dem Host „1234567890.isp.com“. Du kannst Ident zusammen mit dem Host oder alleine verwenden.
+    *Es gibt viele mögliche Kombinationen.
+    *Wenn du weiterhin Probleme mit diesem User hast, könnten die Operatoren in #feds interessiert sein, falls der User störend ist.
+    *IRCops einzuschalten ist der letzte Ausweg, in den meisten Fällen sollte /ignore ausreichen.
+   Dieser User bedroht mich und sagt mir, ich soll meinen Nick ändern.
+    *Nicks gehören niemandem. Wenn ein Nick frei ist, kann ihn jeder nutzen. Wenn die Person dich weiter deswegen kontaktiert,
+    *kannst du sie mit /ignore ignorieren.
+    *Einzige Ausnahme sind Network-Staff- und Service-Nicks; in diesen Fällen kannst du auch ohne Warnung getrennt werden.
+   Dieser User spammt mich mit einer Onjoin-Nachricht jedes Mal, wenn ich einen Channel betrete oder verlasse.
+    *Je nach Inhalt der Nachricht gibt es verschiedene Maßnahmen. Wenn sie eine URL enthält, klicke nicht darauf. Die meisten Würmer
+    *und Trojaner verbreiten sich darüber, dass User auf URLs klicken. Gleiches gilt für Skripte, die dir beim Join gepostet werden
+    *(oft mit $decode()-Text) - führe solche Skripte nicht aus. Wenn ein User beim Join eine URL oder ein Skript postet, kontaktiere #feds oder #help. Wenn er in einem Channel ist, in dem du Op bist,
+    *kannst du ihn auch bannen, damit keine weiteren User möglicherweise infiziert werden.
+    *Wenn er nur einen Channel bewirbt, ignoriere ihn einfach über deine Ignore-Liste oder schließe das
+    *Nachrichtenfenster.
+   Andere Probleme
+    *Wenn es ein Missbrauchsproblem gibt, das aus deiner Sicht Aufmerksamkeit durch MidiAndMore.Net-Staff erfordert, kontaktiere bitte #feds für Hilfe
+    *und um den Vorfall zu melden.
+ Informationen und FAQs
+  *Informationen über MidiAndMore.Net, seine Staff-Mitglieder und Dienste.
+  IRC allgemein
+   Verfügbare Channel-Modi auf MidiAndMore.Net.
+    *Es gibt drei verschiedene Arten von Channel-Modi auf MidiAndMore.Net, wie unten gezeigt. Schutz- und sonstige Modi können
+    *mit „/MODE #channel +mode“ gesetzt und mit „/MODE #channel -mode“ entfernt werden. Modi, die auf User gesetzt werden, können mit
+    *„/MODE #channel +mode nickname|mask“ gesetzt und mit „/MODE #channel -mode nickname|mask“ entfernt werden. Die Flags sind case-sensitive.
+    Auf User gesetzte Modi
+     *Modi, die du auf User in deinem Channel setzen kannst.
+     Channel-Modus +b
+      *Bannt eine Adresse aus einem Channel. Jeder User mit passender Hostmask wird vom Beitritt ausgeschlossen.
+      *Wenn der User bereits im Channel ist und keinen Op/Voice-Status hat, kann der User nicht sprechen.
+      *Verwendung: /MODE #channel +b nick!ident@host. Hinweis: Wenn ein neuer MidiAndMore.Net-Fake-Host gebannt wird (z. B. *!*@authname.users.midiandmore.net),
+      *ist dieser authname unabhängig vom Host des Users gebannt.
+     Channel-Modus +e
+      *Nimmt einen Ban von einem Channel aus. Wenn diese User-Maske gebannt ist, ignoriert die Exception den Ban.
+      *Wenn der User bereits im Channel ist und keinen Op/Voice-Status hat, kann der User sprechen.
+      *Verwendung: /MODE #channel +e nick!ident@host. Hinweis: Wenn ein neuer MidiAndMore.Net-Fake-Host ausgenommen wird (z. B. *!*@authname.users.midiandmore.net),
+      *ist dieser authname unabhängig vom Host des Users ausgenommen.
+     Channel-Modus +o
+      *Gibt einem User Operator-Status in einem Channel, wodurch er Channel-Modi setzen/entfernen, User kicken/bannen, das Topic setzen bei
+      *Channel-Modus +t sowie User in den Channel einladen kann. Verwendung: /MODE #channel +o <nickname>.
+     Channel-Modus +v
+      *Gibt einem User Voice-Status in einem Channel und erlaubt dadurch das Sprechen, wenn der Channel moderiert ist.
+      *Verwendung: /MODE #channel +v <nickname>.
+    Schutz-Modi
+     *Modi, die zum Schutz, Verbot und zur Kontrolle auf den Channel selbst gesetzt werden.
+     Channel-Modus +c
+      *Verbietet mIRC- und ANSI-Farbcodes in einem Channel.
+     Channel-Modus +C
+      *Verbietet channelweite CTCPs.
+     Channel-Modus +i
+      *Nur Einladung. Verhindert den Beitritt, bis ein Channel-Op den User einlädt. Du kannst User einladen mit
+      */INVITE <nickname> #channel.
+     Channel-Modus +j
+      *Setzt ein Join-Flood-Limit. Verwendung /MODE #channel +j <Anzahl Joins>:<Zeit in Sekunden>
+     Channel-Modus +k
+      *Setzt ein Key/Passwort auf einen Channel. Ohne dieses können User den Channel nicht betreten. Verwendung: /MODE #channel +k <key>. Zum
+      *Beitritt nutze /JOIN #channel <key>.
+     Channel-Modus +l
+      *Erlaubt nur eine bestimmte Anzahl Personen im Channel. Verwendung: /mode #channel +l <limit>.
+     Channel-Modus +m
+      *Dieser Modus moderiert den Channel, d. h. User ohne Voice/Op-Status können keine Nachrichten in den Channel senden.
+     Channel-Modus +n
+      *Verhindert externe Nachrichten an den Channel. User müssen im Channel sein, um in ihn zu schreiben.
+     Channel-Modus +N
+      *Verbietet Channel-Notices.
+     Channel-Modus +p
+      *Dieser Modus ist veraltet, es wird empfohlen, Channel-Modus +s zu verwenden.
+     Channel-Modus +r
+      *Dieser Modus erlaubt nur Usern mit AuthServ-Auth den Channel-Beitritt. Sie erhalten die Meldung „You must have a registered nick“,
+      *wenn sie ohne Auth beitreten möchten. Nach erfolgreichem Auth können sie normal beitreten.
+      *+r ist während Flood-Angriffen oft nützlicher als +i (invite only).
+     Channel-Modus +s
+      *Geheim. Verhindert, dass User im Channel oder das Topic extern sichtbar sind. Der Channel erscheint außerdem nicht in
+      */LIST oder /WHOIS.
+     Channel-Modus +t
+      *Nur Channel-Operatoren dürfen das Topic setzen.
+    Sonstige Modi
+     *Weitere Channel-Modi.
+     Channel-Modus +d
+      *Dieser Modus wird automatisch vom Server gesetzt, wenn Channel-Modus +D entfernt wird und noch User im Channel versteckt sind.
+      *Er kann nur vom Server gesetzt/gelöscht werden und wird automatisch entfernt, wenn alle User sichtbar sind. Versteckte User können
+      *mit /NAMES -d #channel angezeigt werden.
+     Channel-Modus +D
+      *Verzögerter Join-Modus. Beitretende User werden erst gezeigt, wenn sie Op/Voice erhalten, das Topic ändern oder sprechen. Beachte, dass versteckte
+      *User beim Entfernen des Modus nicht aufgedeckt werden. Versteckte User können mit /NAMES -d #channel angezeigt werden.
+     Channel-Modus +u
+      *Wenn ein User in irgendeinem Channel mit +u ist, werden seine Quit- und Part-Nachrichten entfernt, z. B. Quit (Benutzerdefinierte Quit-
+      *Nachricht) erscheint als Quit (Signed off).
+   Verfügbare User-Modi auf MidiAndMore.Net.
+    *Die folgenden Modi werden von einem User selbst gesetzt und nicht von jemand anderem auf einen Channel, z. B.
+    */mode user +i und der Modus kann mit /mode user -i entfernt werden
+    User-Modus +d
+     *Deaf. Du empfängst keine Channel-Notices oder -Nachrichten. Queries und private Nachrichten werden weiterhin empfangen.
+    User-Modus +i
+     *Invisible. Kein normaler User kann dich mit /WHO, /NAMES oder ähnlichen Suchfunktionen finden.
+    User-Modus +R
+     *Erlaubt nur Usern mit AuthServ-Auth, dir Privmsg/Notice/CTCP zu senden.
+    User-Modus +w
+     *Wallops/walluser. Als normaler User erhältst du walluser-Nachrichten von IRC-Operatoren. Als IRC-Operator
+     *erhältst du zusätzlich wallops.
+    User-Modus +x
+     *Fake-Host. Ändert deinen Host zu „authname.users.midiandmore.net“, wobei authname dein AuthServ-Accountname ist. User sehen dich mit diesem neuen Host quitten
+     *und erneut joinen. Es wird empfohlen, diesen Modus vor dem Betreten von Channels zu setzen, um maximale Sicherheit zu erreichen.
+     *Hinweis: Um zu deinem alten Hostnamen zurückzukehren, musst du dich neu verbinden.
+   Wie man Channel-/User-Modi setzt/entfernt.
+    *Um einen Channel-Modus zu setzen, verwende: /MODE #channel +modes <params> - wobei <params> je nach gesetzten Modi optionale Parameter sind.
+    *User-Modi sind grundsätzlich gleich: /MODE nickname +modes. Du musst deinen aktuellen Nick verwenden, NICHT deinen AuthServ-
+    *authname. Für mIRC-User geht auch //MODE $me +modes.
+    *
+    *Zum Entfernen eines Modus verwende einfach - statt +.
+   Bedeutung der Symbole vor Channels in WHOIS.
+    *Es gibt mehrere Symbole, die du vor Channel-Namen im WHOIS eines Users sehen kannst. Diese sind:
+    ** @#channel - der User hat Operator-Status im Channel.
+    ** +#channel - der User hat Voice-Status im Channel.
+    ** <#channel - der User ist in einem Channel mit Channel-Modus +D oder +d unsichtbar.
+    ** -#channel - der User hat User-Modus +d und empfängt keine Channel-Nachrichten.
+   Gründe für „Cannot send to channel“.
+    *Dafür kann es mehrere Gründe geben:
+    ** Der Channel kann moderiert sein (Channel-Modus +m) und du hast ggf. kein Voice/Op.
+    ** Du versuchst möglicherweise, farbigen Text in einen Channel mit Channel-Modus +c zu senden.
+    ** Du versuchst möglicherweise, einen CTCP in einen Channel mit Channel-Modus +C zu senden.
+    ** Du versuchst möglicherweise, eine Notice in einen Channel mit Channel-Modus +N zu senden.
+    ** Du bist möglicherweise im Channel gebannt und hast keinen Voice/Op-Status.
+   Wie du deinen Hostnamen auf MidiAndMore.Net versteckst.
+    *Um deinen Hostnamen auf MidiAndMore.Net zu verstecken, musst du dich bei AuthServ authentifizieren und User-Modus +x setzen (/MODE dein_nickname +x). Dadurch wird
+    *dein Hostname zu qauth.users.midiandmore.net geändert.
+   Quit-Meldungen auf MidiAndMore.Net.
+    *Die Quit-Meldungen, die du auf MidiAndMore.Net sehen kannst, sind:
+    Excess flood
+     *Diese Quit-Meldung zeigt, dass du in zu kurzer Zeit zu viele Daten an den IRC-Server gesendet hast und der Server
+     *angenommen hat, dass du ihn flooden willst. Eine gute Vorbeugung ist, Flood-Schutz im IRC-Client zu aktivieren. mIRC-User
+     *können dazu Datei -> Optionen -> IRC -> Flood öffnen und „Enable flood protection“ aktivieren. Die Standardwerte sind für
+     *die meisten User ausreichend.
+    Max sendQ exceeded
+     *Diese Quit-Meldung tritt auf, wenn du Daten vom Server nicht schnell genug empfangen konntest, d. h. der IRC-Server hat
+     *versucht, dir zu viele Daten zu senden und die Verbindung geschlossen. Das passiert oft, wenn du ein LIST aller IRC-Channels auf MidiAndMore.Net machst,
+     *oder wenn du eine WHO-Abfrage auf einem großen Channel ausführst; bei schlechter Internetverbindung kann das zu Disconnects führen.
+    Ping timeout
+     *Alle IRC-Server senden regelmäßig eine sogenannte PING-Anfrage, um zu prüfen, ob die Client-Verbindung noch aktiv ist. Der IRC-
+     *Client muss innerhalb einer bestimmten Zeit darauf antworten, sonst gilt die Verbindung als nicht mehr aktiv und wird geschlossen
+     *(mit dieser Quit-Meldung). Wenn du häufig Ping-Timeouts bekommst, solltest du einen anderen (möglichst näheren)
+     *MidiAndMore.Net-Server versuchen; eine vollständige Serverliste findest du unter https://irc.midiandmore.net/Community/servers.jsp .
+    Connection reset by peer
+     *Diese Quit-Meldung entsteht, wenn der IRC-Client die Verbindung zum Server unsauber schließt und der Server nicht erkennt,
+     *dass die Verbindung beendet wurde. Dadurch entsteht ein sogenannter Ghost-User, der so wirkt, als sei der Client
+     *noch verbunden, obwohl er es nicht ist. Wenn der Server Daten senden will, bemerkt er, dass die Verbindung nicht mehr besteht,
+     *und sie wird zurückgesetzt. Dadurch wird der Ghost-User mit der genannten Quit-Meldung beendet.
+    Read error: EOF from client
+     *Diese Quit-Meldung wird angezeigt, wenn der Client die Verbindung zum IRC-Server vorzeitig beendet hat und der Server
+     *mehr Daten erwartet hat. Das passiert oft, wenn die IRC-Client-Software abstürzt oder plötzlich beendet wird und die Verbindung nicht
+     *„sauber“ schließen kann.
+    Write error, closing link
+     *Diese Quit-Meldung bedeutet, dass der IRC-Server aus irgendeinem Grund keine Daten an den Client senden konnte. Dadurch wurde der Client
+     *getrennt.
+    Broken pipe
+     *Diese Quit-Meldung entsteht, wenn es einen plötzlichen Verbindungsabbruch zwischen IRC-Server und Client gibt. Das kann
+     *aus vielen Gründen passieren, liegt aber generell an der volatilen Natur des Internets.
+    .net .split
+     *Diese Quit-Meldung zeigt, dass der User auf einem Server war, der vom restlichen IRC-Netz getrennt war, ein sogenannter Netsplit. Wenn die
+     *Server wieder verbinden, joint der User alle vorherigen Channels wieder und der Server vergibt ggf. wieder Voice/Op-
+     *Status.
+    Nick collision
+     *Diese Quit-Meldung tritt auf, wenn zwei oder mehr User gleichzeitig auf denselben Nick wechseln. Da nur eine Person
+     *einen Nick gleichzeitig haben kann, trennt der Server die User.
+    Older nick overruled
+     *Diese Quit-Meldung sieht man nur nach einem Netsplit, wenn Server wieder miteinander verbinden. Wenn du während eines Netsplits den Nick geändert hast und
+     *ein User auf dem abgespaltenen Server den Nick bereits hatte, wirst du getrennt, damit der ältere User mit diesem
+     *Nick weitermachen kann.
+    G-lined
+     *Diese Quit-Meldung wird angezeigt, wenn ein User aus verschiedenen Gründen vom gesamten IRC-Netz gebannt ist. MidiAndMore.Net sendet *immer* den
+     *G-Line-Grund; wenn du ihn nicht siehst, könnte dein IRC-Client ihn ausblenden. Die Rules-FAQ enthält einen Abschnitt mit Erklärungen
+     *zu den Gründen für Disconnect/Bann im Netz. Bei G-Line-Anfragen kannst du info@midiandmore.net mailen.
+    K-lined
+     *Diese Quit-Meldung wird angezeigt, wenn ein User aus verschiedenen Gründen von einem bestimmten IRC-Server gebannt ist. Wie bei G-Lines
+     *sendet MidiAndMore.Net *immer* den K-Line-Grund. Auf MidiAndMore.Net sind K-Lines und G-Lines praktisch dasselbe. Bei K-Line-Anfragen kannst du
+     *info@midiandmore.net mailen.
+    Killed (*.midiandmore.net (reason)))
+     *Diese Quit-Meldung wird angezeigt, wenn ein User von einem IRC-Operator zwangsweise vom IRC-Netz getrennt wird (KILLed). Der Grund
+     *steht in der Quit-Meldung. Ein häufiger Kill-Grund ist „You are violating MidiAndMore.Net rules. Please read https://irc.midiandmore.net/Community/rules.jsp .
+     *ID: xxxxxxx“, was bedeutet, dass du vom Anti-Spam-Dienst SpamScan getrennt wurdest.
+   Wie du allen Usern Voice gibst, die deinen Channel betreten.
+    *ChanServ hat diese Funktion, wir erklären sie, wenn wir mehr dazu wissen.
+    *mIRC-User können /avoice *!*@* #channel verwenden
+   Was ist ein Netsplit?
+    *Ein Netsplit ist, wenn ein oder mehrere Server vom restlichen Netzwerk getrennt werden. Das kann durch Serverprobleme passieren
+    *oder einfach dadurch, dass die Netzwerkverbindungen zwischen dem Server und seinem Hub ausgefallen sind.
+    *Netsplits passieren, das gehört zu IRC dazu. In dieser Zeit kannst du sehen, wie User verbinden und neu verbinden, Server
+    *Usern Op oder Voice geben und manche Dienste, wie AuthServ und ChanServ, langsamer reagieren oder den Channel kurz verlassen.
+    *Wenn du diese Probleme bemerkst, hab bitte Geduld, das Staff-Team tut alles, um den vollständigen,
+    *funktionierenden Dienst so schnell wie möglich wiederherzustellen.
+   IRC-Befehlsübersicht
+    *Die für User auf MidiAndMore.Net verfügbaren Befehle sind:
+    ADMIN, AWAY
+     *ADMIN zeigt Informationen über den Administrator des IRC-Servers, mit dem du verbunden bist.
+     *Verwendung: /ADMIN
+     *
+     *AWAY markiert dich im IRC-Netz als abwesend oder wieder anwesend, wenn kein Away-Grund angegeben ist.
+     *Verwendung: /AWAY [Grund]
+    CNOTICE, CPRIVMSG
+     *CNOTICE ist ein neuer Befehl, mit dem du „target change too fast“-Warnungen umgehen und Notices an User in einem gemeinsamen
+     *Channel senden kannst, sofern du dort Op bist.
+     *Verwendung: /CNOTICE nickname #channel :Nachricht
+     *
+     *CPRIVMSG ist ein neuer Befehl, mit dem du „target change too fast“-Warnungen umgehen und Privmsgs an User in einem gemeinsamen
+     *Channel senden kannst, sofern du dort Op bist.
+     *Verwendung: /CPRIVMSG nickname #channel :Nachricht
+    GLINE
+     *GLINE zeigt Informationen über eine auf das IRC-Netz angewendete G-Line.
+     *Verwendung: /GLINE mask - wobei mask die Form nick!ident@host hat
+    HELP
+     *HELP zeigt eine Liste aller auf dem IRC-Server verfügbaren Befehle.
+     *Verwendung: /HELP
+    INFO, INVITE, ISON
+     *INFO zeigt Informationen über die IRC-Server-Software.
+     *Verwendung: /INFO
+     *
+     *INVITE dient dazu, einen anderen User in einen IRC-Channel einzuladen. Du musst Channel-Operator sein, um einen User in den Channel einzuladen.
+     *Verwendung: /INVITE nickname #channel
+     *
+     *ISON fragt den IRC-Server, ob der angegebene User online ist.
+     *Verwendung: /ISON nickname
+    JOIN
+     *JOIN dient zum Beitritt in einen IRC-Channel.
+     *Verwendung: /JOIN #channel
+    KICK
+     *KICK entfernt einen User zwangsweise aus einem IRC-Channel. Du musst Channel-Operator sein, um einen User aus einem Channel zu kicken.
+     *Verwendung: /KICK #channel nickname [Grund]
+    LIST, LUSERS
+     *LIST listet die im Netzwerk verfügbaren Channels auf. Wenn ein exakter Channelname angegeben wird, werden Topic und User-Anzahl
+     *dieses Channels zurückgegeben.
+     *Verwendung: /LIST parameter - wobei parameter ein Channelname oder andere Flags sind. Siehe die Guides auf der MidiAndMore.Net-Website für weitere Informationen.
+     *
+     *LUSERS zeigt Informationen über die Anzahl der mit dem IRC-Netz und dem lokalen Server verbundenen User sowie Channel-Informationen.
+     *Verwendung: /LUSERS
+    MODE, MOTD
+     *MODE wird verwendet, um Channel- oder User-Modi zu setzen. Siehe die Liste der auf MidiAndMore.Net verfügbaren Channel- und User-Modi für Beispiele dieses
+     *Befehls.
+     *Verwendung: /MODE nickname|#channel +|-modes [parameter]
+     *
+     *MOTD zeigt die Message of the Day des lokalen IRC-Servers.
+     *Verwendung: /MOTD
+    NAMES, NICK, NOTICE
+     *NAMES listet die User eines IRC-Channels auf.
+     *Verwendung: /NAMES #channel
+     *
+     *NICK ändert deinen Nick im Netzwerk.
+     *Verwendung: /NICK nickname
+     *
+     *NOTICE sendet eine Notice an einen Channel oder User.
+     *Verwendung: /NOTICE nickname|#channel Nachricht
+    PART, PRIVMSG
+     *PART verlässt einen IRC-Channel.
+     *Verwendung: /PART #channel Verlassensnachricht
+     *
+     *PRIVMSG sendet eine Nachricht an einen Channel oder User.
+     *Verwendung: /MSG nickname|#channel Nachricht.
+    QUIT
+     *QUIT trennt die Verbindung zum IRC-Server.
+     *Verwendung: /QUIT Quit-Nachricht.
+    SILENCE
+     *SILENCE fügt serverseitige Ignores hinzu, entfernt sie oder listet sie auf.
+     *Verwendung: /SILENCE [+|-][mask] - wobei mask die Form nick!user@host hat
+    TIME, TOPIC
+     *TIME zeigt die aktuelle Zeit auf dem IRC-Server, mit dem du verbunden bist.
+     *Verwendung: /TIME
+     *
+     *TOPIC setzt oder zeigt das Topic eines IRC-Channels.
+     *Verwendung: /TOPIC #channel [topic]
+    VERSION
+     *VERSION zeigt Informationen über die Version des IRC-Servers, den du nutzt, sowie die unterstützten Befehle und Modi.
+     *Verwendung: /VERSION
+    WALLCHOPS, WALLVOICES, WHO, WHOIS, WHOWAS
+     *WALLCHOPS sendet eine Nachricht nur an die Operatoren eines Channels.
+     *Verwendung: /WALLCHOPS #channel :nachricht
+     *
+     *WALLVOICES sendet eine Nachricht nur an die User mit Voice in einem Channel.
+     *Verwendung: /WALLVOICES #channel :nachricht
+     *
+     *WHO dient dazu, den IRC-Server nach Informationen über User zu fragen.
+     *Verwendung: /WHO parameter - Siehe die Guides auf der MidiAndMore.Net-Website für weitere Informationen zu diesem Befehl.
+     *
+     *WHOIS zeigt Informationen über einen bestimmten IRC-User.
+     *Verwendung: /WHOIS nickname [nickname] - wenn nickname zweimal angegeben wird, wird ein erweitertes WHOIS ausgeführt.
+     *
+     *WHOWAS zeigt Informationen über einen früher verbundenen IRC-User.
+     *Verwendung: /WHOWAS nickname
+  MidiAndMore.Net-Dienste
+   *MidiAndMore.Net betreibt eine Reihe von Diensten für User. Manche interagieren mit dir, während
+   *andere im Hintergrund arbeiten, um das Netzwerk zu verbessern und zu schützen, ohne dass du es bemerkst.
+   *JServ stellt derzeit folgende Dienste bereit: AuthServ, ChanServ, NickServ, HostServ, SaslServ,
+   *StatsServ, HelpServ, OperServ und SpamScan.
+   AuthServ
+    *AuthServ ist der Konto- und Authentifizierungsdienst von MidiAndMore.Net.
+    *Er bietet Kontoregistrierung, Authentifizierung und Passwortverwaltung für alle anderen Dienste.
+    Wie erkennt mich AuthServ? / Wie authentifiziere ich mich bei AuthServ?
+     *Um ein Konto bei AuthServ zu erstellen, nutze
+     */msg AuthServ REGISTER email@address email@address (deine E-Mail wird zur Verifizierung zweimal gesendet). AuthServ sendet dir anschließend eine
+     *Notice/Nachricht, entweder dass ein Konto erstellt wurde oder dass ein Konto unter diesem Namen bereits existiert. Wenn das
+     *Konto erstellt wurde, prüfe die angegebene E-Mail-Adresse auf eine E-Mail von AuthServ mit Hinweisen zum weiteren
+     *Vorgehen (zu Stoßzeiten kann die E-Mail bis zu 20 Minuten dauern). Wenn du die Meldung bekommst, dass ein Konto bereits existiert,
+     *musst du deinen Nick auf IRC ändern, da der Prozess deinen aktuellen Nick als Benutzernamen verwendet. Sobald du das
+     *Konto erstellt hast, kannst du wieder zu deinem normalen Nick wechseln. Es wird dringend empfohlen, dein Passwort beim
+     *ersten Auth zu ändern. Nutze nichts, das deinem Namen ähnelt, leicht erraten werden kann, wie dein Wohnort,
+     *oder etwas aus einem Wörterbuch. Eine Mischung aus Zeichen und Zahlen ist ratsam. Bei jeder Verbindung
+     *zu MidiAndMore.Net musst du dich mit folgendem Befehl bei AuthServ authentifizieren: /msg AuthServ@services.midiandmore.net IDENTIFY authname password.
+     *Wenn du bereits authentifiziert bist, kannst du dich nicht erneut authentifizieren. Du kannst dich auch nicht de-authen; dafür musst du dich neu verbinden.
+    Nützliche AuthServ-Befehle
+      */msg AuthServ REGISTER <email> <email-confirm>
+      */msg AuthServ IDENTIFY <account> <password>
+      */msg AuthServ PASSWD <old-password> <new-password>
+      */msg AuthServ REQUESTPASSWORD <email>
+      */msg AuthServ INFO [account]
+      */msg AuthServ SHOWCOMMANDS
+      */msg AuthServ VERSION
+    Probleme mit AuthServ
+     Ich habe mein AuthServ-Passwort vergessen
+      *Wenn du das Passwort deines AuthServ-Kontos verloren hast, nutze zum Anfordern: /msg AuthServ REQUESTPASSWORD email@address.
+      *Wenn du keinen Zugriff mehr auf die E-Mail-Adresse hast, mit der du dein AuthServ-Konto erstellt hast, oder dein AuthServ-Konto wegen
+      *Inaktivität abgelaufen ist, musst du ein neues Konto erstellen.
+     Mehr Hilfe
+      *Für weitere Hilfe betrete #help auf IRC.
+   ChanServ
+    *ChanServ ist der Channel-Management-Dienst.
+    *Er verwaltet Channel-Registrierung, Zugriffslisten und Channel-Administrationsbefehle.
+    ChanServ verwenden
+     *Häufige Befehle sind:
+     */msg ChanServ REGISTER #channel
+     */msg ChanServ ADDUSER #channel account OP|VOICE
+     */msg ChanServ DELUSER #channel account
+     */msg ChanServ MODUSER #channel account OP|VOICE|BAN
+     */msg ChanServ LISTUSERS #channel
+     */msg ChanServ SET #channel <setting> <value>
+     */msg ChanServ INFO #channel
+     */msg ChanServ REQUESTOP #channel [nickname]
+     */msg ChanServ REQUESTOWNER #channel
+     */msg ChanServ SHOWCOMMANDS
+   NickServ
+    *NickServ schützt registrierte Nicknamen.
+    *Wenn ein geschützter Nick ohne korrekte Authentifizierung verwendet wird, kann NickServ diesen User trennen.
+    *Nützliche Befehle:
+    */msg NickServ INFO <nickname>
+    */msg NickServ HELP
+    */msg NickServ SHOWCOMMANDS
+    */msg NickServ VERSION
+   HostServ
+    *HostServ verwaltet virtuelle Hosts (vHosts).
+    *Nützliche Befehle:
+    */msg HostServ VHOST <ident> <host>
+    */msg HostServ SHOWCOMMANDS
+    */msg HostServ VERSION
+   SaslServ
+    *SaslServ bietet SASL-Authentifizierung für kompatible IRC-Clients beim Login.
+    *Normalerweise ist kein manueller User-Befehl nötig. Konfiguriere SASL in deinem IRC-Client.
+   StatsServ
+    *StatsServ liefert Channel-Statistiken und Rankings.
+    *Nützliche Befehle:
+    */msg StatsServ STATS <#channel> [nickname]
+    */msg StatsServ TOP10 <#channel> [lines|words|chars]
+    */msg StatsServ CHSTATS <#channel>
+    */msg StatsServ QUOTE <#channel>
+    */msg StatsServ HELP
+   OperServ
+    *OperServ stellt IRC-Operator-Funktionen bereit (nur für Opers).
+    *Typische Befehle enthalten GLINE/UNGLINE, TRUST*-Verwaltung, KILL, CHANLIST und STATS.
+   HelpServ
+    *HelpServ ist der Dienst, der dieses Hilfesystem bereitstellt.
+    *Nützliche Befehle sind HELP, TOPICS, SEARCH, COMMAND, SHOWCOMMANDS und VERSION.
+   SpamScan
+    *SpamScan ist der SpamScan von MidiAndMore.Net und sitzt in bestimmten Channels. Wenn es dich als Spammer erkennt, trennt es dich
+    *vom Netzwerk. Meist kannst du einfach erneut joinen, wenn es jedoch regelmäßig passiert, kann es sein,
+    *dass du für kurze Zeit gebannt wirst.
+    Wie kann ich verhindern, von SpamScan gekickt (gekilled) zu werden?
+     *Die Art und Weise, wie SpamScan Spam erkennt, ist nicht öffentlich bekannt. Versuche aber, den Befehl /amsg nicht zu häufig zu nutzen,
+     *schreibe lieber zusammenhängende Sätze statt jede Zeile als einzelnes Wort und
+     *bewirb keine Channels (siehe MidiAndMore.Net-Regeln zur Klarstellung). Das hilft in den meisten Fällen.
+    Wie kann ich SpamScan anfordern?
+     *SpamScan kann per /MSG SpamScan REQUEST #channel angefordert werden.
+     *Wenn dir mitgeteilt wird, dass du die Voraussetzungen nicht erfüllst, kannst du SpamScan nicht erhalten.
+     *Beschwerden in den Support-Channels helfen nicht.
+    Wie entferne ich SpamScan aus meinem Channel?
+     *Um SpamScan aus deinem Channel zu entfernen, musst du mit den IRC-Operatoren in #feds sprechen.
+   Wo ist Nickserv?
+    *NickServ ist auf MidiAndMore.Net als Teil von JServ aktiv.
+    *Nutze /msg NickServ HELP für verfügbare Befehle.
+   Wo ist ChanServ?
+    *ChanServ ist auf MidiAndMore.Net als Teil von JServ aktiv.
+    *Nutze /msg ChanServ HELP oder /msg ChanServ SHOWCOMMANDS für verfügbare Befehle.
+   Was ist ChanServ?
+    *ChanServ ist der Channel-Dienst und wird für Channel-Registrierung und Zugriffsverwaltung verwendet.
+    *Um Ops in einem Channel ohne Ops anzufordern (Ops schließen SpamScan und ChanServ ein), nutze /msg ChanServ requestop #channel [nickname]. Nutze den nickname-
+    *Teil, wenn du Ops für einen anderen User anfordern willst, sonst versucht ChanServ dich zu op'en. Während eines Netsplits kannst du diesen Befehl nicht nutzen,
+    *und ChanServ wird dir das beim Versuch mitteilen. ChanServ oppt dich außerdem nur, wenn es dich als bekannten Op für diesen Channel erkennt.
+   Was ist H?
+    *H/HelpServ ist der Dienst, der die Hilfe bereitstellt, die du gerade liest.
+    *Er hat außerdem verschiedene Befehle und Systeme für Support-Channels.
+    *Nutze /msg HelpServ HELP, um zu starten.
+   Trusts
+    *Du darfst nicht mehr als 5 IRC-Clients vom selben Computer aus auf MidiAndMore.Net betreiben. Das dient dazu,
+    *Flood-Klone und andere Arten von IRC-Angriffen zu verhindern. Ein Trust ist eine Einstellung auf MidiAndMore.Net, die dir mehr als 5
+    *Verbindungen vom selben Computer erlaubt, ohne automatisch gebannt zu werden.
+    Wie bekomme ich einen Trust?
+    *Um einen Trust zu bekommen, betrete #help und gib folgende Informationen an:
+     *1. Die zu vertrauenden IP-Adressen. Diese müssen statische (d. h. unveränderliche) Adressen sein. Wir vergeben keine Trusts für nicht-statische Adressen.
+     *Wenn du keine garantierte statische IP hast (und die meisten ADSL-Anbieter geben KEINE statischen IP-Adressen aus), bekommst du keinen Trust.
+     *Es spielt keine Rolle, ob du monatelang dieselbe IP hattest - wenn es irgendeine Möglichkeit gibt, dass sie sich ändert, bekommst du keinen Trust.
+     *Die einzige Ausnahme ist kurzfristige Nutzung, z. B. eine LAN-Party. In diesem Fall vergeben wir einen einmaligen temporären Trust
+     *für eine nicht-statische IP. Dieser gilt nie länger als 4 Tage.
+     *
+     *2. Eine Abuse-E-Mail-Adresse. Wir benötigen die E-Mail-Adresse des IP- oder Service-Administrators, damit wir ihn bei Missbrauch
+     *des Trusts kontaktieren können. Das ist verpflichtend und wird nicht aufgehoben.
+     *
+     *3. Einen Grund für den Trust. Du musst erklären, warum du mehr als 5 Verbindungen zu MidiAndMore.Net benötigst.
+     *
+     *4. Die benötigte Anzahl an Verbindungen (kann vom Oper reduziert werden, wenn es zu viele sind).
+     *
+     *5. Und den Home-Channel auf MidiAndMore.Net (falls vorhanden).
+     *
+     *Bitte beachte: Für einen Bouncer benötigen wir einen funktionierenden identd.
+     *
+     *Wir befinden uns derzeit in einem Entwicklungsprozess für unsere Trust-Systeme. Bitte beachte die neuesten Nachrichten auf http://www.midiandmore.net
+     *für Informationen, wie man einen Trust erhält und welche Trust-Arten aktuell angeboten werden.
+    Ich möchte CGI:IRC verwenden. Kann ich einen Trust bekommen?
+     *Nein. Wir vergeben keine Trusts für webbasierte IRC-Clients wie CGI:IRC, die die echten Verbindungsinformationen der
+     *nutzenden Person nicht weiterreichen.
+    Ich habe eine dynamische ADSL-Verbindung - kann ich einen Trust bekommen?
+     *Nein. Wir vergeben keine Trusts mehr für Hostnamen oder IP-Adressen, die nicht statisch (d. h. unveränderlich) sind. Selbst wenn du über Monate
+     *denselben Hostnamen oder dieselbe IP hattest: Wenn sie nicht garantiert unverändert bleiben, vergeben wir keinen Trust.
+    Generische Hostnamen
+     *Viele ISPs verwenden sogenannte „generische“ Hostnamen für ihre User. Diese bestehen meist aus einer Reihe von Buchstaben
+     *und Zahlen, gefolgt vom Namen des ISPs. Gute Beispiele sind T-Dialin (Beispiel: pD9551B44.dip.t-dialin.net) oder
+     *nextgentel (Beispiel: 55.80-202-24.nextgentel.com).
+     *
+     *Du kannst keinen Trust beantragen, wenn du einen solchen generischen Hostnamen hast, außer bei ISP-basiertem NAT (dann muss der ISP
+     *uns kontaktieren, nicht du) oder bei einer LAN-Party (dann gibt es einen temporären Trust, typischerweise nicht länger als 4 Tage,
+     *für eine geringe Anzahl an Usern, und er kann nicht verlängert werden).
+    Ich habe einen Trust, werde aber weiterhin wegen Klonen geglined! Was ist falsch?
+     *Wenn du einen Trust hast und weiterhin wegen Klonen geglined wirst, verstößt du wahrscheinlich gegen die Klon-Regel. Ein Klon liegt vor, wenn
+     *du mehr als eine Verbindung von einer einzelnen Adresse (ident@hostmask) hast. Wenn du also mehr als 5 Verbindungen mit derselben Ident
+     *hast, gelten diese als Klone - unabhängig von der Höhe deines Trusts.
+     *
+     *Ein Trust wird für eine bestimmte Anzahl Verbindungen von einem festen Host vergeben, mit bis zu 5 Verbindungen pro User. Wenn du mehr als
+     *5 Verbindungen von einem trusted Host mit derselben Ident hast, wird diese Ident wegen Klonen geglined. Das ist korrektes Verhalten und
+     *bedeutet nicht, dass dein Trust nicht mehr existiert - es bedeutet, dass du ihn falsch verwendest.
+    IDENT und Trusts
+     *Wenn du einen Trust bei MidiAndMore.Net beantragst, muss die Quellmaschine, auf der der Trust liegt (also dein Server), einen Ident-Server ausführen.
+     *Wenn du keinen Ident-Server betreibst, wirst du beim Verbindungsversuch automatisch K-Lined (gebannt).
+     *
+     *Trusts erfordern eine eindeutige Userident pro User, da wir maximal 5 Verbindungen pro Userident erlauben.
+     *
+     *Bitte beachte: Wir bieten keinen Installations- oder Konfigurationssupport für IDENT-Dienste, entsprechende Anfragen werden ignoriert.
+    Die Natur von Trusts
+     *Wenn MidiAndMore.Net einem Shell- oder BNC-Anbieter einen Trust gibt, vertrauen wir diesem Anbieter eine bestimmte Anzahl Verbindungen
+     *von einem bestimmten Hostnamen an. Das bedeutet, dass mehr als eine Person denselben Hostnamen (den Teil nach dem @) nutzen kann, und wir erlauben
+     *bis zu 5 User pro Ident (den Teil vor dem @).
+     *
+     *Da wir einem Shell-Anbieter eine verantwortungsvolle Bereitstellung seiner Dienste zutrauen, erwarten wir im Gegenzug Verantwortung. Wir haben
+     *zunehmenden Missbrauch bestehender Trusts gesehen, besonders bei großen Service-Anbietern, die MidiAndMore.Net nicht dieselbe
+     *Rücksicht entgegenbringen, die wir ihnen beim Gewähren eines Trusts entgegenbringen.
+     *
+     *Wenn ein Trust für 100 Verbindungen gewährt wird, erwarten wir nicht mehr als 100 Verbindungen vom selben Host und erwarten,
+     *dass der Anbieter ausgehende Verbindungen zu uns automatisch begrenzt, sodass ein gewährter Trust nie überschritten wird.
+     *
+     *Wenn du als trusted Anbieter feststellst, dass deine User die Anzahl der trusted Verbindungen überschreiten, erwarten wir, dass du uns
+     *vorher für eine Erhöhung kontaktierst, bevor du zusätzliche User auf deinen Dienst lässt. Wir erwarten diese Fairness gegenüber dem Vertrauen,
+     *das wir dir mit einer trusted Verbindung entgegenbringen.
+     *
+     *Du als trusted Anbieter musst deine User-Verbindungen überwachen - nicht wir.
+    Wie beantrage ich eine Trust-Änderung?
+     *Wenn du eine Änderung deines Trusts benötigst, kontaktiere Staff in #help und gib deine Trust-Details an.
+     *Stelle sicher, dass du alle Informationen aus der E-Mail angibst, die du bei der ersten Trust-Anfrage erhalten hast.
+     *
+     *Alternativ kann #feds für kleinere Änderungen genutzt werden.
+    Mein Trust-Antrag wurde abgelehnt, warum?
+     *Es kann verschiedene Gründe geben, warum dein Trust-Antrag abgelehnt wurde. Die meisten lassen sich vermeiden, wenn du diese Dokumentation
+     *vor dem Antrag sorgfältig liest. Häufige Gründe für eine Ablehnung sind:
+     Du brauchst identd auf dem Server für einen langfristigen Trust. Wir akzeptieren keine Clients ohne ident auf trusted Hosts.
+      *Wenn du einen Trust bei MidiAndMore.Net beantragst, muss die Quellmaschine, auf der der Trust liegt (also dein Server), einen Ident-Server ausführen.
+      *Wenn du keinen Ident-Server betreibst, wirst du beim Verbindungsversuch automatisch K-Lined (gebannt).
+      *
+      *Trusts erfordern eine eindeutige Userident pro User, da wir maximal 5 Verbindungen pro Userident erlauben.
+      *
+      *Bitte beachte: Wir bieten keinen Installations- oder Konfigurationssupport für IDENT-Dienste, entsprechende Anfragen werden ignoriert.
+     Keine Trusts für generische Hostnamen.
+      *Viele ISPs verwenden sogenannte „generische“ Hostnamen für ihre User. Diese bestehen meist aus einer Reihe von Buchstaben
+      *und Zahlen, gefolgt vom Namen des ISPs. Gute Beispiele sind T-Dialin (Beispiel: pD9551B44.dip.t-dialin.net) oder
+      *nextgentel (Beispiel: 55.80-202-24.nextgentel.com).
+      *
+      *Du kannst keinen Trust beantragen, wenn du einen solchen generischen Hostnamen hast, außer bei ISP-basiertem NAT (dann muss der ISP
+      *uns kontaktieren, nicht du) oder bei einer LAN-Party (dann gibt es einen temporären Trust, typischerweise nicht länger als 4 Tage,
+      *für eine geringe Anzahl an Usern, und er kann nicht verlängert werden).
+     Du musst als NAT-Gateway beantragen. LAN-Trusts sind nur temporär (4 Tage).
+      *Wenn ihr in einem LAN seid und alle dieselbe externe IP teilen und ihr einen temporären Trust wollt, müsst ihr einen NAT-Gateway-Trust beantragen.
+      *LAN-Trusts sind nur für LAN-Partys und daher nur temporär.
+     Dieser Host ist bereits trusted.
+      *Du hast einen Trust für eine IP-Adresse beantragt, die bei MidiAndMore.Net bereits trusted ist. Eine IP-Adresse kann nicht mehrfach trusted werden.
+     Zu viele Verbindungen angefordert.
+      *MidiAndMore.Net fügt normalerweise keinen neuen Trust hinzu, wenn eine sehr hohe Anzahl Verbindungen angefordert wurde. In diesem Fall werden
+      *mehr als 100-150 Verbindungen abgelehnt.
+     Falscher Trust-Typ.
+      *Je nach angefordertem Trust-Typ ist das Setup etwas unterschiedlich. Daher ist es sehr wichtig, den korrekten Typ anzufordern,
+      *sonst wird dein Antrag abgelehnt. Aktuelle Typen sind:
+      **Bouncer - Für einen kleinen Clan- oder Heim-Bouncer.
+      **Non-commercial bouncer - Für nicht-kommerzielle Organisationen, die Bouncer kostenlos oder für Mitarbeitende bereitstellen.
+      **Commercial bouncer - Für Personen, die Bouncer verkaufen oder andere Clans/Organisationen damit sponsern möchten.
+      **Non-commercial shell - Für nicht-kommerzielle Organisationen, die Shell-Accounts kostenlos anbieten, z. B. öffentliche Zugangssysteme.
+      **Commercial shell - Für kommerzielle Shell-Anbieter, die Shells verkaufen oder sponsern.
+      **LAN - Für kurze LAN-Veranstaltungen (4 Tage). Dieser Trust-Typ ist temporär.
+      **NAT gateway - Ein NAT-Gateway zwingt alle dahinter zur gleichen IP. Nutze diesen Typ, wenn du hinter einem NAT-Gateway bist.
+      **Other/special - Alles, was nicht in die obigen Kategorien passt, sollte als Other/special beantragt werden.
+     NAT-Gateway-Ablehnungen.
+      *Der häufigste Grund für die Ablehnung eines NAT-Gateway-Trusts ist, dass der Netzwerk-Admin (die Person, die das
+      *NAT-Gateway besitzt oder verwaltet) den Trust nicht selbst beantragt hat. Diese Person muss Antragsteller sein, sonst wird der Antrag abgelehnt.
+  MidiAndMore.Net-Staff
+   *MidiAndMore.Net-Staff besteht aus Netzwerk-Operatoren und Support-Mitarbeitenden.
+   *Alle Mitglieder des MidiAndMore.Net-Staffs sind Freiwillige und erhalten keine Bezahlung für ihre Arbeit für MidiAndMore.Net.
+   Wer sind die IRC-Operatoren?
+    *IRCops, formeller IRC-Operatoren, sind für die Wartung des Netzwerks und die Durchsetzung der Netzwerk-
+    *Regeln verantwortlich. Wie alle Staff-Mitglieder sind auch IRCops Freiwillige und werden nicht bezahlt.
+    Wie erkenne ich, ob jemand IRC-Operator ist?
+     *Das ist einfach: Bei /whois wird der IRC-Operator-Status in einer separaten Zeile angezeigt
+     *mit „<nick> is an IRC operator“. Wenn dir jemand sagt, er sei IRC-Operator, und diese Zeile nicht in
+     *seiner /whois-Information steht, lügt er und du solltest ihn als potenziell feindlich betrachten.
+    Kann ich IRC-Operator werden?
+     *Leider nein, IRC-Operator zu werden ist nicht möglich. Wir wählen unsere Operatoren sorgfältig aus Menschen,
+     *die wir kennen und denen wir vertrauen. Neue Operatoren werden bei Bedarf hinzugefügt und immer eingeladen,
+     *man bewirbt sich also nicht als IRCop.
+    Was können IRC-Operatoren, was ich nicht kann?
+     *IRC-Operatoren verbinden/trennen Server, sie können User trennen/bannen, die gegen Regeln verstoßen, und
+      *außerdem Netzwerkdienste wie AuthServ, ChanServ, OperServ und SpamScan warten.
+    Sind IRC-Operatoren Götter oder so?
+     *Nein, IRC-Operatoren sind ganz normale Menschen (meistens jedenfalls).
+    Wo kann ich mehr über die IRC-Operatoren von MidiAndMore.Net erfahren?
+     *Alle öffentlichen Informationen über die IRC-Operatoren von MidiAndMore.Net findest du unter
+     *https://irc.midiandmore.net/Community/staff.jsp
+   Wer sind die Support-Mitarbeitenden?
+    *Support-Mitarbeitende sind spezialisiert darauf, User bei Themen rund um IRC und Quakenet zu unterstützen,
+    *sowie bei allgemeinen Anliegen, mit denen du Probleme haben könntest
+    *(vorausgesetzt, die jeweilige Support-Person kennt sich mit dem Thema aus).
+    *
+    *Support-Mitarbeitende findest du in:
+    *#feds - Operator-Support.
+    *#help - Allgemeiner Support.
+    *#help.script - mIRC-Scripting-Support.
+    *#tutorial - Geplante Tutorials für Einsteiger.
+    Kann ich dem Support-Team beitreten?
+     *Wir rekrutieren derzeit keine neuen Support-Mitarbeitenden.
+  MidiAndMore.Net-Regeln
+   *MidiAndMore.Net ist ein freundlicher Ort, und wir akzeptieren eine große Vielfalt an Usern und Bedürfnissen, dennoch haben wir Regeln,
+   *die durchgesetzt werden, um das Netzwerk angenehm zu halten und Probleme zu minimieren. Die Regeln können
+   *im Detail unter http://www.midiandmore.net/Community/rules.jsp eingesehen werden.
+   *
+   *Dieses Netzwerk darf NICHT verwendet werden für:
+   *
+   ** Flooding (einschließlich Flood-/Clonebots).
+   ** Verbreitung urheberrechtlich geschützter Inhalte (z. B. Warez, MP3, Filme) oder Pornografie.
+   ** Channels, die Cheats für unfaire Vorteile in Multiplayer-Spielen bereitstellen.
+   ** Klone. Wenn du mehr als fünf Clients benötigst (LAN-Partys, Bots usw.), kontaktiere Staff in #help.
+   ** Versuche, bestehende Channels oder Netzwerkdienste zu übernehmen.
+   ** Rassismus und/oder Nazismus.
+   ** Spamming und/oder Werbung.
+   ** Hacking (einschließlich Virus-/Trojaner-Verbreitung).
+   *
+   *Die weitere Nutzung von MidiAndMore.Net bedeutet die Zustimmung zu diesen Bedingungen.
+ So nutzt du diesen Dienst
+  *Um diesen Dienst via IRC zu nutzen, musst du nur eine der angegebenen Optionen auswählen. Die Auswahl erfolgt über die Nummer der Option,
+  *zum Beispiel: Wenn dich Option Nummer 3 interessiert, kannst du entweder den Befehl „help 3“ oder einfach „3“ eingeben, um die zugehörigen
+  *Informationen anzuzeigen.
+  *Um diesen Dienst über die Website zu nutzen, klickst du die Links statt deine Auswahl einzutippen.
+  *Weitere Informationen zu diesem Dienst erhältst du von den MidiAndMore.Net-Staff-Mitgliedern in #help oder #feds.

@@ -7,5 +7,6 @@
 {"name":"check_interval","value":"10000"},
 {"name":"gline_enabled","value":"true"},
 {"name":"gline_attempts","value":"3"},
-{"name":"gline_duration","value":"600"}
+{"name":"gline_duration","value":"600"},
+{"name":"auth_service","value":"Q@CServe.example.net"}
 ]

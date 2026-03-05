@@ -404,15 +404,15 @@ public final class NickServ implements Software, Module {
         }
 
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "*** This nickname is registered and protected ***");
+            Messages.get("QM_NS_WARN_PROTECTED"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "If this is your nickname, please authenticate now using:");
+            Messages.get("QM_NS_WARN_AUTH_NOW"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "    /AUTH <username> <password>");
+            Messages.get("QM_NS_WARN_AUTH_CMD", authService));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "If this is not your nickname, please change it now using: /nick newnick");
+            Messages.get("QM_NS_WARN_CHANGE_NICK"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "You have %d seconds to comply, or you will be disconnected.", gracePeriod);
+            Messages.get("QM_NS_WARN_TIMEOUT", gracePeriod));
     }
 
     /**
@@ -464,7 +464,7 @@ public final class NickServ implements Software, Module {
                     }
 
                     socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                            "Authentication successful. You may now use the nickname %s.", userNick);
+                            Messages.get("QM_NS_AUTH_SUCCESS", userNick));
                 } else {
                     // Nick does NOT belong to this account - keep in enforcement list!
                     LOG.log(Level.INFO,
@@ -477,10 +477,9 @@ public final class NickServ implements Software, Module {
                     }
 
                     socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                            "You are authenticated as %s, but nickname %s belongs to a different account.", accountName,
-                            userNick);
+                            Messages.get("QM_NS_AUTH_DIFFERENT_ACCOUNT", accountName, userNick));
                     socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                            "Please change your nickname or you will be disconnected.");
+                            Messages.get("QM_NS_AUTH_CHANGE_OR_DISCONNECT"));
                 }
             }
         }
@@ -588,25 +587,24 @@ public final class NickServ implements Software, Module {
             if (isAuthed) {
                 String accountName = user.getAccount();
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "*** This nickname is registered and protected ***");
+                    Messages.get("QM_NS_WARN_PROTECTED"));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "You are authenticated as '%s', but '%s' belongs to a different account.", accountName,
-                        newNick);
+                    Messages.get("QM_NS_WARN_AUTHED_DIFFERENT", accountName, newNick));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Please change your nickname now using: /nick %s", user.getNick());
+                    Messages.get("QM_NS_WARN_CHANGE_NOW", user.getNick()));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "You have %d seconds to comply, or you will be disconnected.", gracePeriod);
+                    Messages.get("QM_NS_WARN_TIMEOUT", gracePeriod));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "*** This nickname is registered and protected ***");
+                    Messages.get("QM_NS_WARN_PROTECTED"));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "If this is your nickname, please authenticate now using:");
+                    Messages.get("QM_NS_WARN_AUTH_NOW"));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "    /msg %s IDENTIFY <username> <password>", authService);
+                    Messages.get("QM_NS_WARN_AUTH_CMD", authService));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "If this is not your nickname, please change it now using: /nick newnick");
+                    Messages.get("QM_NS_WARN_CHANGE_NICK"));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "You have %d seconds to comply, or you will be disconnected.", gracePeriod);
+                    Messages.get("QM_NS_WARN_TIMEOUT", gracePeriod));
             }
         }
     }
@@ -695,21 +693,21 @@ public final class NickServ implements Software, Module {
         } else if (args[0].equalsIgnoreCase("INFO")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: INFO <nickname>");
+                        Messages.get("QM_NS_USAGE_INFO"));
             } else {
                 sendNickInfo(senderNumeric, notice, args[1]);
             }
         } else if (args[0].equalsIgnoreCase("RESERVE")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: RESERVE <nickname>");
+                        Messages.get("QM_NS_USAGE_RESERVE"));
             } else {
                 handleReserveCommand(senderNumeric, notice, user, args[1]);
             }
         } else if (args[0].equalsIgnoreCase("UNRESERVE")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: UNRESERVE <nickname>");
+                        Messages.get("QM_NS_USAGE_UNRESERVE"));
             } else {
                 handleUnreserveCommand(senderNumeric, notice, user, args[1]);
             }
@@ -718,64 +716,64 @@ public final class NickServ implements Software, Module {
         } else if (args[0].equalsIgnoreCase("GHOST")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: GHOST <nickname>");
+                        Messages.get("QM_NS_USAGE_GHOST"));
             } else {
                 handleGhostCommand(senderNumeric, notice, user, args[1]);
             }
         } else if (args[0].equalsIgnoreCase("RELEASE")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: RELEASE <nickname>");
+                        Messages.get("QM_NS_USAGE_RELEASE"));
             } else {
                 handleReleaseCommand(senderNumeric, notice, user, args[1]);
             }
         } else if (args[0].equalsIgnoreCase("RECOVER") || args[0].equalsIgnoreCase("REGAIN")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: RECOVER <nickname>");
+                        Messages.get("QM_NS_USAGE_RECOVER"));
             } else {
                 handleRecoverCommand(senderNumeric, notice, user, args[1]);
             }
         } else if (args[0].equalsIgnoreCase("STATUS")) {
             if (args.length < 2) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Usage: STATUS <nickname>");
+                        Messages.get("QM_NS_USAGE_STATUS"));
             } else {
                 handleStatusCommand(senderNumeric, notice, user, args[1]);
             }
         } else if (args[0].equalsIgnoreCase("VERSION")) {
             Software.BuildInfo buildInfo = Software.getBuildInfo();
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "NickServ v%s by %s", buildInfo.getFullVersion(), VENDOR);
+                    Messages.get("QM_NS_VERSION_LINE1", buildInfo.getFullVersion(), VENDOR));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "Based on JServ v%s", buildInfo.getFullVersion());
+                    Messages.get("QM_NS_VERSION_LINE2", buildInfo.getFullVersion()));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "Created by %s", AUTHOR);
+                    Messages.get("QM_NS_VERSION_LINE3", AUTHOR));
         } else if (args[0].equalsIgnoreCase("SHOWCOMMANDS")) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
                     Messages.get("QM_COMMANDLIST"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   HELP             Shows help information.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_HELP"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   INFO             Shows information about a registered nickname.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_INFO"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   RESERVE          Reserve an additional nickname for your account.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_RESERVE"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   UNRESERVE        Remove a nickname reservation.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_UNRESERVE"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   LISTRESERVE      List all your reserved nicknames.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_LISTRESERVE"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   GHOST            Disconnect a ghosted session using your nickname.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_GHOST"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   RELEASE          Release a protected nickname from services.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_RELEASE"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   RECOVER          Recover your nickname (GHOST + nick change).");
+                    Messages.get("QM_NS_SHOWCOMMANDS_RECOVER"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   STATUS           Check if a nickname is online and authenticated.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_STATUS"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   SHOWCOMMANDS     Shows this list.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_SHOWCOMMANDS"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "   VERSION          Print version info.");
+                    Messages.get("QM_NS_SHOWCOMMANDS_VERSION"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
                     Messages.get("QM_ENDOFLIST"));
         } else {
@@ -789,49 +787,49 @@ public final class NickServ implements Software, Module {
      */
     private void sendHelp(String userNumeric, String notice) {
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "***** %s Help *****", nick);
+            Messages.get("QM_NS_HELP_TITLE", nick));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "%s protects registered nicknames from unauthorized use.", nick);
+            Messages.get("QM_NS_HELP_PROTECTS", nick));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "");
+            Messages.get("QM_NS_EMPTY"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "When you connect using a registered nickname, you must authenticate");
+            Messages.get("QM_NS_HELP_AUTH_LINE1"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "within %d seconds. If you don't, you will be disconnected from the network.", gracePeriod);
+            Messages.get("QM_NS_HELP_AUTH_LINE2", gracePeriod));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "");
+            Messages.get("QM_NS_EMPTY"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "To authenticate, use: /msg %s IDENTIFY <username> <password>", authService);
+            Messages.get("QM_NS_HELP_IDENTIFY", authService));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "");
+            Messages.get("QM_NS_EMPTY"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "Available commands:");
+            Messages.get("QM_NS_HELP_AVAILABLE"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   INFO <nick>      - Show information about a registered nickname");
+            Messages.get("QM_NS_HELP_CMD_INFO"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   STATUS <nick>    - Check if a nickname is online and authenticated");
+            Messages.get("QM_NS_HELP_CMD_STATUS"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   GHOST <nick>     - Disconnect a ghosted session using your nickname");
+            Messages.get("QM_NS_HELP_CMD_GHOST"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   RELEASE <nick>   - Release a protected nickname from services");
+            Messages.get("QM_NS_HELP_CMD_RELEASE"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   RECOVER <nick>   - Recover your nickname (GHOST + nick change)");
+            Messages.get("QM_NS_HELP_CMD_RECOVER"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   RESERVE <nick>   - Reserve an additional nickname for your account");
+            Messages.get("QM_NS_HELP_CMD_RESERVE"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   UNRESERVE <nick> - Remove a nickname reservation");
+            Messages.get("QM_NS_HELP_CMD_UNRESERVE"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   LISTRESERVE      - List all your reserved nicknames");
+            Messages.get("QM_NS_HELP_CMD_LISTRESERVE"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   SHOWCOMMANDS     - Show all available commands");
+            Messages.get("QM_NS_HELP_CMD_SHOWCOMMANDS"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "   VERSION          - Show version information");
+            Messages.get("QM_NS_HELP_CMD_VERSION"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "");
+            Messages.get("QM_NS_EMPTY"));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "For more information on a specific command, use: /msg %s HELP <command>", nick);
+            Messages.get("QM_NS_HELP_MOREINFO", nick));
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                "***** End of Help *****");
+            Messages.get("QM_NS_HELP_END"));
     }
 
     /**
@@ -852,24 +850,24 @@ public final class NickServ implements Software, Module {
 
             // Header
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "***** Nickname Information *****");
+                    Messages.get("QM_NS_INFO_HEADER"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Nickname   : %s", targetNick);
+                    Messages.get("QM_NS_INFO_NICKNAME", targetNick));
 
             // Account information
             if (isReservedNick) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Account    : %s", account);
+                    Messages.get("QM_NS_INFO_ACCOUNT", account));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Type       : Reserved nickname");
+                    Messages.get("QM_NS_INFO_TYPE_RESERVED"));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Account    : %s (main account)", account);
+                    Messages.get("QM_NS_INFO_ACCOUNT_MAIN", account));
             }
 
             // Status
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Status     : Registered");
+                    Messages.get("QM_NS_INFO_STATUS_REGISTERED"));
 
             // Registration date
             if (created > 0) {
@@ -879,38 +877,38 @@ public final class NickServ implements Software, Module {
                         .withZone(java.time.ZoneId.systemDefault());
                 String formattedDate = formatter.format(instant);
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Registered : %s (timestamp: %d)", formattedDate, created);
+                    Messages.get("QM_NS_INFO_REGISTERED_DATE", formattedDate, created));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Registered : Unknown");
+                    Messages.get("QM_NS_INFO_REGISTERED_UNKNOWN"));
             }
 
             // Current authentication status
             String userAccount = socketThread.getUserAccount(targetNick);
             if (userAccount != null && socketThread.isAuthed(userAccount)) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Currently  : Authenticated");
+                        Messages.get("QM_NS_INFO_CURRENT_AUTHED"));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Currently  : Not authenticated");
+                        Messages.get("QM_NS_INFO_CURRENT_NOTAUTHED"));
             }
 
             // List all reserved nicknames for this account
             var reservedNicks = jserv.getDb().getReservedNicks(account);
             if (reservedNicks != null && !reservedNicks.isEmpty()) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "Reserved Nicks:");
+                    Messages.get("QM_NS_INFO_RESERVED_HEADER"));
                 for (String reservedNick : reservedNicks) {
                     socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                            "   - %s", reservedNick);
+                        Messages.get("QM_NS_LIST_ITEM", reservedNick));
                 }
             }
 
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "***** End of Info *****");
+                    Messages.get("QM_NS_INFO_END"));
         } else {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "The nickname '%s' is not registered.", targetNick);
+                    Messages.get("QM_NS_INFO_NOT_REGISTERED", targetNick));
         }
     }
 
@@ -923,25 +921,25 @@ public final class NickServ implements Software, Module {
         // Check if user is authenticated
         if (!socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You must be authenticated to reserve nicknames.");
+                Messages.get("QM_NS_RESERVE_NEEDAUTH"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Please authenticate first with your account service.");
+                Messages.get("QM_NS_RESERVE_AUTHFIRST"));
             return;
         }
 
         // Validate nickname format (basic validation)
         if (!isValidNickname(nickToReserve)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Invalid nickname format: %s", nickToReserve);
+                    Messages.get("QM_NS_RESERVE_INVALID_FORMAT", nickToReserve));
             return;
         }
 
         // Check if nickname is the user's main account
         if (nickToReserve.equalsIgnoreCase(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You cannot reserve your main account nickname '%s'.", account);
+                Messages.get("QM_NS_RESERVE_MAIN_NOT_ALLOWED", account));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Your main account is automatically protected.");
+                Messages.get("QM_NS_RESERVE_MAIN_PROTECTED"));
             return;
         }
 
@@ -950,10 +948,10 @@ public final class NickServ implements Software, Module {
             String reservedBy = jserv.getDb().getReservedAccount(nickToReserve);
             if (reservedBy != null && reservedBy.equalsIgnoreCase(account)) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "You have already reserved the nickname '%s'.", nickToReserve);
+                        Messages.get("QM_NS_RESERVE_ALREADY_YOURS", nickToReserve));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "The nickname '%s' is already reserved by another account.", nickToReserve);
+                        Messages.get("QM_NS_RESERVE_ALREADY_OTHER", nickToReserve));
             }
             return;
         }
@@ -961,7 +959,7 @@ public final class NickServ implements Software, Module {
         // Check if nickname is registered as main account
         if (jserv.getDb().isRegistered(nickToReserve)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "The nickname '%s' is already registered as a main account.", nickToReserve);
+                    Messages.get("QM_NS_RESERVE_ALREADY_MAIN", nickToReserve));
             return;
         }
 
@@ -969,9 +967,9 @@ public final class NickServ implements Software, Module {
         int currentReservations = jserv.getDb().countReservedNicks(account);
         if (currentReservations >= 5) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You have reached the maximum of 5 reserved nicknames.");
+                Messages.get("QM_NS_RESERVE_MAX_REACHED"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Please unreserve a nickname before reserving a new one.");
+                Messages.get("QM_NS_RESERVE_UNRESERVE_FIRST"));
             return;
         }
 
@@ -980,17 +978,17 @@ public final class NickServ implements Software, Module {
 
         if (success) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Nickname '%s' has been successfully reserved for your account.", nickToReserve);
+                Messages.get("QM_NS_RESERVE_SUCCESS", nickToReserve));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "This nickname is now protected and requires authentication.");
+                Messages.get("QM_NS_RESERVE_SUCCESS_LINE2"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You can use it by authenticating with your account credentials.");
+                Messages.get("QM_NS_RESERVE_SUCCESS_LINE3"));
 
             LOG.log(Level.INFO, "Nickname {0} reserved by account {1}",
                     new Object[] { nickToReserve, account });
         } else {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Failed to reserve nickname. Please try again later.");
+                    Messages.get("QM_NS_RESERVE_FAILED"));
         }
     }
 
@@ -1003,14 +1001,14 @@ public final class NickServ implements Software, Module {
         // Check if user is authenticated
         if (!socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You must be authenticated to unreserve nicknames.");
+                    Messages.get("QM_NS_UNRESERVE_NEEDAUTH"));
             return;
         }
 
         // Check if nickname is reserved
         if (!jserv.getDb().isNickReserved(nickToUnreserve)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "The nickname '%s' is not reserved.", nickToUnreserve);
+                    Messages.get("QM_NS_UNRESERVE_NOT_RESERVED", nickToUnreserve));
             return;
         }
 
@@ -1020,7 +1018,7 @@ public final class NickServ implements Software, Module {
         // Check if user owns this reservation or is an oper
         if (!account.equalsIgnoreCase(reservedAccount) && !user.isOper()) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You cannot unreserve nickname '%s' - you don't own it.", nickToUnreserve);
+                    Messages.get("QM_NS_UNRESERVE_NOT_OWNER", nickToUnreserve));
             return;
         }
 
@@ -1029,13 +1027,13 @@ public final class NickServ implements Software, Module {
 
         if (success) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Nickname '%s' has been successfully unreserved.", nickToUnreserve);
+                    Messages.get("QM_NS_UNRESERVE_SUCCESS", nickToUnreserve));
 
             LOG.log(Level.INFO, "Nickname {0} unreserved by {1}",
                     new Object[] { nickToUnreserve, account });
         } else {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Failed to unreserve nickname. Please try again later.");
+                    Messages.get("QM_NS_UNRESERVE_FAILED"));
         }
     }
 
@@ -1049,7 +1047,7 @@ public final class NickServ implements Software, Module {
         // Check if user is authenticated
         if (!socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You must be authenticated to view your reserved nicknames.");
+                    Messages.get("QM_NS_LISTRES_NEEDAUTH"));
             return;
         }
 
@@ -1058,20 +1056,20 @@ public final class NickServ implements Software, Module {
 
         if (reservedNicks.isEmpty()) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "You have no reserved nicknames.");
+                Messages.get("QM_NS_LISTRES_EMPTY"));
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Use 'RESERVE <nickname>' to reserve additional nicknames.");
+                Messages.get("QM_NS_LISTRES_HINT"));
         } else {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "Reserved nicknames for account '%s': (%d/5)", account, reservedNicks.size());
+                Messages.get("QM_NS_LISTRES_HEADER", account, reservedNicks.size()));
 
             for (String nick : reservedNicks) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                        "   - %s", nick);
+                Messages.get("QM_NS_LIST_ITEM", nick));
             }
 
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, userNumeric,
-                    "End of reserved nicknames list.");
+                Messages.get("QM_NS_LISTRES_END"));
         }
     }
 
@@ -1084,14 +1082,14 @@ public final class NickServ implements Software, Module {
         // Check if user is authenticated
         if (!socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You must be authenticated to use GHOST.");
+                    Messages.get("QM_NS_GHOST_NEEDAUTH"));
             return;
         }
 
         // Check if target nick belongs to this account
         if (!account.equalsIgnoreCase(targetNick) && !isNickOwnedByAccount(targetNick, account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You cannot ghost nickname '%s' - you don't own it.", targetNick);
+                    Messages.get("QM_NS_GHOST_NOT_OWNER", targetNick));
             return;
         }
 
@@ -1110,14 +1108,14 @@ public final class NickServ implements Software, Module {
 
         if (targetNumeric == null) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "Nickname '%s' is not currently in use.", targetNick);
+                    Messages.get("QM_NS_GHOST_NOT_IN_USE", targetNick));
             return;
         }
 
         // Don't ghost yourself
         if (targetNumeric.equals(senderNumeric)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You cannot ghost yourself. Use /QUIT if you want to disconnect.");
+                    Messages.get("QM_NS_GHOST_SELF"));
             return;
         }
 
@@ -1127,10 +1125,9 @@ public final class NickServ implements Software, Module {
             String targetAccount = targetUser.getAccount();
             if (targetAccount.equalsIgnoreCase(account)) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Warning: '%s' is authenticated as your account. This might be your other connection.",
-                        targetNick);
+                    Messages.get("QM_NS_GHOST_WARN_AUTHED", targetNick));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "If you want to proceed anyway, use RECOVER instead.");
+                    Messages.get("QM_NS_GHOST_WARN_USE_RECOVER"));
                 return;
             }
         }
@@ -1143,7 +1140,7 @@ public final class NickServ implements Software, Module {
         unauthenticatedUsers.remove(targetNumeric);
 
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                "Nickname '%s' has been disconnected.", targetNick);
+            Messages.get("QM_NS_GHOST_DISCONNECTED", targetNick));
 
         LOG.log(Level.INFO, "User {0} ({1}) used GHOST on {2} ({3})",
                 new Object[] { user.getNick(), account, targetNick, targetNumeric });
@@ -1158,21 +1155,21 @@ public final class NickServ implements Software, Module {
         // Check if user is authenticated
         if (!socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You must be authenticated to use RELEASE.");
+                    Messages.get("QM_NS_RELEASE_NEEDAUTH"));
             return;
         }
 
         // Check if target nick belongs to this account
         if (!account.equalsIgnoreCase(targetNick) && !isNickOwnedByAccount(targetNick, account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You cannot release nickname '%s' - you don't own it.", targetNick);
+                    Messages.get("QM_NS_RELEASE_NOT_OWNER", targetNick));
             return;
         }
 
         // Check if it's a dummy nick
         if (!dummyNicks.containsKey(targetNick)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "Nickname '%s' is not held by services.", targetNick);
+                    Messages.get("QM_NS_RELEASE_NOT_HELD", targetNick));
             return;
         }
 
@@ -1188,7 +1185,7 @@ public final class NickServ implements Software, Module {
         dummyNicks.remove(targetNick);
 
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                "Nickname '%s' has been released.", targetNick);
+            Messages.get("QM_NS_RELEASE_SUCCESS", targetNick));
 
         LOG.log(Level.INFO, "User {0} ({1}) released dummy nick {2}",
                 new Object[] { user.getNick(), account, targetNick });
@@ -1203,21 +1200,21 @@ public final class NickServ implements Software, Module {
         // Check if user is authenticated
         if (!socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You must be authenticated to use RECOVER.");
+                    Messages.get("QM_NS_RECOVER_NEEDAUTH"));
             return;
         }
 
         // Check if target nick belongs to this account
         if (!account.equalsIgnoreCase(targetNick) && !isNickOwnedByAccount(targetNick, account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You cannot recover nickname '%s' - you don't own it.", targetNick);
+                    Messages.get("QM_NS_RECOVER_NOT_OWNER", targetNick));
             return;
         }
 
         // Check if user already has this nick
         if (user.getNick().equalsIgnoreCase(targetNick)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "You are already using nickname '%s'.", targetNick);
+                    Messages.get("QM_NS_RECOVER_ALREADY_USING", targetNick));
             return;
         }
 
@@ -1244,7 +1241,7 @@ public final class NickServ implements Software, Module {
                 dummyNicks.remove(targetNick);
 
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Services released nickname '%s'.", targetNick);
+                    Messages.get("QM_NS_RECOVER_SERVICES_RELEASED", targetNick));
 
                 scheduleRecoverNickChange(senderNumeric, notice, targetNick, user, account, 500);
 
@@ -1257,7 +1254,7 @@ public final class NickServ implements Software, Module {
                 unauthenticatedUsers.remove(targetNumeric);
 
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "Ghosted user on nickname '%s'.", targetNick);
+                    Messages.get("QM_NS_RECOVER_GHOSTED_USER", targetNick));
 
                 // Delay nick change to avoid collisions, especially for remote users where kill
                 // propagation takes longer
@@ -1300,7 +1297,7 @@ public final class NickServ implements Software, Module {
                 // Already correct nick.
                 if (currentUser.getNick().equalsIgnoreCase(targetNick)) {
                     socketThread.sendNotice(numeric, getNumericSuffix(), finalNotice, finalSenderNumeric,
-                            "You have recovered nickname '%s'.", targetNick);
+                            Messages.get("QM_NS_RECOVER_SUCCESS", targetNick));
                     LOG.log(Level.INFO, "User {0} ({1}) recovered nickname {2}",
                             new Object[] { user.getNick(), account, targetNick });
                     return;
@@ -1312,7 +1309,7 @@ public final class NickServ implements Software, Module {
                 sendText("%s SN %s %s", numeric, finalSenderNumeric, targetNick);
 
                 socketThread.sendNotice(numeric, getNumericSuffix(), finalNotice, finalSenderNumeric,
-                        "You have recovered nickname '%s'.", targetNick);
+                    Messages.get("QM_NS_RECOVER_SUCCESS", targetNick));
                 LOG.log(Level.INFO, "User {0} ({1}) recovered nickname {2}",
                         new Object[] { user.getNick(), account, targetNick });
 
@@ -1341,42 +1338,42 @@ public final class NickServ implements Software, Module {
             // Check if it's a registered nick
             if (isNickRegistered(targetNick)) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "%s is not currently online.", targetNick);
+                Messages.get("QM_NS_STATUS_NOT_ONLINE", targetNick));
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "%s is a registered nickname.", targetNick);
+                Messages.get("QM_NS_STATUS_IS_REGISTERED", targetNick));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "%s is not a registered nickname.", targetNick);
+                Messages.get("QM_NS_STATUS_NOT_REGISTERED", targetNick));
             }
             return;
         }
 
         // User is online
         socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                "%s is currently online.", targetNick);
+            Messages.get("QM_NS_STATUS_ONLINE", targetNick));
 
         // Check authentication status
         String account = targetUser.getAccount();
         if (socketThread.isAuthed(account)) {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "%s is authenticated as %s.", targetNick, account);
+                    Messages.get("QM_NS_STATUS_AUTHED_AS", targetNick, account));
 
             // Check if using own nick
             if (account.equalsIgnoreCase(targetNick) || isNickOwnedByAccount(targetNick, account)) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "%s is using their own nickname.", targetNick);
+                        Messages.get("QM_NS_STATUS_OWN_NICK", targetNick));
             } else {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "%s is authenticated but using a different nickname.", targetNick);
+                        Messages.get("QM_NS_STATUS_DIFFERENT_NICK", targetNick));
             }
         } else {
             socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                    "%s is not authenticated.", targetNick);
+                    Messages.get("QM_NS_STATUS_NOT_AUTHED", targetNick));
 
             // Check if nick is registered
             if (isNickRegistered(targetNick)) {
                 socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                        "%s is a registered nickname.", targetNick);
+                        Messages.get("QM_NS_STATUS_IS_REGISTERED", targetNick));
 
                 // Check if in enforcement list
                 if (unauthenticatedUsers.containsKey(targetNumeric)) {
@@ -1386,10 +1383,10 @@ public final class NickServ implements Software, Module {
 
                     if (remaining > 0) {
                         socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                                "%s has %d seconds to authenticate.", targetNick, remaining);
+                                Messages.get("QM_NS_STATUS_TIME_TO_AUTH", targetNick, remaining));
                     } else {
                         socketThread.sendNotice(numeric, getNumericSuffix(), notice, senderNumeric,
-                                "%s will be disconnected shortly.", targetNick);
+                                Messages.get("QM_NS_STATUS_DISCONNECT_SOON", targetNick));
                     }
                 }
             }
@@ -1761,7 +1758,7 @@ public final class NickServ implements Software, Module {
 
                     // Send notice to ops channel
                     socketThread.sendNotice(numeric, getNumericSuffix(), "P", OPS_CHANNEL,
-                            "Released dummy nick %s for authenticated user %s", dummyNick, accountName);
+                            Messages.get("QM_NS_OPS_RELEASE_DUMMY", dummyNick, accountName));
                 }
             }
         } catch (Exception e) {

@@ -359,23 +359,23 @@ public final class HostServ implements Software, Module {
                     var auth = command.split(" ");
                     if (auth[0].equalsIgnoreCase("VHOST")) {
                         if (auth.length <= 2) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "To few parameters...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_TOOFEWPARAMS"));
                         } else if (!getSt().isAuthed(nick)) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "You are not authed");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_NOTAUTHED"));
                         } else if (!isMoreAsAnWeek(getMi().getDb().getHostTimestamp(nick)) && !getSt().isPrivileged(nick)) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "You cannot change currently the VHost, please try again in few days...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_CHANGETOOFAST"));
                         } else if (checkHostChars(auth[2]) == 0 && checkIdentChars(auth[1]) == 0) {
                             sendText("%s SH %s %s %s", getNumeric(), elem[0], auth[1], auth[2]);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "%s@%s is now your VHost...", auth[1], auth[2]);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_SET", auth[1], auth[2]));
                             getMi().getDb().addHost(nick, auth[1], auth[2]);
                         } else if (checkHostChars(auth[2]) == 2 && checkIdentChars(auth[1]) == 2) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Your VHost is too long...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_TOOLONG"));
                         } else if (checkHostChars(auth[2]) == 4 && checkIdentChars(auth[1]) == 4) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Your VHost contains invalid characters...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_INVALIDCHARS"));
                         } else if (checkHostChars(auth[2]) == 3 && checkIdentChars(auth[1]) == 3) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Your VHost is too weak...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_TOOWEAK"));
                         } else {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Invalid host...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_INVALID"));
                         }
                     } else if (auth[0].equalsIgnoreCase("UHOST")) {
                         if (!getSt().isAuthed(nick)) {
@@ -383,40 +383,40 @@ public final class HostServ implements Software, Module {
                         } else if (!getSt().isPrivileged(nick)) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                         } else if (auth.length <= 3) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "To few parameters...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_TOOFEWPARAMS"));
                         } else if (checkHostChars(auth[3]) == 0 && checkIdentChars(auth[2]) == 0) {
                             var users = getSt().getUserName(auth[1]);
                             var unu = getSt().getUserAccount(auth[1]);
                             sendText("%s SH %s %s %s", getNumeric(), users, auth[2], auth[3]);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "%s has now the VHost: %s@%s", auth[1], auth[2], auth[3]);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, users, "%s has changed your VHost to %s@%s", nick, auth[2], auth[3]);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_SET", auth[1], auth[2], auth[3]));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, users, Messages.get("QM_HS_UHOST_NOTIFY", nick, auth[2], auth[3]));
                             if (getSt().isAuthed(auth[1])) {
                                 getMi().getDb().addHost(unu, auth[2], auth[3]);
                             }
                         } else if (checkHostChars(auth[3]) == 2 && checkIdentChars(auth[2]) == 2) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "The VHost is too long...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_TOOLONG"));
                         } else if (checkHostChars(auth[3]) == 4 && checkIdentChars(auth[2]) == 4) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "The VHost contains invalid characters...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_INVALIDCHARS"));
                         } else if (checkHostChars(auth[3]) == 3 && checkIdentChars(auth[2]) == 3) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "The VHost is too weak...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_TOOWEAK"));
                         } else {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Invalid host...");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_INVALID"));
                         }
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_COMMANDLIST"));
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   HELP             Shows a specific help to a command.");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   SHOWCOMMANDS     Shows this list.");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   VHOST            Sets your VHost. (You must be authed)");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_HELP"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_SHOWCOMMANDS"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_VHOST"));
                         if (getSt().isAuthed(nick) && getSt().isPrivileged(nick)) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   UHOST            Sets VHost for other users.");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_UHOST"));
                         }
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   VERSION          Print version info.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_VERSION"));
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_ENDOFLIST"));
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
                         Software.BuildInfo buildInfo = Software.getBuildInfo();
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "HostServ v%s by %s", buildInfo.getFullVersion(), VENDOR);
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Based on JServ v%s", buildInfo.getFullVersion());
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Created by %s", AUTHOR);
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VERSION_LINE1", buildInfo.getFullVersion(), VENDOR));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VERSION_LINE2", buildInfo.getFullVersion()));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VERSION_LINE3", AUTHOR));
                     } else {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                     }

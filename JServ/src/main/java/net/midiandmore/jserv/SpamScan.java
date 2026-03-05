@@ -305,7 +305,7 @@ public final class SpamScan implements Software, Module {
                         }
                         
                         if (!isAuthorized) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Access denied. You must be an IRC Operator or channel owner (+m/+n).");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_ACCESSDENIED"));
                         } else if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_EMPTYCHAN", channel));
                         } else {
@@ -314,22 +314,21 @@ public final class SpamScan implements Software, Module {
                             int userCount = chan != null ? chan.getUsers().size() : 0;
                             
                             if (!isPrivileged && userCount < 5) {
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], 
-                                    "Cannot add channel %s: Channel must have at least 5 users (current: %d).", 
-                                    channel, userCount);
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0],
+                                    Messages.get("QM_SS_ADDCHAN_MINUSERS", channel, userCount));
                             } else if (!getMi().getDb().isSpamScanChannel(channel)) {
                                 getMi().getDb().addChan(channel);
                                 getSt().joinChannel(channel, getNumeric(), getNumeric() + getNumericSuffix());
                                 setReg(false);
                                 if (isPrivileged) {
-                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], 
-                                        "Channel %s added (privilege override - user requirement bypassed).", channel);
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0],
+                                        Messages.get("QM_SS_ADDCHAN_PRIVILEGED", channel));
                                 } else {
                                     getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_DONE"));
                                 }
                             } else {
                                 setReg(false);
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Cannot add channel %s: %s is already on that channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_ADDCHAN_ALREADY", channel, getMi().getConfig().getSpamFile().get("nick")));
                             }
                         }
                     // DELCHAN command - remove channel from spam monitoring
@@ -344,7 +343,7 @@ public final class SpamScan implements Software, Module {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_DONE"));
                         } else {
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "%s isn't in the channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_DELCHAN_NOTONCHAN", channel));
                         }
                     // ADDLAXCHAN command - add channel to lax spam detection list
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("ADDLAXCHAN")) {
@@ -352,14 +351,14 @@ public final class SpamScan implements Software, Module {
                         if (!getSt().getChannel().containsKey(channel.toLowerCase())) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_EMPTYCHAN", channel));
                         } else if (!getMi().getDb().isSpamScanChannel(channel)) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Cannot enable lax mode for %s: %s is not monitoring that channel.", channel, getMi().getConfig().getSpamFile().get("nick"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_LAX_NOT_MONITORED", channel, getMi().getConfig().getSpamFile().get("nick")));
                         } else if (!getMi().getDb().isLaxChannel(channel)) {
                             getMi().getDb().addLaxChannel(channel);
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Lax spam detection enabled for %s.", channel);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_LAX_ENABLED", channel));
                         } else {
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Lax spam detection already enabled for %s.", channel);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_LAX_ALREADY_ENABLED", channel));
                         }
                     // DELLAXCHAN command - remove channel from lax spam detection list
                     } else if ((getSt().isOper(nick) || isReg()) && auth.length >= 2 && auth[0].equalsIgnoreCase("DELLAXCHAN")) {
@@ -369,10 +368,10 @@ public final class SpamScan implements Software, Module {
                         } else if (getMi().getDb().isLaxChannel(channel)) {
                             getMi().getDb().removeLaxChannel(channel);
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Lax spam detection disabled for %s.", channel);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_LAX_DISABLED", channel));
                         } else {
                             setReg(false);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Lax spam detection not enabled for %s.", channel);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_LAX_NOT_ENABLED", channel));
                         }
                     // BADWORD command - manage badword list
                     } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("BADWORD")) {
@@ -387,33 +386,33 @@ public final class SpamScan implements Software, Module {
                             var parsed = sb1.toString().trim();
                             if (b.containsKey(parsed.toLowerCase())) {
                                 if (flag.equalsIgnoreCase("ADD")) {
-                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Badword (%s) already exists.", parsed);
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_EXISTS", parsed));
                                 } else if (flag.equalsIgnoreCase("DELETE")) {
                                     b.remove(parsed.toLowerCase());
                                     getMi().getConfig().saveDataToJSON("badwords-spamscan.json", b, "name", "value");
-                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Badword (%s) successfully removed.", parsed);
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_REMOVED", parsed));
                                 }
                             } else {
                                 if (flag.equalsIgnoreCase("ADD")) {
                                     b.put(parsed.toLowerCase(), "");
                                     getMi().getConfig().saveDataToJSON("badwords-spamscan.json", b, "name", "value");
-                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Badword (%s) successfully added.", parsed);
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_ADDED", parsed));
                                 } else if (flag.equalsIgnoreCase("DELETE")) {
-                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Badword (%s) doesn't exist.", parsed);
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_NOT_EXISTS", parsed));
                                 }
                             }
                         } else if (flag.equalsIgnoreCase("LIST")) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- Badwords ---");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_LIST_HEADER"));
                             if (b.isEmpty()) {
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "  No badwords specified.");
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_LIST_EMPTY"));
                             } else {
                                 for (var key : b.keySet()) {
                                     getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "%s", key);
                                 }
                             }
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- End of list ---");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_BADWORD_LIST_END"));
                         } else {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Unknown flag.");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_UNKNOWN_FLAG"));
                         }
                     // SPAMSCORE - check spam score of a user
                     } else if (getSt().isOper(nick) && auth.length >= 2 && auth[0].equalsIgnoreCase("SPAMSCORE")) {
@@ -421,71 +420,71 @@ public final class SpamScan implements Software, Module {
                         var targetNumeric = getSt().getUserNumeric(targetNick);
                         
                         if (targetNumeric == null) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "User '%s' not found.", targetNick);
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_USER_NOT_FOUND", targetNick));
                         } else {
                             var targetUser = getSt().getUsers().get(targetNumeric);
                             if (targetUser == null) {
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "User data not available.");
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_USER_DATA_UNAVAILABLE"));
                             } else {
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- Spam Score for %s ---", targetUser.getNick());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Current Score: %.2f", targetUser.getSpamScore());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Repeat Count: %d", targetUser.getRepeat());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Flood Count: %d", targetUser.getFlood());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Caps Count: %d", targetUser.getCapsCount());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Message History: %d messages", targetUser.getMessageHistory().size());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Channels: %d", targetUser.getChannels().size());
-                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- End of spam score ---");
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_HEADER", targetUser.getNick()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_CURRENT", targetUser.getSpamScore()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_REPEAT", targetUser.getRepeat()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_FLOOD", targetUser.getFlood()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_CAPS", targetUser.getCapsCount()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_HISTORY", targetUser.getMessageHistory().size()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_CHANNELS", targetUser.getChannels().size()));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_SPAMSCORE_END"));
                             }
                         }
                     // SHOWCOMMANDS - display available commands
                     } else if (auth[0].equalsIgnoreCase("SHOWCOMMANDS")) {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_COMMANDLIST"));
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   ADDCHAN      Adds a channel to spam monitoring (+o or channel owner)");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDCHAN"));
                         if (getSt().isOper(nick)) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o ADDLAXCHAN   Enables lax spam detection for a channel");
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o BADWORD      Manage badwords");
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o DELCHAN      Removes a channel from spam monitoring");
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o DELLAXCHAN   Disables lax spam detection for a channel");
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o GLINESTATS   Shows G-Line configuration and statistics");
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "+o SPAMSCORE    Check spam score of a user");
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDLAXCHAN"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_BADWORD"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_DELCHAN"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_DELLAXCHAN"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_GLINESTATS"));
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_SPAMSCORE"));
                         }
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   HELP         Show help for a command");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   SHOWCOMMANDS This message");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "   VERSION      Shows version information");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_HELP"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_SHOWCOMMANDS"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_VERSION"));
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_ENDOFLIST"));
                     // VERSION - show version information
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
                         Software.BuildInfo buildInfo = Software.getBuildInfo();
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "SpamScan v%s by %s", buildInfo.getFullVersion(), VENDOR);
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Based on JServ v%s", buildInfo.getFullVersion());
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Created by %s", AUTHOR);
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_VERSION_LINE1", buildInfo.getFullVersion(), VENDOR));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_VERSION_LINE2", buildInfo.getFullVersion()));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_VERSION_LINE3", AUTHOR));
                     // HELP commands
                     } else if (auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDCHAN")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "ADDCHAN <#channel>");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Adds a channel to spam monitoring.");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Requirements: IRC Operator, channel owner (+m/+n), or AUTH.");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Channel must have at least 5 users.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDCHAN_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDCHAN_DESC"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDCHAN_REQUIREMENTS"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDCHAN_MINUSERS_NOTE"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("ADDLAXCHAN")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "ADDLAXCHAN <#channel>");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Enables lax spam detection for a channel (higher thresholds, more lenient).");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDLAXCHAN_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_ADDLAXCHAN_DESC"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("AUTH")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "AUTH <requestname> <requestpassword>");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Authenticates for temporary elevated privileges.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_AUTH_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_AUTH_DESC"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("BADWORD")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "BADWORD <ADD|LIST|DELETE> [badword]");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Manages the badword filter list.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_BADWORD_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_BADWORD_DESC"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("DELCHAN")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "DELCHAN <#channel>");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Removes a channel from spam monitoring.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_DELCHAN_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_DELCHAN_DESC"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("DELLAXCHAN")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "DELLAXCHAN <#channel>");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Disables lax spam detection for a channel (returns to normal detection).");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_DELLAXCHAN_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_DELLAXCHAN_DESC"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("GLINESTATS")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "GLINESTATS");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Shows G-Line configuration and statistics.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_GLINESTATS_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_GLINESTATS_DESC"));
                     } else if (getSt().isOper(nick) && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("SPAMSCORE")) {
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "SPAMSCORE <nickname>");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Shows the spam score and detection statistics for a user.");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_SPAMSCORE_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_HELP_SPAMSCORE_DESC"));
                     } else if (getSt().isOper(nick) && auth[0].equalsIgnoreCase("GLINESTATS")) {
                         var config = getMi().getConfig().getSpamFile();
                         boolean glineEnabled = Boolean.parseBoolean(config.getProperty("enableGLine", "true"));
@@ -493,12 +492,12 @@ public final class SpamScan implements Software, Module {
                         int glineDuration = Integer.parseInt(config.getProperty("glineDuration", "86400"));
                         String glineReason = config.getProperty("glineReason", "Repeated spam violations");
                         
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- G-Line Statistics ---");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Status: %s", glineEnabled ? "Enabled" : "Disabled");
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Threshold: %d kills", glineThreshold);
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Duration: %d seconds (%d hours)", glineDuration, glineDuration / 3600);
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "Reason: %s", glineReason);
-                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], "--- End of statistics ---");
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_GLINE_HEADER"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_GLINE_STATUS", glineEnabled ? Messages.get("QM_SS_GLINE_STATUS_ENABLED") : Messages.get("QM_SS_GLINE_STATUS_DISABLED")));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_GLINE_THRESHOLD", glineThreshold));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_GLINE_DURATION", glineDuration, glineDuration / 3600));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_GLINE_REASON", glineReason));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_SS_GLINE_END"));
                     } else {
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                     }

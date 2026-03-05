@@ -304,43 +304,9 @@ Refer to the built-in help system or project wiki for a complete list of operato
 - `config-spamscan.json` - SpamScan module settings (nick, servername, description, identd, detection thresholds)
 - `config-hostserv.json` - HostServ module settings (nick, servername, description, identd)
 - `config-nickserv.json` - NickServ module settings (nick, servername, description, identd, grace period)
-- `config-trustcheck.json` - TrustCheck allow rules (legacy fallback if database has no trust rules)
 
 ### Data Files
 - `badwords-spamscan.json` - Badword list for SpamScan spam detection
-
-## TrustCheck (TC/TR)
-
-JServ can act as a **TrustCheck server** for JIRCd's TC/TR protocol.
-
-- Enable TrustCheck by setting `trustserver` in `config.json`.
-- JServ only evaluates TC requests when `servername` equals `trustserver`.
-
-Add to `config.json`:
-
-```json
-{"name":"trustserver","value":"trust.example.net"},
-{"name":"trustcheck_timeout_ms","value":"2000"}
-```
-
-Allow rules are primarily evaluated from the database table `operserv.trusts`. Based on the evaluation, JServ replies:
-- `TR ... OK` - Connection allowed (rule matched)
-- `TR ... IGNORE` - No rule matched, but not explicitly denied (default behavior)
-- `TR ... FAIL` - Connection explicitly denied (fail-closed mode, if configured)
-
-Rule masks support `*` and `?` and typically use `ident@ip` (example: `*admin*@192.0.2.*`).
-`maxconn` is the maximum simultaneous connections for that IP (0 = unlimited). `ident` forces a non-empty ident.
-
-If the database contains **no** trust rules, JServ falls back to `config-trustcheck.json` for backward compatibility.
-
-Example `config-trustcheck.json`:
-
-```json
-[
-  {"name":"rule1","value":"trustedident@203.0.113.*"},
-  {"name":"rule2","value":"vpn*@2001:db8:*"}
-]
-```
 
 ## License
 

@@ -304,43 +304,9 @@ Weitere Informationen finden Sie im integrierten Hilfesystem oder im Projekt-Wik
 - `config-spamscan.json` - SpamScan-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd, Erkennungsschwellenwerte)
 - `config-hostserv.json` - HostServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd)
 - `config-nickserv.json` - NickServ-Modul-Einstellungen (Nick, Servername, Beschreibung, Identd, Gnadenfrist)
-- `config-trustcheck.json` - TrustCheck Allow-Regeln (Legacy-Fallback, falls Datenbank keine Trust-Regeln enthält)
 
 ### Datendateien
 - `badwords-spamscan.json` - Badword-Liste für SpamScan Spam-Erkennung
-
-## TrustCheck (TC/TR)
-
-JServ kann als **TrustCheck-Server** für JIRCd's TC/TR-Protokoll laufen.
-
-- TrustCheck wird über `trustserver` in `config.json` aktiviert.
-- JServ wertet TC-Anfragen nur aus, wenn `servername` exakt `trustserver` entspricht.
-
-In `config.json` ergänzen:
-
-```json
-{"name":"trustserver","value":"trust.example.net"},
-{"name":"trustcheck_timeout_ms","value":"2000"}
-```
-
-Die Allow-Regeln werden primär aus der Datenbanktabelle `operserv.trusts` ausgewertet. Basierend auf der Auswertung antwortet JServ:
-- `TR ... OK` - Verbindung erlaubt (Regel gefunden)
-- `TR ... IGNORE` - Keine Regel gefunden, aber nicht explizit abgelehnt (Standardverhalten)
-- `TR ... FAIL` - Verbindung explizit abgelehnt (fail-closed Modus, falls konfiguriert)
-
-Masken unterstützen `*` und `?` und sind typischerweise `ident@ip` (Beispiel: `*admin*@192.0.2.*`).
-`maxconn` ist die maximale gleichzeitige Verbindungsanzahl für diese IP (0 = unbegrenzt). Mit `ident` wird ein nicht-leeres Ident erzwungen.
-
-Wenn die Datenbank **keine** Trust-Regeln enthält, fällt JServ aus Kompatibilitätsgründen auf `config-trustcheck.json` zurück.
-
-Beispiel für `config-trustcheck.json`:
-
-```json
-[
-  {"name":"rule1","value":"trustedident@203.0.113.*"},
-  {"name":"rule2","value":"vpn*@2001:db8:*"}
-]
-```
 
 ## Logdateien
 

@@ -32,10 +32,6 @@ public final class Config {
         return helpServFile;
     }
 
-    public Properties getTrustcheckFile() {
-        return trustcheckFile;
-    }
-
     /**
      * @param saslFile the saslFile to set
      */
@@ -49,10 +45,6 @@ public final class Config {
 
     public void setHelpServFile(Properties helpServFile) {
         this.helpServFile = helpServFile;
-    }
-
-    public void setTrustcheckFile(Properties trustcheckFile) {
-        this.trustcheckFile = trustcheckFile;
     }
 
     /**
@@ -123,7 +115,6 @@ public final class Config {
     private Properties authFile;
     private Properties operFile;
     private Properties helpServFile;
-    private Properties trustcheckFile;
     private Properties statsServFile;
          
     /**
@@ -180,7 +171,6 @@ public final class Config {
         setHostFile(loadDataFromJSONasProperties("config-hostserv.json", "name", "value"));   
         setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
         setNickFile(loadDataFromJSONasProperties("config-nickserv.json", "name", "value"));   
-        setTrustcheckFile(loadDataFromJSONasProperties("config-trustcheck.json", "name", "value"));
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 

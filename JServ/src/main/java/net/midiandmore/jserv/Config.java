@@ -177,17 +177,10 @@ public final class Config {
      */
     private void loadConfig() {
         setConfigFile(loadDataFromJSONasProperties("config.json", "name", "value"));
-        setModulesFile(loadDataFromJSONasProperties("config-modules.json", "name", "value")); 
         setHostFile(loadDataFromJSONasProperties("config-hostserv.json", "name", "value"));   
         setSpamFile(loadDataFromJSONasProperties("config-spamscan.json", "name", "value"));   
         setNickFile(loadDataFromJSONasProperties("config-nickserv.json", "name", "value"));   
-        setSaslFile(loadDataFromJSONasProperties("config-saslserv.json", "name", "value"));
-        setChanServFile(loadDataFromJSONasProperties("config-chanserv.json", "name", "value"));
-        setAuthFile(loadDataFromJSONasProperties("config-authserv.json", "name", "value"));
-        setOperFile(loadDataFromJSONasProperties("config-operserv.json", "name", "value"));
-        setHelpServFile(loadDataFromJSONasProperties("config-helpserv.json", "name", "value"));
         setTrustcheckFile(loadDataFromJSONasProperties("config-trustcheck.json", "name", "value"));
-        setStatsServFile(loadDataFromJSONasProperties("config-statsserv.json", "name", "value"));
         setBadwordFile(loadDataFromJSONasProperties("badwords-spamscan.json", "name", "value")); 
     }
 

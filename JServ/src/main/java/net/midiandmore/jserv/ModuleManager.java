@@ -6,6 +6,7 @@ package net.midiandmore.jserv;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +20,7 @@ import java.util.logging.Logger;
 public class ModuleManager {
     
     private static final Logger LOG = Logger.getLogger(ModuleManager.class.getName());
+    private static final int DEFAULT_IRCU2_NICKLEN = 12;
     
     private final Map<String, Module> modules = new HashMap<>();
     private final JServ jserv;
@@ -72,10 +74,6 @@ public class ModuleManager {
                     ((HostServ) module).setNumericSuffix(def.getNumericSuffix());
                 } else if (module instanceof NickServ) {
                     ((NickServ) module).setNumericSuffix(def.getNumericSuffix());
-                } else if (module instanceof ChanServ) {
-                    ((ChanServ) module).setNumericSuffix(def.getNumericSuffix());
-                } else if (module instanceof AuthServ) {
-                    ((AuthServ) module).setNumericSuffix(def.getNumericSuffix());
                 }
                 
                 // Register module
@@ -199,17 +197,21 @@ public class ModuleManager {
     public void performHandshakes(String jnumeric) {
         for (Module module : modules.values()) {
             if (module.isEnabled()) {
-                String nick = getModuleConfig(module.getModuleName(), "nick");
+                String rawNick = getModuleConfig(module.getModuleName(), "nick");
+                String nick = sanitizeServiceNicknameForIrcu2(module.getModuleName(), rawNick);
                 String servername = getModuleConfig(module.getModuleName(), "servername");
                 String description = getModuleConfig(module.getModuleName(), "description");
                 String identd = getModuleConfig(module.getModuleName(), "identd");
 
-                // Most modules require nick/servername/description from config.
-                // SaslServ can resolve/fallback internally, so always attempt its handshake.
-                boolean hasRequired = nick != null && servername != null && description != null;
-                boolean alwaysAttempt = module instanceof SaslServ;
+                if (rawNick != null && !rawNick.equals(nick)) {
+                    LOG.log(Level.INFO, "Adjusted service nick for ircu2 compatibility ({0}): {1} -> {2}",
+                            new Object[]{module.getModuleName(), rawNick, nick});
+                }
 
-                if (hasRequired || alwaysAttempt) {
+                // Most modules require nick/servername/description from config.
+                boolean hasRequired = nick != null && servername != null && description != null;
+
+                if (hasRequired) {
                     module.handshake(nick, servername, description, jnumeric, identd);
                     LOG.log(Level.INFO, "Handshake completed for module: {0}", module.getModuleName());
                 } else {
@@ -217,6 +219,77 @@ public class ModuleManager {
                 }
             }
         }
+    }
+
+    private int getServiceNickMaxLength() {
+        int maxLen = DEFAULT_IRCU2_NICKLEN;
+        try {
+            if (jserv != null && jserv.getConfig() != null && jserv.getConfig().getConfigFile() != null) {
+                String configured = jserv.getConfig().getConfigFile().getProperty("service_nick_maxlen");
+                if (configured != null && !configured.isBlank()) {
+                    maxLen = Integer.parseInt(configured.trim());
+                }
+            }
+        } catch (Exception ignored) {
+            maxLen = DEFAULT_IRCU2_NICKLEN;
+        }
+
+        if (maxLen < 1) {
+            return DEFAULT_IRCU2_NICKLEN;
+        }
+        return Math.min(maxLen, 30);
+    }
+
+    private static boolean isIrcu2NickChar(char c) {
+        return (c >= 'A' && c <= '}') || c == '_' || c == '-';
+    }
+
+    private static boolean isIrcu2NickStartChar(char c) {
+        return isIrcu2NickChar(c) && c != '-' && !Character.isDigit(c);
+    }
+
+    private String sanitizeServiceNicknameForIrcu2(String moduleName, String nick) {
+        if (nick == null) {
+            return null;
+        }
+
+        String trimmed = nick.trim();
+        if (trimmed.isEmpty()) {
+            return trimmed;
+        }
+
+        int maxLen = getServiceNickMaxLength();
+        StringBuilder filtered = new StringBuilder(trimmed.length());
+        for (int i = 0; i < trimmed.length(); i++) {
+            char c = trimmed.charAt(i);
+            if (isIrcu2NickChar(c)) {
+                filtered.append(c);
+            }
+        }
+
+        if (filtered.length() == 0) {
+            filtered.append("S");
+            if (moduleName != null && !moduleName.isBlank()) {
+                String fallback = moduleName.replaceAll("[^A-Za-z0-9_\\-\\[\\]\\\\`\\^{}|~]", "");
+                if (!fallback.isBlank()) {
+                    filtered.append(fallback);
+                }
+            }
+        }
+
+        while (filtered.length() > 0 && !isIrcu2NickStartChar(filtered.charAt(0))) {
+            filtered.deleteCharAt(0);
+        }
+
+        if (filtered.length() == 0) {
+            filtered.append('S');
+        }
+
+        if (filtered.length() > maxLen) {
+            filtered.setLength(maxLen);
+        }
+
+        return filtered.toString();
     }
     
     /**
@@ -266,18 +339,6 @@ public class ModuleManager {
             return jserv.getConfig().getHostFile().getProperty(property);
         } else if (moduleName.equalsIgnoreCase("NickServ")) {
             return jserv.getConfig().getNickFile().getProperty(property);
-        } else if (moduleName.equalsIgnoreCase("SaslServ")) {
-            return jserv.getConfig().getSaslFile().getProperty(property);
-        } else if (moduleName.equalsIgnoreCase("ChanServ")) {
-            return jserv.getConfig().getChanServFile().getProperty(property);
-        } else if (moduleName.equalsIgnoreCase("AuthServ")) {
-            return jserv.getConfig().getAuthFile().getProperty(property);
-        } else if (moduleName.equalsIgnoreCase("OperServ")) {
-            return jserv.getConfig().getOperFile().getProperty(property);
-        } else if (moduleName.equalsIgnoreCase("HelpServ")) {
-            return jserv.getConfig().getHelpServFile().getProperty(property);
-        } else if (moduleName.equalsIgnoreCase("StatsServ")) {
-            return jserv.getConfig().getStatsServFile().getProperty(property);
         }
         return null;
     }

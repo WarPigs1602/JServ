@@ -105,6 +105,8 @@ public abstract class AbstractModule implements Module {
             String text = String.format(format, args);
             pw.print(text + "\r\n");
             pw.flush();
+            System.out.println("Send: "  +  text + "\r\n");
+            System.out.flush();
         }
     }
     

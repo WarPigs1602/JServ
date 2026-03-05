@@ -11,6 +11,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.net.InetAddress;
@@ -1081,6 +1083,168 @@ public final class SocketThread implements Runnable, Software {
         }
     }
 
+    private static final class BurstUserEntry {
+        private final String numeric;
+        private final boolean op;
+        private final boolean voice;
+
+        private BurstUserEntry(String numeric, boolean op, boolean voice) {
+            this.numeric = numeric;
+            this.op = op;
+            this.voice = voice;
+        }
+    }
+
+    private static String[] buildBurstUsersArray(List<BurstUserEntry> entries) {
+        String[] users = new String[entries.size()];
+        for (int i = 0; i < entries.size(); i++) {
+            BurstUserEntry entry = entries.get(i);
+            if (entry.op && entry.voice) {
+                users[i] = entry.numeric + ":ov";
+            } else if (entry.op) {
+                users[i] = entry.numeric + ":o";
+            } else if (entry.voice) {
+                users[i] = entry.numeric + ":v";
+            } else {
+                users[i] = entry.numeric;
+            }
+        }
+        return users;
+    }
+
+    private static String buildOutgoingBurstUserList(List<BurstUserEntry> entries, String jnumeric, boolean includeStatus) {
+        StringBuilder userList = new StringBuilder();
+        for (int i = 0; i < entries.size(); i++) {
+            BurstUserEntry entry = entries.get(i);
+            if (i > 0) {
+                userList.append(",");
+            }
+
+            boolean op = includeStatus && entry.op;
+            boolean voice = includeStatus && entry.voice;
+
+            // Preserve previous behavior: local service users are opped in outgoing burst.
+            // This is required so services keep their control role after burst sync.
+            if (!op && !voice && entry.numeric.startsWith(jnumeric)) {
+                op = true;
+            }
+
+            userList.append(entry.numeric);
+            if (op && voice) {
+                userList.append(":ov");
+            } else if (op) {
+                userList.append(":o");
+            } else if (voice) {
+                userList.append(":v");
+            }
+        }
+        return userList.toString();
+    }
+
+    private List<BurstUserEntry> parseBurstUsers(String userListStr, String channel, boolean debugMode) {
+        LinkedHashMap<String, BurstUserEntry> uniqueUsers = new LinkedHashMap<>();
+        if (userListStr == null || userListStr.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        boolean currentOp = false;
+        boolean currentVoice = false;
+
+        String[] rawUsers = userListStr.split("[,\\s]+");
+        for (String rawUser : rawUsers) {
+            if (rawUser == null || rawUser.isBlank()) {
+                continue;
+            }
+
+            String userNumeric = rawUser;
+            String marker = null;
+            int markerPos = rawUser.indexOf(':');
+            if (markerPos >= 0) {
+                userNumeric = rawUser.substring(0, markerPos);
+                marker = markerPos + 1 < rawUser.length() ? rawUser.substring(markerPos + 1) : "";
+            }
+
+            if (userNumeric.isBlank()) {
+                continue;
+            }
+
+            if (marker != null && !marker.isBlank()) {
+                boolean hasVoice = marker.indexOf('v') >= 0;
+                boolean hasOp = marker.indexOf('o') >= 0;
+                boolean hasDigit = marker.chars().anyMatch(Character::isDigit);
+
+                if (hasOp || hasDigit) {
+                    currentOp = true;
+                } else if (hasVoice) {
+                    currentOp = false;
+                }
+
+                if (hasVoice) {
+                    currentVoice = true;
+                } else if (hasOp) {
+                    currentVoice = false;
+                }
+            }
+
+            BurstUserEntry parsed = new BurstUserEntry(userNumeric, currentOp, currentVoice);
+            BurstUserEntry previous = uniqueUsers.get(userNumeric);
+            if (previous == null) {
+                uniqueUsers.put(userNumeric, parsed);
+            } else {
+                BurstUserEntry merged = new BurstUserEntry(userNumeric, previous.op || parsed.op, previous.voice || parsed.voice);
+                uniqueUsers.put(userNumeric, merged);
+
+                if (getUsers().containsKey(userNumeric)) {
+                    Users user = getUsers().get(userNumeric);
+                    if (user.isService()) {
+                        LOG.warning(String.format("Duplicate service in burst for %s: %s (%s)", channel, userNumeric, user.getNick()));
+                    } else if (user.isOper()) {
+                        LOG.warning(String.format("Duplicate oper in burst for %s: %s (%s)", channel, userNumeric, user.getNick()));
+                    } else if (debugMode) {
+                        System.out.printf("NOTICE: Duplicate user in BURST for channel %s: %s (%s)\n", channel, userNumeric, user.getNick());
+                    }
+                } else if (debugMode) {
+                    System.out.printf("NOTICE: Duplicate unknown user in BURST for channel %s: %s\n", channel, userNumeric);
+                }
+            }
+        }
+
+        return new ArrayList<>(uniqueUsers.values());
+    }
+
+    private void updateKnownUsersChannelMembership(List<BurstUserEntry> usersInBurst, String channel) {
+        for (BurstUserEntry entry : usersInBurst) {
+            Users user = getUsers().get(entry.numeric);
+            if (user != null) {
+                user.addChannel(channel);
+            }
+        }
+    }
+
+    private void applyBurstToExistingChannel(Channel existingChannel, List<BurstUserEntry> usersInBurst, boolean applyModes) {
+        for (BurstUserEntry entry : usersInBurst) {
+            if (!existingChannel.getUsers().contains(entry.numeric)) {
+                existingChannel.addUser(entry.numeric);
+            }
+            if (applyModes) {
+                if (entry.op && !existingChannel.getOp().contains(entry.numeric)) {
+                    existingChannel.addOp(entry.numeric);
+                }
+                if (entry.voice && !existingChannel.getVoice().contains(entry.numeric)) {
+                    existingChannel.addVoice(entry.numeric);
+                }
+            }
+        }
+    }
+
+    private Channel buildChannelFromBurst(String channel, String modes, List<BurstUserEntry> usersInBurst, long channelTs) {
+        Channel channelObj = new Channel(channel, modes != null ? modes : "", buildBurstUsersArray(usersInBurst));
+        if (channelTs > 0) {
+            channelObj.setCreatedTimestamp(channelTs);
+        }
+        return channelObj;
+    }
+
     @Override
     public void run() {
         System.out.println("Connecting to server...");
@@ -1181,11 +1345,26 @@ public final class SocketThread implements Runnable, Software {
                                         
                                         var users = getUsers().keySet();
                                         for (var user : users) {
-                                            // Include all currently known users here so DB-authorized users
-                                            // (AUTOOP/AUTOVOICE/BANNED) are present in burst processing,
-                                            // even when they are remote users on another server.
                                             var u = getUsers().get(user);
                                             if (u.getAccount() != null && u.getAccount().equalsIgnoreCase(nick[1])) {
+                                                // Only apply DB-derived burst status for users who are actually
+                                                // in this channel (known channel state or user channel list).
+                                                boolean userInChannel = false;
+                                                Channel knownChannel = getChannel().get(chanLower);
+                                                if (knownChannel != null && knownChannel.getUsers().contains(user)) {
+                                                    userInChannel = true;
+                                                }
+                                                if (!userInChannel && u.getChannels() != null && u.getChannels().contains(chanLower)) {
+                                                    userInChannel = true;
+                                                }
+
+                                                if (!userInChannel) {
+                                                    if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
+                                                        System.out.println("[DEBUG] Skip DB-rights burst add for " + user + " in " + chanLower + " (not a channel member)");
+                                                    }
+                                                    continue;
+                                                }
+
                                                 System.out.println("[DEBUG] Found online user " + user + " matching account " + nick[1]);
                                                 
                                                 // Handle BANNED flag - mark for ban+kick (to be processed by ChanServ)
@@ -1280,63 +1459,100 @@ public final class SocketThread implements Runnable, Software {
                         var bursts = getBursts().keySet();
                         for (var burst : bursts) {
                             Burst burstData = getBursts().get(burst);
-                            var nicks1 = burstData.getUsers().toArray();
-                            
-                            // Build comma-separated list of users with their modes
-                            StringBuilder userList = new StringBuilder();
-                            for (int i = 0; i < nicks1.length; i++) {
-                                if (i > 0) userList.append(",");
-                                String userEntry = String.valueOf(nicks1[i]);
-                                
-                                // Services get op automatically in their burst
-                                if (userEntry.startsWith(jnumeric) && !userEntry.contains(":")) {
-                                    userList.append(userEntry).append(":o");
-                                } else {
-                                    userList.append(userEntry);
+                            boolean debugMode = getMi() != null && getMi().getConfig() != null
+                                    && "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
+                            List<BurstUserEntry> outgoingUsers = parseBurstUsers(String.join(",", burstData.getUsers()), burst, debugMode);
+
+                            // Ignore foreign users in server-side outgoing burst.
+                            List<BurstUserEntry> localOutgoingUsers = new ArrayList<>();
+                            for (BurstUserEntry entry : outgoingUsers) {
+                                if (entry.numeric != null && entry.numeric.startsWith(jnumeric)) {
+                                    localOutgoingUsers.add(entry);
+                                } else if (debugMode) {
+                                    System.out.println("[DEBUG] Ignoring foreign user in outgoing BURST for " + burst + ": " + entry.numeric);
                                 }
                             }
                             
-                            // Get timestamp from burst data or use current time
-                            long timestamp = burstData.getTime() > 0 ? burstData.getTime() : time();
-                            
-                            // Get modes from burst data
-                            String modes = burstData.getModes();
+                            Channel existingChannel = getChannel().get(burst.toLowerCase());
+                            // Use real channel TS for outgoing burst whenever possible.
+                            long burstTs = 0;
+                            if (existingChannel != null && existingChannel.getCreatedTimestamp() != null
+                                    && existingChannel.getCreatedTimestamp() > 0) {
+                                burstTs = existingChannel.getCreatedTimestamp();
+                            } else if (burstData.getTime() > 0) {
+                                burstTs = burstData.getTime();
+                            } else {
+                                String createdTs = getMi().getDb().getChannel("created", burst);
+                                if (createdTs != null && !createdTs.isBlank()) {
+                                    try {
+                                        burstTs = Long.parseLong(createdTs);
+                                    } catch (NumberFormatException ex) {
+                                        LOG.warning("Failed to parse DB created timestamp for channel " + burst + ": " + createdTs);
+                                    }
+                                }
+                            }
+                            if (burstTs <= 0) {
+                                burstTs = time();
+                            }
+                            burstData.setTime(burstTs);
+
+                            String burstModes = burstData.getModes();
+
+                            long localTs = 0;
+                            if (existingChannel != null && existingChannel.getCreatedTimestamp() != null) {
+                                localTs = existingChannel.getCreatedTimestamp();
+                            }
+
+                            // ircu2-style TS rule for outgoing burst:
+                            // - newer TS loses modes/status,
+                            // - older/equal TS keeps modes/status.
+                            boolean keepModesAndStatus = !(burstTs > 0 && localTs > 0 && burstTs > localTs);
+
+                            List<BurstUserEntry> effectiveOutgoingUsers = new ArrayList<>(localOutgoingUsers.size());
+                            if (keepModesAndStatus) {
+                                effectiveOutgoingUsers.addAll(localOutgoingUsers);
+                            } else {
+                                for (BurstUserEntry entry : localOutgoingUsers) {
+                                    effectiveOutgoingUsers.add(new BurstUserEntry(entry.numeric, false, false));
+                                }
+                            }
+
+                            String modesToSend = keepModesAndStatus ? burstModes : "";
+                            String userList = buildOutgoingBurstUserList(effectiveOutgoingUsers, jnumeric, keepModesAndStatus);
+                            String[] effectiveBurstUsers = userList.isBlank() ? new String[0] : userList.split(",");
                             
                             // Send BURST command for the channel
                             // Format: <numeric> B <channel> <timestamp> [+modes] :<users>
-                            if (modes != null && !modes.isEmpty() && modes.startsWith("+")) {
-                                sendText("%s B %s %d %s %s", jnumeric, burst, timestamp, modes, userList.toString());
+                            if (modesToSend != null && !modesToSend.isEmpty() && modesToSend.startsWith("+")) {
+                                sendText("%s B %s %d %s %s", jnumeric, burst, burstTs, modesToSend, userList);
                             } else {
-                                sendText("%s B %s %d %s", jnumeric, burst, timestamp, userList.toString());
+                                sendText("%s B %s %d %s", jnumeric, burst, burstTs, userList);
                             }
                             
-                            System.out.printf("BURST: %s with %d users at timestamp %d\r\n", burst, nicks1.length, timestamp);
+                            System.out.printf("BURST: %s with %d users at timestamp %d\r\n", burst, effectiveBurstUsers.length, burstTs);
                             
-                            // Create local channel object after sending BURST
-                            String[] usersArray = new String[nicks1.length];
-                            for (int i = 0; i < nicks1.length; i++) {
-                                usersArray[i] = String.valueOf(nicks1[i]);
-                            }
-                            Channel newChannel = new Channel(burst, modes != null ? modes : "", usersArray);
-                            newChannel.setCreatedTimestamp(timestamp);
-                            Channel existingChannel = getChannel().get(burst.toLowerCase());
-                            if (existingChannel != null) {
-                                for (String existingUser : existingChannel.getUsers()) {
-                                    if (!newChannel.getUsers().contains(existingUser)) {
-                                        newChannel.addUser(existingUser);
+                            // Keep local channel state consistent with TS rule used for outgoing BURST.
+                            if (existingChannel == null) {
+                                Channel newChannel = buildChannelFromBurst(
+                                        burst,
+                                        keepModesAndStatus ? (burstModes != null ? burstModes : "") : "",
+                                    effectiveOutgoingUsers,
+                                        burstTs);
+                                getChannel().put(burst.toLowerCase(), newChannel);
+                            } else {
+                                if (keepModesAndStatus) {
+                                    if (burstModes != null && !burstModes.isEmpty()) {
+                                        existingChannel.setModes(burstModes);
                                     }
-                                    if (existingChannel.getOp().contains(existingUser) && !newChannel.getOp().contains(existingUser)) {
-                                        newChannel.addOp(existingUser);
-                                    }
-                                    if (existingChannel.getVoice().contains(existingUser) && !newChannel.getVoice().contains(existingUser)) {
-                                        newChannel.addVoice(existingUser);
+                                    if (burstTs > 0 && (existingChannel.getCreatedTimestamp() == null || burstTs <= existingChannel.getCreatedTimestamp())) {
+                                        existingChannel.setCreatedTimestamp(burstTs);
                                     }
                                 }
+                                applyBurstToExistingChannel(existingChannel, effectiveOutgoingUsers, keepModesAndStatus);
                             }
-                            getChannel().put(burst.toLowerCase(), newChannel);
                             
                             // Add channel to each user's channel list
-                            for (var userObj : nicks1) {
+                            for (var userObj : effectiveBurstUsers) {
                                 String userEntry = String.valueOf(userObj);
                                 String userNumeric;
                                 if (userEntry.endsWith(":o") || userEntry.endsWith(":v") || userEntry.endsWith(":b")) {
@@ -1350,142 +1566,8 @@ public final class SocketThread implements Runnable, Software {
                                     getUsers().get(userNumeric).addChannel(burst.toLowerCase());
                                 }
                             }
-                            
-                            // Process post-burst actions for ChanServ (AAF)
-                            for (var nameObj : nicks1) {
-                                var name = String.valueOf(nameObj);
-                                if (name.startsWith(jnumeric) && name.endsWith("AAF")) {
-                                        // Get the Channel object to check if users are actually in the channel
-                                        Channel channelObj = getChannel().get(burst);
-                                        if (channelObj != null) {
-                                            // Get channel ID for flag lookups
-                                            String chanIdStr = getMi().getDb().getChannel("id", burst);
-                                            long chanId = chanIdStr != null ? Long.parseLong(chanIdStr) : -1;
-                                            
-                                            for (var userObj : nicks1) {
-                                                String userEntry = String.valueOf(userObj);
-                                                // Extract user numeric (remove mode suffix if present)
-                                                String userNumeric;
-                                                if (userEntry.endsWith(":o") || userEntry.endsWith(":v") || userEntry.endsWith(":b")) {
-                                                    userNumeric = userEntry.substring(0, userEntry.length() - 2);
-                                                } else if (userEntry.contains(":")) {
-                                                    userNumeric = userEntry.split(":")[0];
-                                                } else {
-                                                    userNumeric = userEntry;
-                                                }
 
-                                                // Get user object
-                                                Users user = getUsers().get(userNumeric);
-                                                // Skip unknown users and service bots (ChanServ itself and sibling services)
-                                                if (user == null || user.isService()) {
-                                                    continue;
-                                                }
-
-                                                // Verify user exists and is in the channel (or will be in it)
-                                                if (channelObj.getUsers().contains(userNumeric) || userEntry.contains(":")) {
-                                                        
-                                                        // Check for channel bans from database
-                                                        if (chanId > 0) {
-                                                            String userHost = user.getNick() + "!" + user.getIdent() + "@" + user.getHost();
-                                                            String realUserHost = user.getNick() + "!" + user.getIdent() + "@" + user.getRealHost();
-                                                            String hiddenHostMask = user.getHiddenHost() != null ? user.getNick() + "!" + user.getHiddenHost() : null;
-                                                            ArrayList<String[]> bans = getMi().getDb().getChannelBans(chanId);
-                                                            
-                                                            if (bans.size() > 0) {
-                                                                System.out.println("[DEBUG] Burst: Checking bans for " + userHost + " (real: " + realUserHost + ", hidden: " + hiddenHostMask + ") in " + burst + " - bans found: " + bans.size());
-                                                            }
-                                                            
-                                                            boolean isBanned = false;
-                                                            String banMask = null;
-                                                            String banReason = "Banned";
-                                                            
-                                                            for (String[] ban : bans) {
-                                                                banMask = ban[1]; // hostmask
-                                                                banReason = ban[3]; // reason
-                                                                System.out.println("[DEBUG] Burst: Testing ban mask " + banMask + " against " + userHost + ", " + realUserHost + " and " + hiddenHostMask);
-                                                                
-                                                                // Check visible host, real host, and hidden host
-                                                                if (getMi().getDb().checkBanMatch(userHost, banMask) 
-                                                                        || getMi().getDb().checkBanMatch(realUserHost, banMask)
-                                                                        || (hiddenHostMask != null && getMi().getDb().checkBanMatch(hiddenHostMask, banMask))) {
-                                                                    isBanned = true;
-                                                                    break;
-                                                                }
-                                                            }
-                                                            
-                                                            if (isBanned) {
-                                                                // Apply ban and kick user
-                                                                sendText("%s M %s +b %s", name, burst, banMask);
-                                                                String kickReason = (banReason != null && !banReason.isEmpty()) ? "Banned: " + banReason : "Banned";
-                                                                sendText("%s K %s %s :%s", name, burst, userNumeric, kickReason);
-                                                                System.out.println("[DEBUG] Banned and kicked " + userNumeric + " from " + burst + " - Matched ban: " + banMask);
-                                                                continue; // Skip op/voice for banned users
-                                                            }
-                                                        }
-                                                        
-                                                        // Get user flags for autoop/autovoice
-                                                        if (chanId > 0) {
-                                                            String accountName = user.getAccount();
-                                                            
-                                                            // Check database flags if user has account
-                                                            if (accountName != null && !accountName.isEmpty()) {
-                                                                String userIdStr = getMi().getDb().getData("id", accountName);
-                                                                if (userIdStr != null) {
-                                                                    long userId = Long.parseLong(userIdStr);
-                                                                    String[] userData = getMi().getDb().getChanUser(userId, chanId);
-                                                                    if (userData != null && userData.length > 0 && userData[0] != null) {
-                                                                        int flags = Integer.parseInt(userData[0]);
-                                                                        
-                                                                        // Check BANNED flag FIRST - before granting any modes
-                                                                        if (Userflags.hasQCUFlag(flags, Userflags.QCUFlag.BANNED)) {
-                                                                            String suffix = getMi().getConfig().getConfigFile().getProperty("reg_host", "users.midiandmore.net");
-                                                                            String ban = "*!*@" + accountName + suffix;
-                                                                            sendText("%s M %s +b %s", name, burst, ban);
-                                                                            sendText("%s K %s %s :Banned (user flagged with +b)", name, burst, userNumeric);
-                                                                            System.out.println("[DEBUG] Banned and kicked " + userNumeric + " from " + burst + " - BANNED flag - Account: " + accountName);
-                                                                            continue; // Skip op/voice for banned users
-                                                                        }
-                                                                        
-                                                                        // Only grant modes if user has autoop/autovoice flags AND passed ban check
-                                                                        // Grant op/voice based on string suffix (legacy) or flags
-                                                                        if (userEntry.endsWith(":o") || Userflags.hasQCUFlag(flags, Userflags.QCUFlag.AUTOOP)) {
-                                                                            sendText("%s M %s +o %s", name, burst, userNumeric);
-                                                                        } else if (userEntry.endsWith(":v") || Userflags.hasQCUFlag(flags, Userflags.QCUFlag.AUTOVOICE)) {
-                                                                            sendText("%s M %s +v %s", name, burst, userNumeric);
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                            }
-                                        }
-                                        break; // Only process once per channel for ChanServ
-                                    }
-                                }
-                            }
-                        
-                        // After all channels joined, check if topics need to be set
-                        System.out.println("Checking stored topics...");
-                        for (String channelName : getBursts().keySet()) {
-                            Burst burst = getBursts().get(channelName);
-                            String storedTopic = burst.getTopic();
-                            
-                            if (storedTopic != null && !storedTopic.isEmpty()) {
-                                Channel channelObj = getChannel().get(channelName);
-                                if (channelObj != null) {
-                                    String currentTopic = channelObj.getTopic();
-                                    // Only set if channel has no topic
-                                    if (currentTopic == null || currentTopic.isEmpty()) {
-                                        sendText("%sAAF T %s :%s", jnumeric, channelName, storedTopic);
-                                        System.out.println("[DEBUG] Setting stored topic for " + channelName + ": " + storedTopic);
-                                    } else {
-                                        System.out.println("[DEBUG] Channel " + channelName + " already has topic, not overwriting");
-                                    }
-                                }
-                            }
                         }
-                        
                         System.out.println("Channels joined...");
                     } else if (elem[1].equals("J") || elem[1].equals("C")) {
                         var channel = elem[2];
@@ -1529,32 +1611,36 @@ public final class SocketThread implements Runnable, Software {
                         // Critical section: Check + Parse + Register (must be atomic)
                         // Propagation is done after lock is released
                         processNCommand(elem, content, jnumeric);
-                    } else if (elem[1].equals("N") && elem.length == 4) {
-                        getUsers().get(elem[0]).setNick(elem[2]);
+                    } else if (elem[1].equals("N") && elem.length >= 3) {
+                        Users nickChangeUser = getUsers().get(elem[0]);
+                        if (nickChangeUser != null) {
+                            nickChangeUser.setNick(elem[2]);
+                        } else if (getMi().getConfig().getConfigFile().getProperty("debug", "false").equalsIgnoreCase("true")) {
+                            System.out.printf("DEBUG: Ignoring NICK change for unknown numeric %s -> %s\n", elem[0], elem[2]);
+                        }
                     } else if (elem[1].equals("B") && elem.length >= 5) {
                         // P10 Burst format: <numeric> B <channel> <timestamp> [+flags] <users...> [:<bans/exceptions>]
-                        // With modes: elem[4]=+flags, users start at elem[5], stop at first token with ':' prefix
-                        // Without modes: users start at elem[4], stop at first token with ':' prefix
-                        // Users can be: NUMERIC or NUMERIC:modes (comma or space separated)
-                        
-                        var channel = elem[2].toLowerCase();
-                        var modes = "";
+                        String channel = elem[2].toLowerCase();
+                        String modes = "";
                         int userStartIndex;
-                        
+
                         if (elem.length > 4 && elem[4].startsWith("+")) {
-                            // Modes present: elem[4]=+flags, users start at elem[5]
                             modes = elem[4];
                             userStartIndex = 5;
                         } else {
-                            // No modes: users start at elem[4]
                             userStartIndex = 4;
                         }
-                        
-                        // Collect user tokens until we hit ban/exception list (marked with ':' prefix)
+
+                        long burstTs = 0;
+                        try {
+                            burstTs = Long.parseLong(elem[3]);
+                        } catch (NumberFormatException ex) {
+                            LOG.warning("Failed to parse BURST timestamp for channel " + channel + ": " + elem[3]);
+                        }
+
                         StringBuilder userListBuilder = new StringBuilder();
                         for (int i = userStartIndex; i < elem.length; i++) {
                             String token = elem[i];
-                            // Stop at ban/exception list marker (tokens starting with ':')
                             if (token.startsWith(":")) {
                                 break;
                             }
@@ -1563,102 +1649,47 @@ public final class SocketThread implements Runnable, Software {
                             }
                             userListBuilder.append(token);
                         }
-                        
-                        // Parse user string (comma or space separated)
-                        String[] names = new String[0];
-                        String userListStr = userListBuilder.toString().trim();
-                        if (!userListStr.isEmpty()) {
-                            names = userListStr.contains(",") ? userListStr.split(",") : userListStr.split(" ");
-                        }
-                        
-                        // Check for duplicates in the burst user list
-                        java.util.Set<String> seenUsers = new java.util.HashSet<>();
-                        java.util.List<String> duplicates = new java.util.ArrayList<>();
-                        boolean debugMode = getMi() != null && getMi().getConfig() != null && 
-                            "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
-                        
-                        for (String userName : names) {
-                            String userNumeric = userName.split(":")[0]; // Strip mode suffixes
-                            if (!seenUsers.add(userNumeric)) {
-                                duplicates.add(userNumeric);
-                                // Check if this is a service or oper
-                                if (getUsers().containsKey(userNumeric)) {
-                                    Users user = getUsers().get(userNumeric);
-                                    if (user.isService()) {
-                                        System.out.printf("WARNING: Duplicate SERVICE in BURST for channel %s: %s (%s)\n", 
-                                            channel, userNumeric, user.getNick());
-                                        LOG.warning(String.format("Duplicate service in burst for %s: %s (%s)", 
-                                            channel, userNumeric, user.getNick()));
-                                    } else if (user.isOper()) {
-                                        System.out.printf("WARNING: Duplicate OPER in BURST for channel %s: %s (%s)\n", 
-                                            channel, userNumeric, user.getNick());
-                                        LOG.warning(String.format("Duplicate oper in burst for %s: %s (%s)", 
-                                            channel, userNumeric, user.getNick()));
-                                    } else if (debugMode) {
-                                        System.out.printf("NOTICE: Duplicate user in BURST for channel %s: %s (%s)\n", 
-                                            channel, userNumeric, user.getNick());
+
+                        boolean debugMode = getMi() != null && getMi().getConfig() != null
+                                && "true".equalsIgnoreCase(getMi().getConfig().getConfigFile().getProperty("debug", "false"));
+                        List<BurstUserEntry> usersInBurst = parseBurstUsers(userListBuilder.toString(), channel, debugMode);
+
+                        Channel existingChannel = getChannel().get(channel);
+                        if (existingChannel == null) {
+                            Channel newChannel = buildChannelFromBurst(channel, modes, usersInBurst, burstTs);
+                            getChannel().put(channel, newChannel);
+                        } else {
+                            Long localTsObj = existingChannel.getCreatedTimestamp();
+                            long localTs = localTsObj != null ? localTsObj : 0;
+
+                            if (burstTs > 0 && localTs > 0 && burstTs < localTs) {
+                                // Remote side has older TS -> remote channel state wins.
+                                Channel mergedFromBurst = buildChannelFromBurst(channel, modes, usersInBurst, burstTs);
+
+                                // Preserve any local-only members as plain users.
+                                for (String existingUser : existingChannel.getUsers()) {
+                                    if (!mergedFromBurst.getUsers().contains(existingUser)) {
+                                        mergedFromBurst.addUser(existingUser);
                                     }
-                                } else if (debugMode) {
-                                    System.out.printf("NOTICE: Duplicate unknown user in BURST for channel %s: %s\n", 
-                                        channel, userNumeric);
                                 }
-                            }
-                        }
-                        
-                        if (!duplicates.isEmpty() && debugMode) {
-                            System.out.printf("BURST for channel %s contained %d duplicate user entries\n", 
-                                channel, duplicates.size());
-                        }
-                        
-                        // Set creation timestamp from database if channel is registered
-                        Long createdTsValue = null;
-                        String createdTs = getMi().getDb().getChannel("created", channel);
-                        if (createdTs != null && !createdTs.isEmpty()) {
-                            try {
-                                createdTsValue = Long.parseLong(createdTs);
-                            } catch (NumberFormatException e) {
-                                LOG.warning("Failed to parse created timestamp for channel " + channel + ": " + createdTs);
+
+                                getChannel().put(channel, mergedFromBurst);
+                            } else if (burstTs > 0 && localTs > 0 && burstTs > localTs) {
+                                // Remote side has newer TS -> it loses channel modes/user-status.
+                                applyBurstToExistingChannel(existingChannel, usersInBurst, false);
+                            } else {
+                                // Equal TS (or unknown TS locally/remotely): merge members and status.
+                                if (!modes.isEmpty()) {
+                                    existingChannel.setModes(modes);
+                                }
+                                if (burstTs > 0 && localTs <= 0) {
+                                    existingChannel.setCreatedTimestamp(burstTs);
+                                }
+                                applyBurstToExistingChannel(existingChannel, usersInBurst, true);
                             }
                         }
 
-                        Channel existingChannel = getChannel().get(channel.toLowerCase());
-                        if (existingChannel != null) {
-                            if (modes != null && !modes.isEmpty()) {
-                                existingChannel.setModes(modes);
-                            }
-                            if (createdTsValue != null) {
-                                existingChannel.setCreatedTimestamp(createdTsValue);
-                            }
-                            for (String userName : names) {
-                                String userNumeric = userName.split(":")[0];
-                                if (!existingChannel.getUsers().contains(userNumeric)) {
-                                    existingChannel.addUser(userNumeric);
-                                }
-                                if (userName.contains(":")) {
-                                    String status = userName.split(":", 2)[1];
-                                    if (status.contains("o") && !existingChannel.getOp().contains(userNumeric)) {
-                                        existingChannel.addOp(userNumeric);
-                                    }
-                                    if (status.contains("v") && !existingChannel.getVoice().contains(userNumeric)) {
-                                        existingChannel.addVoice(userNumeric);
-                                    }
-                                }
-                            }
-                        } else {
-                            Channel newChannel = new Channel(channel, modes, names);
-                            if (createdTsValue != null) {
-                                newChannel.setCreatedTimestamp(createdTsValue);
-                            }
-                            getChannel().put(channel.toLowerCase(), newChannel);
-                        }
-                        
-                        // Add channel to each user's channel list
-                        for (var userName : names) {
-                            var userNumeric = userName.split(":")[0]; // Strip mode suffixes
-                            if (getUsers().containsKey(userNumeric)) {
-                                getUsers().get(userNumeric).addChannel(channel);
-                            }
-                        }
+                        updateKnownUsersChannelMembership(usersInBurst, channel);
                     } else if (elem[1].equals("AC") && getUsers().containsKey(elem[2])) {
                         var acc = elem[3];
                         var nick = elem[2];

@@ -1,13 +1,13 @@
 # JServ
 
-**JServ** is a robust Java-based service that integrates essential IRC modules—**SpamScan**, **HostServ**, **NickServ**, **SaslServ**, **ChanServ**, **AuthServ**, **StatsServ**, **HelpServ**, and **OperServ**—into a single, efficient package. Designed specifically for use with **JIRCd** (Java IRC Daemon), JServ streamlines spam detection, hidden host management, nickname protection, authentication, channel management, channel statistics, help/FAQ delivery, and operator services for IRC networks.
+**JServ** is a robust Java-based service that integrates essential IRC modules—**SpamScan**, **HostServ**, and **NickServ**—into a single, efficient package. Designed specifically for use with **JIRCd** (Java IRC Daemon), JServ streamlines spam detection, hidden host management, and nickname protection for IRC networks.
 
 **Lineage:** Derived from NewServ (GPLv2), Copyright (C) 2002-2013 David Mansell (splidge) and the QuakeNet development team. Source: https://codeberg.org/quakenet/newserv
 
 ## Key Features
 
 ### Modular Architecture
-- **Plugin System:** SpamScan, HostServ, NickServ, SaslServ, ChanServ, AuthServ, StatsServ, HelpServ, and OperServ are implemented as independent modules
+- **Plugin System:** SpamScan, HostServ, and NickServ are implemented as independent modules
 - **Dynamic Module Management:** Modules can be enabled/disabled via configuration without code changes
 - **Extended Module Configuration:** Comprehensive JSON-based module definition with className, numeric suffix, and config file mapping
 - **Automatic Module Loading:** Modules are automatically instantiated and registered based on configuration
@@ -78,138 +78,6 @@
 - **Database Integration:** Checks registered nicknames against the PostgreSQL database.
 - **User Notifications:** Sends warnings and success messages for authentication status.
 - **INFO Command:** Comprehensive nickname information including all reserved nicks and formatted dates.
-- **Runtime Control:** Can be enabled/disabled dynamically through configuration
-- **Graceful Logout:** Sends proper QUIT command on shutdown
-
-### SaslServ Module
-
-**Purpose:** Implements server-to-server SASL authentication protocol for secure pre-connection authentication. SaslServ validates user credentials before they fully connect to the network, providing enhanced security and seamless authentication for IRC clients.
-
-**Key Capabilities:**
-- **SASL Authentication:** Server-to-server SASL validation protocol for JIRCd
-- **PLAIN Mechanism Support:** Implements SASL PLAIN authentication mechanism
-- **Database Integration:** Authenticates users against PostgreSQL database
-- **Relay Mode Support:** Optional relay authentication to external control services (e.g., mIAuthd)
-- **Account Token Generation:** Generates extended account tokens (username:timestamp:id) for JIRCd
-- **Configurable Account Parameters:** Customizable account name and ID in N-Line registration
-- **Timeout Handling:** Configurable relay timeout with automatic failure handling
-- **Remote Authentication:** MD5-based digest authentication for relay mode
-- **Config Fallback:** Optional fallback to config-based authentication if database fails
-- **Runtime Control:** Can be enabled/disabled dynamically through configuration
-- **Graceful Logout:** Sends proper QUIT command on shutdown
-
-### ChanServ Module
-
-**Purpose:** Manages channel registration, ownership, and access control. ChanServ allows users to register channels, maintain persistent channel settings, and control user access through a comprehensive permission system.
-
-**Key Capabilities:**
-- **Channel Registration:** Register channels with founder privileges and persistent ownership
-- **Access Level Management:** Control user access with OP, VOICE, and BAN flags
-- **Automatic Mode Application:** Automatically apply channel modes based on user access levels upon join
-- **Channel Settings:** Configure AUTOOP, PROTECT, AUTOLIMIT, and other channel behaviors
-- **Topic Management:** Set, lock, and manage channel topics with protection
-- **Ban List Management:** Maintain and enforce channel ban lists
-- **User Commands:** REGISTER, ADDUSER, DELUSER, MODUSER, LISTUSERS, SET, INFO, UNREGISTER
-- **Operator Commands:** CHANLIST for network-wide channel overview
-- **Runtime Control:** Can be enabled/disabled dynamically through configuration
-- **Graceful Logout:** Sends proper QUIT command on shutdown
-
-### AuthServ Module
-
-**Purpose:** Provides centralized user account management and authentication services. AuthServ handles user registration, password management, and authentication, serving as the foundation for other services like ChanServ and HostServ.
-
-**Key Capabilities:**
-- **Account Registration:** Register new accounts with email verification and auto-generated passwords
-- **Secure Authentication:** IDENTIFY command for account login with database validation
-- **Password Management:** Change passwords (PASSWD), request new passwords (REQUESTPASSWORD), and cancel pending changes (RESETPASSWORD)
-- **Email Notifications:** Automated email system for registration, password changes, and recovery
-- **User Flags System:** Comprehensive permission system (+n, +i, +c, +h, +q, +o, +a, +d, +p, +T flags)
-- **Account Information:** View account details, creation date, and last login (INFO, STATUS commands)
-- **Account Deletion:** Secure account deletion with password confirmation
-- **One Registration Per Session:** Prevents abuse by limiting registrations per connection
-- **Integration:** Automatically applies channel modes via ChanServ after authentication
-- **Runtime Control:** Can be enabled/disabled dynamically through configuration
-- **Graceful Logout:** Sends proper QUIT command on shutdown
-
-### StatsServ Module
-
-**Purpose:** Provides channel statistics, rankings, and quotes based on the `a4stats` schema. StatsServ tracks channel activity events (messages, joins, parts, kicks, topics, and actions) and exposes query commands with privacy controls.
-
-**Key Capabilities:**
-- **Channel Statistics Tracking:** Tracks channel/user activity and stores data in `a4stats.*` tables
-- **Ranking & Stats Commands:** Provides `STATS`, `TOP10`, `CHSTATS`, and `QUOTE` commands
-- **Privacy Levels:** Supports per-channel privacy levels (`0=Public`, `1=Members`, `2=ChanServ/privileged`)
-- **Channel Lifecycle Commands:** Supports `ADDCHAN`, `DELCHAN`, and `PRIVACY` management commands
-- **Burst-Aware Joining:** Registers active channels during burst and joins them consistently with other services
-- **Automatic Cleanup:** Periodic cleanup of inactive/old statistics data via timer
-- **Configurable Defaults:** Supports cleanup and privacy tuning via `config-statsserv.json`
-- **Runtime Control:** Can be enabled/disabled dynamically through configuration
-- **Graceful Logout:** Sends proper QUIT command on shutdown
-
-### HelpServ Module
-
-**Purpose:** Provides a full helpdesk-style service inspired by NewServ `helpmod2`, including hierarchical FAQ delivery, command-level help, support queue handling, ticket workflows, moderation helpers, and staff/statistics tooling.
-
-**How Help Content Works:**
-- **Automatic Language Sources:** Automatically loads all `help_*.txt` files from `help_dir` (default `help`), for example `help_en.txt`, `help_de.txt`.
-- **Hierarchical Parsing:** Builds a tree from indentation-based topic lines.
-- **Topic Body Lines:** Lines prefixed with `*` are rendered as topic text.
-- **Per-User Navigation State:** Users can browse topics/menu paths with stateful numeric navigation (`1..N`, `0` = back).
-- **Fallback Safety:** If no help file is found, HelpServ uses an internal fallback topic tree so basic help remains available.
-
-**Command Model and Access Control:**
-- **ACL-Enforced Commands:** Every command is checked against an internal command catalog and minimum level.
-- **Command Levels:** `LAMER (0)`, `PEON (1)`, `FRIEND (2)`, `TRIAL (3)`, `STAFF (4)`, `OPER (5)`, `ADMIN (6)`.
-- **Unknown Command Handling:** Unknown commands return a clear error and point users to `SHOWCOMMANDS`.
-- **Shortcuts Supported:** `?`, `?+`, `?-` and compatibility forms `QUESTIONMARK`, `QUESTIONMARKPLUS`, `QUESTIONMARKMINUS` are mapped to term and queue actions.
-
-**Core User-Facing Features:**
-- **Topic Help:** `HELP [topic]`, `TOPICS [topic]`, `SEARCH <text>`.
-- **Command Discovery:** `SHOWCOMMANDS [level]`, `COMMAND <name>` with short per-command descriptions.
-- **General Info:** `VERSION`, `WHOAMI`, `INVITE`.
-- **Term Lookup:** `TERM` and `?`-style shortcuts for glossary-like responses.
-
-**Staff / Operator Features:**
-- **Queue Operations:** `QUEUE`, `NEXT`, `DONE`, `ENQUEUE`, `DEQUEUE`, `AUTOQUEUE` for support-flow handling.
-- **Ticket Operations:** `TICKET`, `RESOLVE`, `TICKETS`, `SHOWTICKET`, `TICKETMSG`.
-- **Channel Operations:** `OP`, `DEOP`, `VOICE`, `DEVOICE`, `KICK`, `OUT`, `DNMO`, `EVERYONEOUT`, `CHANCONF`, `TOPIC`, `WELCOME`.
-- **Moderation/Policy Helpers:** `BAN`, `CHANBAN`, `CENSOR`, `LAMERCONTROL`, `LCEDIT`, `IDLEKICK`, `REPORT`.
-- **Diagnostics and Runtime:** `STATUS`, `RELOAD`, `WRITEDB`, plus extended stats commands (`STATS`, `TOP10`, `CHANSTATS`, `TERMSTATS`, etc.).
-
-**Persistent Runtime State (`helpmod.db`):**
-- **Runtime Data Source:** Loads optional legacy-compatible state from `helpmod.db` inside `help_dir`.
-- **Restored Elements:** Managed channels, queue/ticket data, welcome texts, term maps, account config/levels, report routes, and statistics snapshots.
-- **Safe Degradation:** If the file is missing, HelpServ continues with in-memory defaults and configured base channel behavior.
-
-**Configuration (`config-helpserv.json`):**
-- `nick`, `servername`, `description`, `identd`: Service identity for handshake/registration.
-- `help_dir`: Base directory containing `help_*.txt` and `helpmod.db` (default `help`).
-- Default channel behavior: resolved from `helpmod.db` when present, otherwise `#help`.
-
-**Typical Operational Flows:**
-- **User self-help:** User sends `HELP`, navigates with numbers, drills down with `TOPICS`, and searches with `SEARCH`.
-- **Live support:** Staff uses `QUEUE NEXT` / `DONE` to process waiting users in managed channels.
-- **Controlled onboarding:** Teams can use `TICKET`/`RESOLVE` plus `INVITE` flow for moderated help access.
-- **Hot reload:** `RELOAD` allows topic and DB refresh at runtime without restarting JServ.
-
-**Operational Guarantees:**
-- **Burst Integration:** Registers and joins managed help channels during burst like other modules.
-- **Runtime Control:** Can be enabled/disabled dynamically through configuration.
-- **Graceful Logout:** Sends proper QUIT command on shutdown.
-
-### OperServ Module
-
-**Purpose:** Provides network operator tools for network management, monitoring, and security enforcement. OperServ offers commands for G-Line management, trust control, and network statistics accessible only to IRC operators.
-
-**Key Capabilities:**
-- **G-Line Management:** Add, remove, list, and synchronize network-wide bans (GLINE, UNGLINE, GLINELIST)
-- **Trust System:** Manage connection trust rules for IP-based access control (TRUSTADD, TRUSTDEL, TRUSTGET, TRUSTSET, TRUSTLIST)
-- **Network Statistics:** View network stats, active G-Lines, and trust rules (STATS)
-- **Channel Management:** List all channels with user counts (CHANLIST)
-- **User Management:** KILL command for disconnecting abusive users
-- **Raw Commands:** Send raw IRC protocol commands for advanced operations (RAW)
-- **Automatic Cleanup:** Timer-based cleanup of expired G-Lines
-- **Network Synchronization:** Sync G-Lines with network on startup
 - **Runtime Control:** Can be enabled/disabled dynamically through configuration
 - **Graceful Logout:** Sends proper QUIT command on shutdown
 
@@ -323,27 +191,6 @@ Modules are configured in `config-modules-extended.json`:
       "className": "net.midiandmore.jserv.NickServ",
       "numericSuffix": "AAD",
       "configFile": "config-nickserv.json"
-    },
-    {
-      "name": "SaslServ",
-      "enabled": true,
-      "className": "net.midiandmore.jserv.SaslServ",
-      "numericSuffix": "AAE",
-      "configFile": "config-saslserv.json"
-    },
-    {
-      "name": "StatsServ",
-      "enabled": true,
-      "className": "net.midiandmore.jserv.StatsServ",
-      "numericSuffix": "AAH",
-      "configFile": "config-statsserv.json"
-    },
-    {
-      "name": "HelpServ",
-      "enabled": true,
-      "className": "net.midiandmore.jserv.HelpServ",
-      "numericSuffix": "AAI",
-      "configFile": "config-helpserv.json"
     }
   ]
 }
@@ -369,45 +216,6 @@ Changes require a restart to take effect.
   - Comprehensive operator commands and statistics
 - **HostServ** (`hostserv`): Hidden host management for authenticated users
 - **NickServ** (`nickserv`): Nickname protection and authentication enforcement
-- **SaslServ** (`saslserv`): SASL authentication validation (mechanism `PLAIN`)
-  - Implements server-to-server SASL protocol for JIRCd
-  - Supports database and config-based authentication
-  - Optional relay mode for external authentication services
-  - Configurable account parameters via `config-saslserv.json`
-- **ChanServ** (`chanserv`): Channel registration and management service
-  - Channel registration with founder privileges
-  - User access level management (OP, VOICE, BAN)
-  - Automatic mode setting based on user flags
-  - Channel settings (AUTOOP, PROTECT, AUTOLIMIT)
-  - Topic protection and management
-  - Ban list management
-  - Channel information and user list commands
-- **AuthServ** (`authserv`): Account management and authentication service
-  - User account registration with email verification
-  - Secure password management (change, reset, recovery)
-  - Account identification and authentication
-  - User flags and permission management
-  - Account deletion and information display
-  - Email notification system for password changes
-  - Integration with ChanServ for automatic channel mode application
-- **StatsServ** (`statsserv`): Channel statistics and ranking service
-  - Tracks messages, joins, parts, kicks, topics, and actions per channel
-  - Provides STATS, TOP10, CHSTATS, and QUOTE commands
-  - Supports channel privacy levels and channel add/remove management
-  - Uses `config-statsserv.json` for defaults and cleanup tuning
-- **HelpServ** (`helpserv`): Help and FAQ service inspired by NewServ helpmod2
-  - Loads hierarchical help topics from `help/help_en.txt`
-  - Supports HELP/TOPICS/SEARCH for user navigation
-  - Supports oper-only RELOAD command for live topic reload
-  - Uses `config-helpserv.json` for service/channel/source-file settings
-- **OperServ** (`operserv`): Operator service for network management
-  - Network statistics and monitoring
-  - G-Line management (add, remove, list, sync)
-  - Trust management for connection control (TRUSTADD, TRUSTDEL, TRUSTLIST)
-  - Channel and user listing
-  - Raw command sending for advanced operations
-  - Kill command for user management
-  - Automatic G-Line cleanup and synchronization
 
 ### Adding New Modules
 
@@ -471,18 +279,6 @@ The ModuleManager will automatically instantiate your module using reflection ba
 
 For detailed information about NickServ commands and features, see [README_NICKSERV.md](README_NICKSERV.md).
 
-### HelpServ User & Oper Commands
-- **HELP [topic]** - Show HelpServ help menu or a specific topic
-- **TOPICS [topic]** - List available topics/subtopics
-- **SEARCH <text>** - Search help topics and command descriptions
-- **SHOWCOMMANDS** - List available HelpServ commands
-- **COMMAND <name>** - Show short help text for a HelpServ command
-- **VERSION** - Show HelpServ version information
-- **INVITE** - Request invite to the configured help channel
-- **RELOAD** - Reload help topics (oper-only)
-
-For detailed information about HelpServ commands, workflows, and configuration, see [README_HELPSERV.md](README_HELPSERV.md).
-
 ### SpamScan & HostServ Commands
 Refer to the built-in help system or project wiki for a complete list of operator and user commands for SpamScan and HostServ.
 
@@ -502,25 +298,16 @@ Refer to the built-in help system or project wiki for a complete list of operato
 
 ### Core Configuration
 - `config.json` - Main JServ configuration (server connection, numeric, database settings, SMTP)
-- `config-modules.json` - Basic module configuration (deprecated, use extended version)
 - `config-modules-extended.json` - Extended module configuration with class names, numeric suffixes, and config file mappings
 
 ### Module Configuration
 - `config-spamscan.json` - SpamScan module settings (nick, servername, description, identd, detection thresholds)
 - `config-hostserv.json` - HostServ module settings (nick, servername, description, identd)
 - `config-nickserv.json` - NickServ module settings (nick, servername, description, identd, grace period)
-- `config-saslserv.json` - SaslServ module settings (account name, ID, relay settings, timeout)
-- `config-chanserv.json` - ChanServ module settings (nick, servername, description, identd)
-- `config-authserv.json` - AuthServ module settings (nick, servername, description, identd)
-- `config-operserv.json` - OperServ module settings (nick, servername, description, identd)
-- `config-helpserv.json` - HelpServ module settings (nick, servername, description, identd, channel, help_dir)
 - `config-trustcheck.json` - TrustCheck allow rules (legacy fallback if database has no trust rules)
 
 ### Data Files
 - `badwords-spamscan.json` - Badword list for SpamScan spam detection
-- `email-templates.json` - Email templates for AuthServ notifications (registration, password changes)
-- `help/help_en.txt` - Imported helpmod2 help tree for HelpServ topic responses
-- `help/help_de.txt` - Optional German help tree that can be loaded as a secondary HelpServ language source
 
 ## TrustCheck (TC/TR)
 
@@ -536,18 +323,10 @@ Add to `config.json`:
 {"name":"trustcheck_timeout_ms","value":"2000"}
 ```
 
-Allow rules are primarily evaluated from the database table `operserv.trusts` (managed via OperServ commands). Based on the evaluation, JServ replies:
+Allow rules are primarily evaluated from the database table `operserv.trusts`. Based on the evaluation, JServ replies:
 - `TR ... OK` - Connection allowed (rule matched)
 - `TR ... IGNORE` - No rule matched, but not explicitly denied (default behavior)
 - `TR ... FAIL` - Connection explicitly denied (fail-closed mode, if configured)
-
-OperServ commands:
-
-- `TRUSTADD <mask> [maxconn] [ident]`
-- `TRUSTDEL <mask>`
-- `TRUSTGET <mask>`
-- `TRUSTSET <mask> [maxconn] [ident|noident]`
-- `TRUSTLIST [limit]`
 
 Rule masks support `*` and `?` and typically use `ident@ip` (example: `*admin*@192.0.2.*`).
 `maxconn` is the maximum simultaneous connections for that IP (0 = unlimited). `ident` forces a non-empty ident.

@@ -1725,6 +1725,29 @@ public final class Database {
             }
         }
     }
+    
+    public boolean removeHost(String nick) {
+
+        int index = getUserId(nick);
+        int tries = 0;
+        while (tries < 2) {
+            ensureConnection();
+            try (Connection conn = getConnection();
+                 var statement = conn.prepareStatement("DELETE FROM hostserv.hosts WHERE uid = ?;")) {
+                statement.setInt(1, index);
+                return statement.executeUpdate() > 0;
+            } catch (SQLException ex) {
+                if (tries == 0) {
+                    LOG.warning(RECONNECT_MSG + ex.getMessage());
+                    initializeConnectionPool();
+                } else {
+                    ex.printStackTrace();
+                }
+            }
+            tries++;
+        }
+        return false;
+    }
 
     private long numericToLong(String numeric, int numericlen) {
         long mynumeric = 0;
@@ -3491,6 +3514,35 @@ public final class Database {
             try (Connection conn = getConnection();
                  var statement = conn.prepareStatement(
                 "UPDATE spamscan.kill_tracking SET glined = TRUE WHERE userhost = ?;"
+            )) {
+                statement.setString(1, userHost);
+                statement.executeUpdate();
+                break;
+            } catch (SQLException ex) {
+                if (tries == 0) {
+                    LOG.warning(RECONNECT_MSG + ex.getMessage());
+                    initializeConnectionPool();
+                } else {
+                    ex.printStackTrace();
+                }
+            }
+            tries++;
+        }
+    }
+
+    /**
+     * Clears kill tracking for a user@host after a SpamScan G-Line was applied.
+     * This resets both the counter and the temporary G-Line marker.
+     *
+     * @param userHost The user@host to clear
+     */
+    protected void clearKillTracking(String userHost) {
+        int tries = 0;
+        while (tries < 2) {
+            ensureConnection();
+            try (Connection conn = getConnection();
+                 var statement = conn.prepareStatement(
+                "DELETE FROM spamscan.kill_tracking WHERE userhost = ?;"
             )) {
                 statement.setString(1, userHost);
                 statement.executeUpdate();

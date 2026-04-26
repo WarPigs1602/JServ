@@ -546,6 +546,7 @@ public final class SpamScan implements Software, Module {
                         
                         // Apply score decay (rehabilitate good behavior over time)
                         applyScoreDecay(user, currentTime);
+                        updateBehaviorSignals(user, message, currentTime);
                         
                         // Add message to history for pattern analysis
                         user.addMessageToHistory(message, currentTime, channelName);
@@ -592,64 +593,9 @@ public final class SpamScan implements Software, Module {
                         // === LEGACY CHECKS (fallback for specific patterns) ===
                         
                         // Still check for immediate threats (very high single-message scores)
-                        if (spamScore > 50.0) {
+                        if (spamScore > 70.0) {
                             String reason = "High-risk spam pattern detected";
                             kickOrKillUser(userNumeric, channelName, reason);
-                            user.setSpamScore(0.0);
-                            return;
-                        }
-                        
-                        // Legacy repeat check (for backward compatibility)
-                        int normalRepeatNew = Integer.parseInt(config.getProperty("normalRepeatThresholdNew", "3"));
-                        int normalRepeatEstablished = Integer.parseInt(config.getProperty("normalRepeatThresholdEstablished", "7"));
-                        int laxRepeatNew = Integer.parseInt(config.getProperty("laxRepeatThresholdNew", "6"));
-                        int laxRepeatEstablished = Integer.parseInt(config.getProperty("laxRepeatThresholdEstablished", "10"));
-                        
-                        int repeatThreshold;
-                        if (isLaxMode) {
-                            repeatThreshold = isNewUser ? laxRepeatNew : laxRepeatEstablished;
-                        } else {
-                            repeatThreshold = isNewUser ? normalRepeatNew : normalRepeatEstablished;
-                        }
-                        
-                        if (user.getLine().equalsIgnoreCase(message)) {
-                            var repeatCount = user.getRepeat();
-                            repeatCount = repeatCount + 1;
-                            user.setRepeat(repeatCount);
-                            if (repeatCount > repeatThreshold) {
-                                kickOrKillUser(userNumeric, channelName, "Repeating lines!");
-                                user.setSpamScore(0.0);
-                                return;
-                            }
-                        } else {
-                            user.setRepeat(0);
-                            user.setLine(message);
-                        }
-                        
-                        // Legacy flood check with decay
-                        int normalFloodNew = Integer.parseInt(config.getProperty("normalFloodThresholdNew", "2"));
-                        int normalFloodEstablished = Integer.parseInt(config.getProperty("normalFloodThresholdEstablished", "5"));
-                        int laxFloodNew = Integer.parseInt(config.getProperty("laxFloodThresholdNew", "5"));
-                        int laxFloodEstablished = Integer.parseInt(config.getProperty("laxFloodThresholdEstablished", "8"));
-                        
-                        int floodThreshold;
-                        if (isLaxMode) {
-                            floodThreshold = isNewUser ? laxFloodNew : laxFloodEstablished;
-                        } else {
-                            floodThreshold = isNewUser ? normalFloodNew : normalFloodEstablished;
-                        }
-                        
-                        var floodCount = user.getFlood();
-                        floodCount = floodCount + 1;
-                        user.setFlood(floodCount);
-                        
-                        // Decay flood counter over time
-                        if (user.getLastMessageTime() > 0 && currentTime - user.getLastMessageTime() > 10) {
-                            user.setFlood(Math.max(0, floodCount - 1));
-                        }
-                        
-                        if (floodCount > floodThreshold) {
-                            kickOrKillUser(userNumeric, channelName, "Flooding!");
                             user.setSpamScore(0.0);
                             return;
                         }
@@ -1121,8 +1067,8 @@ public final class SpamScan implements Software, Module {
             getSt().sendText("%s GL * !+%s %d %d %d :%s", 
                     getNumeric(), glinePattern, glineDuration, currentTime, currentTime, glineMessage);
             
-            // Mark as G-Lined in database
-            getMi().getDb().markAsGLined(userHost);
+                // Reset kill tracking after the G-Line was issued.
+                getMi().getDb().clearKillTracking(userHost);
             
             LOG.log(Level.WARNING, "Applied GLOBAL G-Line to {0} for {1} seconds (Violations: {2}, Reason: {3})", 
                     new Object[]{glinePattern, glineDuration, killCount, reason});
@@ -1188,9 +1134,8 @@ public final class SpamScan implements Software, Module {
         getSt().sendText("%s GL * !+%s %d %d %d :%s", 
                 getNumeric(), glinePattern, glineDuration, currentTime, currentTime, glineMessage);
         
-        // Mark as G-Lined in database (with extreme spam tracking)
-        getMi().getDb().markAsGLined(userHost);
-        getMi().getDb().trackKillForGLine(userHost, currentTime); // Track for statistics
+        // Reset kill tracking after the immediate G-Line was issued.
+        getMi().getDb().clearKillTracking(userHost);
         
         LOG.log(Level.SEVERE, "IMMEDIATE GLOBAL G-Line applied to {0} for {1} seconds (EXTREME SPAM: {2})", 
                 new Object[]{glinePattern, glineDuration, reason});
@@ -1252,6 +1197,75 @@ public final class SpamScan implements Software, Module {
         }
         
         return false;
+    }
+
+    private boolean containsUrl(String message) {
+        String urlPattern = "(?i)(https?://|www\\.)\\S+";
+        return java.util.regex.Pattern.compile(urlPattern).matcher(message).find();
+    }
+
+    private String normalizeMessageForComparison(String message) {
+        if (message == null) {
+            return "";
+        }
+        return message.toLowerCase()
+                .replaceAll("\\s+", " ")
+                .replaceAll("[!?.:,;]+$", "")
+                .trim();
+    }
+
+    private boolean isLikelyConversationalMessage(String message) {
+        if (message == null) {
+            return false;
+        }
+
+        String trimmedMessage = message.trim();
+        if (trimmedMessage.isEmpty() || containsUrl(trimmedMessage)) {
+            return false;
+        }
+
+        int length = trimmedMessage.length();
+        if (length <= 14) {
+            return true;
+        }
+
+        return trimmedMessage.endsWith("?")
+                || trimmedMessage.startsWith("@");
+    }
+
+    private void updateBehaviorSignals(Users user, String message, long currentTime) {
+        long previousMessageTime = user.getLastMessageTime();
+        if (previousMessageTime > 0) {
+            long timeDiff = currentTime - previousMessageTime;
+            if (timeDiff >= 10) {
+                user.setFlood(Math.max(0, user.getFlood() - 2));
+            } else if (timeDiff >= 5) {
+                user.setFlood(Math.max(0, user.getFlood() - 1));
+            }
+        }
+
+        user.setFlood(Math.min(user.getFlood() + 1, 20));
+
+        String normalizedCurrentMessage = normalizeMessageForComparison(message);
+        String normalizedPreviousMessage = normalizeMessageForComparison(user.getLine());
+        if (!normalizedCurrentMessage.isEmpty() && normalizedCurrentMessage.equals(normalizedPreviousMessage)) {
+            user.setRepeat(user.getRepeat() + 1);
+        } else {
+            user.setRepeat(0);
+            user.setLine(message);
+        }
+
+        if (isExcessiveCaps(message)) {
+            user.setCapsCount(Math.min(user.getCapsCount() + 1, 10));
+        } else {
+            user.setCapsCount(Math.max(0, user.getCapsCount() - 1));
+        }
+
+        if (containsUrl(message)) {
+            user.setUrlCount(Math.min(user.getUrlCount() + 1, 10));
+        } else {
+            user.setUrlCount(Math.max(0, user.getUrlCount() - 1));
+        }
     }
     
     /**
@@ -1438,19 +1452,23 @@ public final class SpamScan implements Software, Module {
     private double calculateSpamScore(Users user, String message, String channel, long currentTime) {
         double score = 0.0;
         var config = getMi().getConfig().getSpamFile();
+        boolean hasUrl = containsUrl(message);
+        boolean hasHomoglyphs = getMi().getHomoglyphs().scanForHomoglyphs(message);
+        boolean excessiveCaps = isExcessiveCaps(message);
+        boolean conversationalMessage = isLikelyConversationalMessage(message);
         
         // Factor 1: Message rate (time between messages)
         if (user.getLastMessageTime() > 0) {
             long timeDiff = currentTime - user.getLastMessageTime();
             if (timeDiff < 2) { // Less than 2 seconds between messages
-                score += 10.0;
+                score += conversationalMessage ? 4.0 : 10.0;
             } else if (timeDiff < 5) { // Less than 5 seconds
-                score += 5.0;
+                score += conversationalMessage ? 2.0 : 5.0;
             }
         }
         
         // Factor 2: Excessive caps
-        if (isExcessiveCaps(message)) {
+        if (excessiveCaps) {
             score += 15.0;
         }
         
@@ -1463,7 +1481,7 @@ public final class SpamScan implements Software, Module {
         score += analyzeUrlSuspicion(message);
         
         // Factor 5: Homoglyphs
-        if (getMi().getHomoglyphs().scanForHomoglyphs(message)) {
+        if (hasHomoglyphs) {
             score += 25.0;
         }
         
@@ -1487,17 +1505,35 @@ public final class SpamScan implements Software, Module {
             }
         }
         
-        // Factor 9: Message length (very short or very long)
-        if (message.length() < 5) {
-            score += 5.0; // Short messages can be spam
-        } else if (message.length() > 400) {
+        // Factor 9: Message length and behavioral pressure
+        if (message.length() > 400) {
             score += 10.0; // Very long messages can be spam
+        }
+
+        if (user.getRepeat() >= 2) {
+            score += conversationalMessage ? user.getRepeat() * 2.0 : user.getRepeat() * 6.0;
+        }
+
+        if (user.getFlood() >= 4) {
+            score += (user.getFlood() - 3) * (conversationalMessage ? 1.5 : 3.0);
+        }
+
+        if (user.getCapsCount() >= 3) {
+            score += (user.getCapsCount() - 2) * 4.0;
+        }
+
+        if (user.getUrlCount() >= 2) {
+            score += (user.getUrlCount() - 1) * 6.0;
         }
         
         // Factor 10: Number repetition (common in spam)
         long digitCount = message.chars().filter(Character::isDigit).count();
         if (digitCount > message.length() * 0.3) { // More than 30% digits
             score += 8.0;
+        }
+
+        if (conversationalMessage && !hasUrl && !hasHomoglyphs && !excessiveCaps) {
+            score = Math.max(0.0, score - 8.0);
         }
         
         return score;

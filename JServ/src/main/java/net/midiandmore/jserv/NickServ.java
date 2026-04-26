@@ -104,8 +104,8 @@ public final class NickServ implements Software, Module {
         // Register NickServ bot with P10 protocol
         // N <nick> <hop> <timestamp> <user> <host> <modes> <base64-ip> <numeric>
         // :<realname>
-        sendText("%s N %s 2 %d %s %s +oikr - %s U]AEB %s%s :%s",
-                numeric, nick, time(), identd, servername, nick, numeric, getNumericSuffix(), description);
+        sendText("%s N %s 2 %d %s %s +oikr - %s:%d U]AEB %s%s :%s",
+            numeric, nick, time(), identd, servername, nick, time(), numeric, getNumericSuffix(), description);
 
         // Start the enforcement timer
         startEnforcementTimer();
@@ -219,15 +219,10 @@ public final class NickServ implements Software, Module {
 
         String userNumeric = extractNumericFromNCommand(elem);
         String userNick = elem[2];
-        String modes = elem[6];
-        String authInfo = elem[7];
-        if (!authInfo.equals("-")) {
-            modes = elem[7];
-            authInfo = elem[8];
-        }
+        Users user = socketThread.getUsers().get(userNumeric);
 
         // Skip opers and services
-        if (modes.contains("o") || modes.contains("k")) {
+        if (user != null && (user.isOper() || user.isService())) {
             return;
         }
 
@@ -259,20 +254,21 @@ public final class NickServ implements Software, Module {
         }
 
         // Nick is registered - check if user is authenticated for THIS nick
+        String accountName = user != null ? user.getAccount() : "";
+        boolean hasReliableAccountState = accountName != null && !accountName.isBlank();
         boolean isAuthenticatedForThisNick = false;
 
-        if (!authInfo.equals("-") && authInfo.contains(":")) {
-            String[] authParts = authInfo.split(":");
-            if (authParts.length >= 1 && !authParts[0].isEmpty()) {
-                String accountName = authParts[0];
-                // User is authenticated if their account name matches the nick
-                // (case-insensitive)
-                // OR if the nick is reserved by their account
-                isAuthenticatedForThisNick = accountName.equalsIgnoreCase(userNick) ||
-                        isNickOwnedByAccount(userNick, accountName);
-                LOG.log(Level.FINE, "User {0} during burst is authenticated as {1}, matches nick: {2}",
-                        new Object[] { userNick, accountName, isAuthenticatedForThisNick });
-            }
+        if (hasReliableAccountState) {
+            // User is authenticated if their account name matches the nick
+            // (case-insensitive) OR if the nick is reserved by their account.
+            isAuthenticatedForThisNick = accountName.equalsIgnoreCase(userNick)
+                || isNickOwnedByAccount(userNick, accountName);
+            LOG.log(Level.FINE, "User {0} during burst is authenticated as {1}, matches nick: {2}",
+                new Object[] { userNick, accountName, isAuthenticatedForThisNick });
+        } else {
+            LOG.log(Level.FINE, "Skipping immediate burst enforcement for {0} ({1}) because no account state is available yet",
+                new Object[] { userNick, userNumeric });
+            return;
         }
 
         // If not authenticated for this nick during burst, kill immediately
@@ -341,15 +337,10 @@ public final class NickServ implements Software, Module {
 
         String userNumeric = extractNumericFromNCommand(elem);
         String userNick = elem[2];
-        String modes = elem[6];
-        String authInfo = elem[7];
-        if (!authInfo.equals("-")) {
-            modes = elem[7];
-            authInfo = elem[8];
-        }
+        Users user = socketThread.getUsers().get(userNumeric);
 
         // Skip opers and services
-        if (modes.contains("o") || modes.contains("k")) {
+        if (user != null && (user.isOper() || user.isService())) {
             LOG.log(Level.FINE, "Skipping nick protection for oper/service: {0}", userNick);
             return;
         }
@@ -368,20 +359,16 @@ public final class NickServ implements Software, Module {
         }
 
         // Nick is registered - check if user is authenticated for THIS nick
+        String accountName = user != null ? user.getAccount() : "";
         boolean isAuthenticatedForThisNick = false;
 
-        if (!authInfo.equals("-") && authInfo.contains(":")) {
-            String[] authParts = authInfo.split(":");
-            if (authParts.length >= 1 && !authParts[0].isEmpty()) {
-                String accountName = authParts[0];
-                // User is authenticated if their account name matches the nick
-                // (case-insensitive)
-                // OR if the nick is reserved by their account
-                isAuthenticatedForThisNick = accountName.equalsIgnoreCase(userNick) ||
-                        isNickOwnedByAccount(userNick, accountName);
-                LOG.log(Level.FINE, "User {0} is authenticated as {1}, matches nick: {2}",
-                        new Object[] { userNick, accountName, isAuthenticatedForThisNick });
-            }
+        if (accountName != null && !accountName.isBlank()) {
+            // User is authenticated if their account name matches the nick
+            // (case-insensitive) OR if the nick is reserved by their account.
+            isAuthenticatedForThisNick = accountName.equalsIgnoreCase(userNick)
+                || isNickOwnedByAccount(userNick, accountName);
+            LOG.log(Level.FINE, "User {0} is authenticated as {1}, matches nick: {2}",
+                new Object[] { userNick, accountName, isAuthenticatedForThisNick });
         }
 
         // If authenticated for this nick, no warning needed
@@ -398,7 +385,6 @@ public final class NickServ implements Software, Module {
 
         // Send warning notice to user numeric (not server numeric)
         String notice = "O";
-        Users user = socketThread.getUsers().get(userNumeric);
         if (user != null && !socketThread.isNotice(user.getAccount())) {
             notice = "P";
         }

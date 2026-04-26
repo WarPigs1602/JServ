@@ -402,7 +402,8 @@ public final class SocketThread implements Runnable, Software {
         setUsers(new HashMap<>());
         setChannel(new HashMap<>());
         setAuthed(new HashMap<>());
-        setBurst(false);
+        // We start in incoming netburst until the uplink sends EB.
+        setBurst(true);
         setBursts(new HashMap<>());
         setModuleManager(new ModuleManager(mi, this));
         (thread = new Thread(this)).start();
@@ -552,10 +553,25 @@ public final class SocketThread implements Runnable, Software {
             propagateUserToOthers(elem, rawLine, jnumeric);
         }
     }
+
+    private boolean shouldPropagateRegisteredUser(String userToken, String jnumeric) {
+        if (userToken == null || userToken.isBlank() || jnumeric == null || jnumeric.isBlank()) {
+            return false;
+        }
+
+        // Existing users learned during server burst or users that belong to this
+        // local server must not be forwarded again.
+        if (isBurst() || userToken.startsWith(jnumeric)) {
+            return false;
+        }
+
+        return true;
+    }
     
     /**
      * Critical section: Check for duplicates, parse user info, and register user
-     * Returns true if registration succeeded, false if user was killed/handled
+    * Returns true if registration succeeded and may be propagated, false if the
+    * user was handled locally or must not be propagated further.
      * 
      * Variable P10 N fields:
      * - elem[7] contains modes (+i, +r, +o, +h, +z, +k, +x, +w, +s)
@@ -691,13 +707,16 @@ public final class SocketThread implements Runnable, Software {
             return false; // Don't propagate, just updated existing
         }
         
-        // Let modules handle new user (e.g., SpamScan checks for bots, HostServ sets vhost)
+        // Existing users received during netburst are state sync, not fresh logins.
+        // Modules should only see actual post-burst new connections.
         boolean userHandled = false;
-        for (Module module : getModuleManager().getAllModules().values()) {
-            if (module.isEnabled()) {
-                if (module.handleNewUser(userToken, nickname, elem[5], elem[6], acc, jnumeric, hiddenHost)) {
-                    userHandled = true;
-                    break; // User was killed/handled by module
+        if (!isBurst()) {
+            for (Module module : getModuleManager().getAllModules().values()) {
+                if (module.isEnabled()) {
+                    if (module.handleNewUser(userToken, nickname, elem[5], elem[6], acc, jnumeric, hiddenHost)) {
+                        userHandled = true;
+                        break; // User was killed/handled by module
+                    }
                 }
             }
         }
@@ -714,7 +733,7 @@ public final class SocketThread implements Runnable, Software {
                 getMi().getDb().updateData("lastuserhost", acc, hosts);
                 getMi().getDb().updateData("lastpasschng", acc, time());
             }
-            return true; // Proceed with propagation
+            return shouldPropagateRegisteredUser(userToken, jnumeric);
         }
         
         return false; // User was handled/killed by module
@@ -953,8 +972,7 @@ public final class SocketThread implements Runnable, Software {
                     if (content.startsWith("SERVER")) {
                         setServerNumeric(content.split(" ")[SERVERNAME_INDEX].substring(0, 1));
                         System.out.println("Getting SERVER response...");
-                    } else if (elem[1].equals("EB") && !isBurst()) {
-                        setBurst(true);
+                    } else if (elem[1].equals("EB") && isBurst()) {
                         
                         // Now that all users are loaded, check database for channel permissions
                         var list = getMi().getDb().getChannels();
@@ -1216,6 +1234,7 @@ public final class SocketThread implements Runnable, Software {
                             }
 
                         }
+                        setBurst(false);
                         System.out.println("Channels joined...");
                     } else if (elem[1].equals("J") || elem[1].equals("C")) {
                         var channel = elem[2];
@@ -1458,18 +1477,6 @@ public final class SocketThread implements Runnable, Software {
         } catch (IOException | NumberFormatException ex) {
             LOG.severe("Fehler beim Verbindungsaufbau: " + ex.getMessage());
         } finally {
-            // Send SQUIT before closing connection
-            if (getPw() != null && !getSocket().isClosed()) {
-                try {
-                    System.out.println("Sending SQUIT command...");
-                    sendText("SQUIT %s :Service shutting down", getServername());
-                    getPw().flush();
-                    Thread.sleep(500); // Give time for SQUIT to be sent
-                } catch (Exception e) {
-                    LOG.warning("Failed to send SQUIT: " + e.getMessage());
-                }
-            }
-            
             if (getPw() != null) {
                 getPw().close();
             }

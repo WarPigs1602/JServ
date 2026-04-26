@@ -243,6 +243,32 @@ public final class HostServ implements Software, Module {
         }
     }
     
+    private boolean isRemoveAction(String action) {
+        return action != null && (action.equalsIgnoreCase("DEL")
+                || action.equalsIgnoreCase("DELETE")
+                || action.equalsIgnoreCase("REMOVE"));
+    }
+    
+    private boolean removeVirtualHost(String numeric, String account) {
+        boolean removed = false;
+        if (account != null && !account.isBlank()) {
+            removed = getMi().getDb().removeHost(account);
+        }
+        
+        Users user = getSt().getUsers().get(numeric);
+        if (user != null) {
+            boolean hadHiddenHost = user.getHiddenHost() != null && !user.getHiddenHost().isBlank();
+            if (user.getIdent() != null && !user.getIdent().isBlank()
+                    && user.getRealHost() != null && !user.getRealHost().isBlank()) {
+                sendText("%s SH %s %s %s", getNumeric(), numeric, user.getIdent(), user.getRealHost());
+                user.setHost(user.getRealHost());
+            }
+            user.setHiddenHost(null);
+            removed = removed || hadHiddenHost;
+        }
+        return removed;
+    }
+    
     @Override
     public boolean isEnabled() {
         return enabled;
@@ -358,10 +384,16 @@ public final class HostServ implements Software, Module {
                     }
                     var auth = command.split(" ");
                     if (auth[0].equalsIgnoreCase("VHOST")) {
-                        if (auth.length <= 2) {
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_TOOFEWPARAMS"));
-                        } else if (!getSt().isAuthed(nick)) {
+                        if (!getSt().isAuthed(nick)) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_NOTAUTHED"));
+                        } else if (auth.length == 2 && isRemoveAction(auth[1])) {
+                            if (removeVirtualHost(elem[0], nick)) {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_REMOVED"));
+                            } else {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_NOTSET"));
+                            }
+                        } else if (auth.length <= 2) {
+                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_TOOFEWPARAMS"));
                         } else if (!isMoreAsAnWeek(getMi().getDb().getHostTimestamp(nick)) && !getSt().isPrivileged(nick)) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_CHANGETOOFAST"));
                         } else if (checkHostChars(auth[2]) == 0 && checkIdentChars(auth[1]) == 0) {
@@ -382,16 +414,33 @@ public final class HostServ implements Software, Module {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
                         } else if (!getSt().isPrivileged(nick)) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_UNKNOWNCMD", auth[0].toUpperCase()));
+                        } else if (auth.length >= 3 && isRemoveAction(auth[2])) {
+                            var users = getSt().getUserName(auth[1]);
+                            if (users == null || !getSt().getUsers().containsKey(users)) {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_USER_NOT_FOUND", auth[1]));
+                            } else {
+                                var unu = getSt().getUserAccount(auth[1]);
+                                if (removeVirtualHost(users, unu)) {
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_REMOVED", auth[1]));
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, users, Messages.get("QM_HS_UHOST_REMOVE_NOTIFY", nick));
+                                } else {
+                                    getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VHOST_NOTSET"));
+                                }
+                            }
                         } else if (auth.length <= 3) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_TOOFEWPARAMS"));
                         } else if (checkHostChars(auth[3]) == 0 && checkIdentChars(auth[2]) == 0) {
                             var users = getSt().getUserName(auth[1]);
-                            var unu = getSt().getUserAccount(auth[1]);
-                            sendText("%s SH %s %s %s", getNumeric(), users, auth[2], auth[3]);
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_SET", auth[1], auth[2], auth[3]));
-                            getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, users, Messages.get("QM_HS_UHOST_NOTIFY", nick, auth[2], auth[3]));
-                            if (getSt().isAuthed(auth[1])) {
-                                getMi().getDb().addHost(unu, auth[2], auth[3]);
+                            if (users == null || !getSt().getUsers().containsKey(users)) {
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_USER_NOT_FOUND", auth[1]));
+                            } else {
+                                var unu = getSt().getUserAccount(auth[1]);
+                                sendText("%s SH %s %s %s", getNumeric(), users, auth[2], auth[3]);
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_SET", auth[1], auth[2], auth[3]));
+                                getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, users, Messages.get("QM_HS_UHOST_NOTIFY", nick, auth[2], auth[3]));
+                                if (getSt().isAuthed(auth[1])) {
+                                    getMi().getDb().addHost(unu, auth[2], auth[3]);
+                                }
                             }
                         } else if (checkHostChars(auth[3]) == 2 && checkIdentChars(auth[2]) == 2) {
                             getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_UHOST_TOOLONG"));
@@ -412,6 +461,13 @@ public final class HostServ implements Software, Module {
                         }
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_VERSION"));
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_ENDOFLIST"));
+                    } else if (auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("VHOST")) {
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_VHOST_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_VHOST_DESC"));
+                    } else if (getSt().isAuthed(nick) && getSt().isPrivileged(nick)
+                            && auth.length == 2 && auth[0].equalsIgnoreCase("HELP") && auth[1].equalsIgnoreCase("UHOST")) {
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_UHOST_USAGE"));
+                        getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_HELP_UHOST_DESC"));
                     } else if (auth[0].equalsIgnoreCase("VERSION")) {
                         Software.BuildInfo buildInfo = Software.getBuildInfo();
                         getSt().sendNotice(getNumeric(), getNumericSuffix(), notice, elem[0], Messages.get("QM_HS_VERSION_LINE1", buildInfo.getFullVersion(), VENDOR));
